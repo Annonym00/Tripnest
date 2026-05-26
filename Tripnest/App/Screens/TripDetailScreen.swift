@@ -38,12 +38,11 @@ struct TripDetailScreen: View {
                 VStack(spacing: 0) {
                     topBar
                     ScrollView(showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 14) {
                             heroCard(t)
+                            detailActions(t)
+                            budgetSummary(t)
                             TripPhotosSection(trip: t)
-                            statsSection(t)
-                            tabSelector
-                            tabContent(t)
                         }
                         .padding(.horizontal, 18)
                         .padding(.top, 6)
@@ -71,23 +70,144 @@ struct TripDetailScreen: View {
     // MARK: - Top bar
 
     private var topBar: some View {
-        HStack {
+        HStack(spacing: 12) {
             Button(action: onBack) {
                 IconBtn(glyph: .back)
             }
             .buttonStyle(TripnestPressStyle())
-            Spacer()
-            HStack(spacing: 8) {
-                IconBtn(glyph: .heart)
-                IconBtn(glyph: .more)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Voyage")
+                    .font(.tText(12, weight: .bold))
+                    .foregroundColor(.tTextMute)
+                Text(store.activeTrip?.homeDestinationTitle ?? "Détails")
+                    .font(.tText(17, weight: .bold))
+                    .lineLimit(1)
             }
+
+            Spacer()
         }
         .padding(.horizontal, 22)
         .padding(.top, 8)
         .padding(.bottom, 4)
     }
 
+    private func detailActions(_ trip: Trip) -> some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                detailAction(glyph: .cal, title: "Planning", color: .tMint) { onNav(.tripPlanning) }
+                detailAction(glyph: .wallet, title: "Budget", color: .tBlue) { onNav(.tripBudget) }
+                detailAction(glyph: .spot, title: "Spots", color: .tRose) { onNav(.spots) }
+            }
+
+            HStack(spacing: 10) {
+                if trip.transportMode.supportsTravelTicket {
+                    detailAction(glyph: .ticket, title: "Billet", color: .tGold) { onNav(.flights) }
+                }
+                detailAction(glyph: .gallery, title: "Souvenirs", color: .tAccent2) { onNav(.tripSouvenirs) }
+            }
+        }
+    }
+
+    private func detailAction(glyph: TIcon.Glyph, title: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                TIcon(glyph: glyph, size: 17, stroke: color, strokeWidth: 2)
+                Text(title)
+                    .font(.tText(13, weight: .bold))
+                    .foregroundColor(.tText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.tSurface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(color.opacity(0.25), lineWidth: 1)
+            )
+        }
+        .buttonStyle(TripnestPressStyle())
+    }
+
+    private func budgetSummary(_ t: Trip) -> some View {
+        let sym = defaultCurrency.currencySymbol
+        let spotCount = store.spots.filter { $0.tripId == t.id }.count
+        let ticketCount = store.flights.filter { $0.tripId == t.id }.count
+        let remaining = max(0, t.budget - t.spent)
+        let pct = t.budget > 0 ? min(100, Int(Double(t.spent) / Double(t.budget) * 100)) : 0
+
+        return TCard(padding: 16, radius: 18, bg: AnyShapeStyle(Color.tSurface)) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Résumé")
+                            .font(.tText(16, weight: .bold))
+                        Text(t.budget > 0 ? "\(remaining)\(sym) restant" : "Aucun budget défini")
+                            .font(.tText(12, weight: .semibold))
+                            .foregroundColor(.tTextMute)
+                    }
+                    Spacer()
+                    Text(t.budget > 0 ? "\(pct)%" : "--")
+                        .font(.tDisplay(22))
+                        .foregroundColor(pct > 90 ? .tRose : .tAccent2)
+                }
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.tAccent2.opacity(0.12)).frame(height: 5)
+                        Capsule()
+                            .fill(pct > 90 ? Color.tRose : Color.tAccent2)
+                            .frame(width: geo.size.width * CGFloat(pct) / 100, height: 5)
+                    }
+                }
+                .frame(height: 5)
+
+                HStack(spacing: 10) {
+                    miniStat("\(t.spent)\(sym)", "dépensé", .tBlue)
+                    miniStat("\(spotCount)", "spots", .tRose)
+                    miniStat("\(ticketCount)", "billets", .tGold)
+                    miniStat("\(t.days)", "jours", .tMint)
+                }
+            }
+        }
+    }
+
+    private func miniStat(_ value: String, _ label: String, _ color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.tText(14, weight: .bold))
+                .foregroundColor(color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.76)
+            Text(label)
+                .font(.tText(10, weight: .semibold))
+                .foregroundColor(.tTextMute)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     // MARK: - Hero
+
+    private func heroStatusColor(_ status: Trip.Status) -> Color {
+        switch status {
+        case .active:  return .tMint
+        case .planned: return .tBlue
+        case .done:    return .tGold
+        }
+    }
+
+    private func heroStatusLabel(_ status: Trip.Status) -> String {
+        switch status {
+        case .active:  return "VOYAGE EN COURS"
+        case .planned: return "VOYAGE PLANIFIÉ"
+        case .done:    return "VOYAGE TERMINÉ"
+        }
+    }
 
     private func heroCard(_ t: Trip) -> some View {
         ZStack(alignment: .bottomLeading) {
@@ -101,48 +221,97 @@ struct TripDetailScreen: View {
                 tripId: t.id
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .frame(height: 200)
+            .frame(height: 220)
             .clipped()
 
             LinearGradient(
                 stops: [
+                    .init(color: Color.tBg0.opacity(0.32), location: 0),
                     .init(color: .clear, location: 0.35),
-                    .init(color: Color.tBg0.opacity(0.75), location: 0.75),
-                    .init(color: Color.tBg0.opacity(0.95), location: 1),
+                    .init(color: Color.tBg0.opacity(0.72), location: 0.8),
+                    .init(color: Color.tBg0.opacity(0.98), location: 1),
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
 
-            VStack(alignment: .leading, spacing: 6) {
-                TripDoneStatusControl(isDone: t.status == .done, style: .detail) { completed in
-                    if completed {
-                        showCompleteTripAlert = true
-                    } else {
-                        store.setTripCompleted(id: t.id, completed: false)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(heroStatusColor(t.status))
+                        .frame(width: 6, height: 6)
+                    Text(heroStatusLabel(t.status))
+                        .font(.tText(10, weight: .heavy))
+                        .tracking(1.4)
+                        .foregroundColor(heroStatusColor(t.status))
+                    Spacer(minLength: 8)
+                    TripDoneStatusControl(isDone: t.status == .done, style: .detail) { completed in
+                        if completed {
+                            showCompleteTripAlert = true
+                        } else {
+                            store.setTripCompleted(id: t.id, completed: false)
+                        }
                     }
                 }
                 Text(t.displayTitle)
-                    .font(.tDisplay(34))
-                    .tracking(-1.2)
+                    .font(.tDisplay(36))
+                    .tracking(-1.4)
+                    .foregroundColor(.white)
                     .lineLimit(2)
                 if !t.origin.isEmpty {
                     Text(t.routeLine)
-                        .font(.tText(14, weight: .semibold))
-                        .foregroundColor(.tTextMute)
+                        .font(.tText(13, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.82))
                 }
                 Text(t.tripSubtitle)
                     .font(.tText(13))
-                    .foregroundColor(.tTextMute)
+                    .foregroundColor(.white.opacity(0.7))
             }
             .padding(18)
         }
-        .frame(height: 200)
+        .frame(height: 220)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(Color.tBorderStrong, lineWidth: 1)
         )
+        .shadow(color: Color.tBg0.opacity(0.5), radius: 22, x: 0, y: 18)
+    }
+
+    /// Bandeau de 4 mini-cartes : dépensé, spots, vols, jours.
+    private func statStrip(_ t: Trip) -> some View {
+        let sym = defaultCurrency.currencySymbol
+        let spotCount = store.spots.filter { $0.tripId == t.id }.count
+        let stats: [(label: String, value: String, sub: String, color: Color)] = [
+            ("Dépensé", "\(t.spent)\(sym)", "/ \(t.budget)\(sym)", .tAccent2),
+            ("Spots", "\(spotCount)", spotCount > 1 ? "sauvés" : "sauvé", .tRose),
+            ("Photos", "\(t.photoCount)", t.photoCount > 1 ? "clichés" : "cliché", .tBlue),
+            ("Jours", "\(t.days)", t.days > 1 ? "jours" : "jour", .tMint),
+        ]
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(stats, id: \.label) { stat in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(stat.label)
+                            .font(.tText(10, weight: .heavy))
+                            .tracking(0.4)
+                            .foregroundColor(.tTextMute)
+                        Text(stat.value)
+                            .font(.tDisplay(20))
+                            .tracking(-0.5)
+                            .foregroundColor(stat.color)
+                        Text(stat.sub)
+                            .font(.tText(10))
+                            .foregroundColor(.tTextMute)
+                    }
+                    .frame(minWidth: 78, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.tSurface))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.tBorder, lineWidth: 1))
+                }
+            }
+        }
     }
 
     // MARK: - Stats

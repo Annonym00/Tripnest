@@ -81,25 +81,29 @@ struct HomeScreen: View {
                     .padding(.bottom, 10)
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 14) {
+                    VStack(spacing: 12) {
                         if sortedTrips.isEmpty {
                             emptyHome
                         } else if ongoingTrips.isEmpty {
                             noOngoingTripsHint
                         } else {
-                            if ongoingTrips.count > 1 {
-                                ongoingTripsHeader
-                                tripSwitcher
-                            }
                             if let t = displayedTrip {
                                 TripHomeHeroCard(
                                     trip: t,
                                     onTap: { onEditTrip(t.id) }
                                 )
                                     .frame(maxWidth: .infinity)
-                                    .frame(height: 220)
-                                tripActions(t)
-                                newTripButton
+                                    .frame(height: 204)
+                                HomePrimaryActions(
+                                    trip: t,
+                                    onPlanTap: { onNav(.tripPlanning) },
+                                    onBudgetTap: { onNav(.tripBudget) },
+                                    onSpotsTap: { onNav(.spots) },
+                                    onTicketTap: { onNav(.flights) }
+                                )
+                                if ongoingTrips.count > 1 {
+                                    tripSwitcher
+                                }
                                 TripRouteMapCard(trip: t)
                                     .id(t.routeMapLoadKey)
                                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -146,21 +150,20 @@ struct HomeScreen: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(Date.now.formatted(date: .abbreviated, time: .omitted))
-                        .font(.tText(13))
-                        .foregroundColor(.tTextMute)
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text(profileFirstName.isEmpty ? timeGreeting : "\(timeGreeting),")
-                            .font(.tDisplay(24, weight: .bold))
-                            .tracking(-0.5)
+                            .font(.tDisplay(22, weight: .bold))
                         if !profileFirstName.isEmpty {
                             Text(profileFirstName)
-                                .font(.tDisplay(24, weight: .bold))
-                                .tracking(-0.5)
+                                .font(.tDisplay(22, weight: .bold))
                                 .foregroundColor(.tAccent2)
                                 .lineLimit(1)
                         }
                     }
+                    Text(displayedTrip?.homeDestinationTitle ?? Date.now.formatted(date: .abbreviated, time: .omitted))
+                        .font(.tText(13, weight: .semibold))
+                        .foregroundColor(.tTextMute)
+                        .lineLimit(1)
                 }
                 Spacer(minLength: 8)
                 HStack(spacing: 8) {
@@ -169,15 +172,15 @@ struct HomeScreen: View {
                         Haptics.selection()
                     } label: {
                         Image(systemName: "questionmark.circle")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.tText)
-                            .frame(width: 30, height: 30)
+                            .frame(width: 40, height: 40)
                             .background(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
                                     .fill(Color.tSurface)
                             )
                             .overlay(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
                                     .stroke(Color.tBorder, lineWidth: 1)
                             )
                     }
@@ -333,61 +336,51 @@ struct HomeScreen: View {
         .buttonStyle(TripnestPressStyle())
     }
 
-    private var newTripButton: some View {
-        Button(action: { onNav(.newTrip) }) {
-            HStack(spacing: 8) {
-                TIcon(glyph: .plus, size: 16, stroke: .tAccent2, strokeWidth: 2.2)
-                Text("Nouveau voyage")
-                    .font(.tText(14, weight: .semibold))
+}
+
+// MARK: - Home primary actions
+
+struct HomePrimaryActions: View {
+    let trip: Trip
+    var onPlanTap: () -> Void = {}
+    var onBudgetTap: () -> Void = {}
+    var onSpotsTap: () -> Void = {}
+    var onTicketTap: () -> Void = {}
+
+    var body: some View {
+        HStack(spacing: 12) {
+            action(title: "Planning", glyph: .cal, color: .tMint, action: onPlanTap)
+            action(title: "Budget", glyph: .wallet, color: .tBlue, action: onBudgetTap)
+            action(title: "Spots", glyph: .spot, color: .tRose, action: onSpotsTap)
+            if trip.transportMode.supportsTravelTicket {
+                action(title: "Billet", glyph: .ticket, color: .tGold, action: onTicketTap)
             }
-            .foregroundColor(.tAccent2)
+        }
+    }
+
+    private func action(title: String, glyph: TIcon.Glyph, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 7) {
+                TIcon(glyph: glyph, size: 18, stroke: color, strokeWidth: 2)
+                Text(title)
+                    .font(.tText(11, weight: .bold))
+                    .foregroundColor(.tText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+            }
             .frame(maxWidth: .infinity)
-            .frame(height: 48)
+            .frame(height: 64)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.tAccent2.opacity(0.35), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.tSurface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(color.opacity(0.24), lineWidth: 1)
             )
         }
         .buttonStyle(TripnestPressStyle())
     }
-
-    private func tripActions(_ t: Trip) -> some View {
-        HStack(spacing: 10) {
-            Button(action: { onEditTrip(t.id) }) {
-                HStack(spacing: 6) {
-                    TIcon(glyph: .edit, size: 16, stroke: .tAccent2)
-                    Text("Modifier")
-                        .font(.tText(13, weight: .semibold))
-                }
-                .foregroundColor(.tAccent2)
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.tAccent2.opacity(0.10))
-                )
-            }
-            .buttonStyle(TripnestPressStyle())
-
-            Button(action: { onDeleteTrip(t.id) }) {
-                HStack(spacing: 6) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("Supprimer")
-                        .font(.tText(13, weight: .semibold))
-                }
-                .foregroundColor(.tRose)
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.tRose.opacity(0.08))
-                )
-            }
-            .buttonStyle(TripnestPressStyle())
-        }
-    }
-
 }
 
 struct DashedDivider: View {

@@ -59,38 +59,61 @@ struct TripsScreen: View {
     }
 
     private var tripsHeader: some View {
-        HStack(alignment: .top) {
-            Text("Voyages")
-                .font(.tDisplay(26))
-                .tracking(-0.6)
+        HStack(alignment: .center, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Voyages")
+                    .font(.tDisplay(30))
+                    .tracking(-0.6)
+
+                Text(headerSubtitle)
+                    .font(.tText(12, weight: .semibold))
+                    .foregroundColor(.tTextMute)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+            }
+
             Spacer(minLength: 12)
+
+            Button(action: { onNav(.newTrip) }) {
+                TIcon(glyph: .plus, size: 18, stroke: .white, strokeWidth: 2.2)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(LinearGradient(colors: [.tAccent2, .tAccentDeep], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    )
+                    .overlay(Circle().stroke(Color.white.opacity(0.16), lineWidth: 1))
+                    .shadow(color: Color.tAccent.opacity(0.32), radius: 14, y: 8)
+            }
+            .buttonStyle(TripnestPressStyle())
+            .accessibilityLabel("Créer un voyage")
         }
         .padding(.horizontal, 22)
-        .padding(.top, 6)
-        .padding(.bottom, 10)
+        .padding(.top, 8)
+        .padding(.bottom, 16)
+    }
+
+    private var headerSubtitle: String {
+        if ongoingTrips.isEmpty {
+            return completedCount == 0 ? "Prépare ton prochain départ." : "\(completedCount) voyage\(completedCount > 1 ? "s" : "") archivé\(completedCount > 1 ? "s" : "")"
+        }
+        return "\(ongoingTrips.count) voyage\(ongoingTrips.count > 1 ? "s" : "") en cours"
     }
 
     // MARK: - Voyages en cours (contenu principal)
 
     private var ongoingSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             if ongoingTrips.isEmpty {
-                TCard(padding: 20) {
-                    VStack(spacing: 10) {
-                        TIcon(glyph: .plane, size: 28, stroke: .tAccent2)
-                        Text("Aucun voyage actif")
-                            .font(.tText(16, weight: .bold))
-                        Text("Pour créer un voyage, utilise l’onglet Accueil.")
-                            .font(.tText(13))
-                            .foregroundColor(.tTextMute)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
+                emptyOngoingState
             } else {
-                Text("Appuie sur un voyage pour le sélectionner et voir les actions.")
-                    .font(.tText(11))
-                    .foregroundColor(.tTextMute)
+                HStack(alignment: .firstTextBaseline) {
+                    sectionLabel("EN COURS", color: .tMint)
+                    Spacer()
+                    Text("\(ongoingTrips.count)")
+                        .font(.tText(12, weight: .bold))
+                        .foregroundColor(.tMint)
+                        .monospacedDigit()
+                }
 
                 ForEach(ongoingTrips) { trip in
                     TripRow(
@@ -112,6 +135,52 @@ struct TripsScreen: View {
         }
     }
 
+    private var emptyOngoingState: some View {
+        TCard(
+            padding: 20,
+            radius: 22,
+            bg: AnyShapeStyle(
+                LinearGradient(colors: [
+                    Color.tAccent2.opacity(0.16),
+                    Color.tBlue.opacity(0.08),
+                    Color.tSurface
+                ], startPoint: .topLeading, endPoint: .bottomTrailing)
+            ),
+            border: Color.tBorderStrong
+        ) {
+            VStack(alignment: .leading, spacing: 16) {
+                IconBubble(glyph: .plane, color: .tBlue, size: 48)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Aucun voyage actif")
+                        .font(.tDisplay(22))
+                        .tracking(-0.4)
+                    Text("Crée ton prochain départ et retrouve ici le planning, le budget, les spots et les souvenirs.")
+                        .font(.tText(13))
+                        .foregroundColor(.tTextMute)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Button(action: { onNav(.newTrip) }) {
+                    HStack(spacing: 8) {
+                        TIcon(glyph: .plus, size: 15, stroke: .white, strokeWidth: 2.1)
+                        Text("Créer un voyage")
+                            .font(.tText(14, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 46)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(LinearGradient(colors: [.tAccent2, .tAccentDeep], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    )
+                }
+                .buttonStyle(TripnestPressStyle())
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     // MARK: - Voyages passés (page séparée)
 
     private var pastTripsEntry: some View {
@@ -120,16 +189,19 @@ struct TripsScreen: View {
 
             Button(action: { onNav(.completedTrips) }) {
                 HStack(spacing: 14) {
-                    TIcon(glyph: .globe, size: 22, stroke: .tGold)
-                        .frame(width: 44, height: 44)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color.tGold.opacity(0.14))
-                        )
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(LinearGradient(colors: [
+                                Color.tGold.opacity(0.24),
+                                Color.tRose.opacity(0.12)
+                            ], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        TIcon(glyph: .globe, size: 23, stroke: .tGold, strokeWidth: 2)
+                    }
+                    .frame(width: 52, height: 52)
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Voyages passés")
-                            .font(.tText(16, weight: .bold))
+                            .font(.tText(17, weight: .bold))
                             .foregroundColor(.tText)
                         Text(completedCount == 0
                              ? "Souvenirs, spots, budget et planning"
@@ -141,16 +213,21 @@ struct TripsScreen: View {
 
                     Spacer(minLength: 0)
 
-                    TIcon(glyph: .arrow, size: 14, stroke: .tTextMute)
+                    TIcon(glyph: .arrow, size: 15, stroke: .tGold)
+                        .frame(width: 34, height: 34)
+                        .background(Circle().fill(Color.tGold.opacity(0.10)))
                 }
                 .padding(16)
                 .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color.tSurface)
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(LinearGradient(colors: [
+                            Color.tGold.opacity(0.10),
+                            Color.tSurface
+                        ], startPoint: .topLeading, endPoint: .bottomTrailing))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.tGold.opacity(0.25), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(Color.tGold.opacity(0.28), lineWidth: 1)
                 )
             }
             .buttonStyle(TripnestPressStyle())
@@ -241,7 +318,6 @@ struct TripRow: View {
     @State private var returnTravelDuration: String?
     @AppStorage("tripnest.currency") private var defaultCurrency: String = "EUR"
 
-    private var hasMenu: Bool { onEdit != nil || onDelete != nil }
     private var showsTripActions: Bool {
         isSelected && (onPlan != nil || onBudget != nil || onSouvenirs != nil || onSpots != nil)
     }
@@ -252,109 +328,52 @@ struct TripRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if isSelected, let onClose {
-                HStack {
-                    Spacer()
-                    Button(action: onClose) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.tTextMute)
-                            .frame(width: 28, height: 28)
-                            .background(Circle().fill(Color.tSurface))
-                            .overlay(Circle().stroke(Color.tBorder, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Fermer")
-                }
-                .padding(.bottom, 4)
+        VStack(alignment: .leading, spacing: 12) {
+            Button(action: onTap) {
+                compactHeader
             }
+            .buttonStyle(TripnestPressStyle())
 
-            HStack(alignment: .top, spacing: 10) {
-                VStack(spacing: 0) {
-                    Button(action: onTap) {
-                        rowHeader
-                    }
-                    .buttonStyle(TripnestPressStyle())
+            tripActionChips
 
-                    if isSelected, onModify != nil || onDelete != nil {
-                        HStack(spacing: 10) {
-                            if let onModify {
-                                Button(action: onModify) {
-                                    HStack(spacing: 6) {
-                                        TIcon(glyph: .edit, size: 14, stroke: .tAccent2)
-                                        Text("Modifier")
-                                            .font(.tText(13, weight: .semibold))
-                                    }
-                                    .foregroundColor(.tAccent2)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 40)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .fill(Color.tAccent2.opacity(0.10))
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                            if let onDelete {
-                                Button(action: onDelete) {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "trash")
-                                            .font(.system(size: 14, weight: .semibold))
-                                        Text("Supprimer")
-                                            .font(.tText(13, weight: .semibold))
-                                    }
-                                    .foregroundColor(.tRose)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 40)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .fill(Color.tRose.opacity(0.08))
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.bottom, 8)
-                    }
-
-                    rowFooter
-
-                    if showsTripActions {
-                        tripActionChips
-                    }
+            HStack(spacing: 10) {
+                if let onSetCompleted {
+                    TripDoneStatusControl(isDone: t.status == .done, style: .card, onChange: onSetCompleted)
                 }
-                .frame(maxWidth: .infinity)
-                .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color.tSurface))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color.tBorder, lineWidth: 1)
-                )
-                .overlay(alignment: .topLeading) {
-                    if isSelected {
-                        TripSelectedBadge()
-                            .padding(10)
-                    }
-                }
-                .accessibilityLabel(isSelected ? "\(t.homeDestinationTitle), sélectionné" : t.homeDestinationTitle)
 
-                if let onGoToDestination {
-                    Button(action: onGoToDestination) {
-                        Image(systemName: "mappin.and.ellipse")
-                            .font(.system(size: 15, weight: .semibold))
+                Spacer()
+
+                if let onModify {
+                    Button(action: onModify) {
+                        Text("Modifier")
+                            .font(.tText(12, weight: .bold))
                             .foregroundColor(.tAccent2)
-                            .frame(width: 36, height: 36)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(Color.tAccent2.opacity(0.12))
-                            )
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Voir sur la planète")
+                }
+
+                if let onDelete {
+                    Button(action: onDelete) {
+                        Text("Supprimer")
+                            .font(.tText(12, weight: .bold))
+                            .foregroundColor(.tRose)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.tSurface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(isSelected ? Color.tAccent2.opacity(0.48) : Color.tBorder, lineWidth: 1)
+        )
+        .shadow(color: Color.tBg0.opacity(0.18), radius: 10, x: 0, y: 6)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .accessibilityLabel(isSelected ? "\(t.homeDestinationTitle), sélectionné" : t.homeDestinationTitle)
         .animation(.easeOut(duration: 0.2), value: isSelected)
         .task(id: t.routeMapLoadKey) {
             outboundTravelDuration = await TripTravelDuration.outboundLeg(trip: t, ticket: primaryTicket)
@@ -362,10 +381,115 @@ struct TripRow: View {
         }
     }
 
+    private var compactHeader: some View {
+        HStack(spacing: 12) {
+            TripPhoto(
+                destination: t.dest,
+                country: t.country,
+                hue: t.hue,
+                radius: 14,
+                showBorder: false,
+                coverKind: t.coverKind,
+                tripId: t.id
+            )
+            .frame(width: 78, height: 78)
+            .clipped()
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.tBorderStrong, lineWidth: 1)
+            )
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 7) {
+                    Circle()
+                        .fill(statusColor)
+                        .frame(width: 7, height: 7)
+                    Text(statusLabel.capitalized)
+                        .font(.tText(11, weight: .bold))
+                        .foregroundColor(statusColor)
+                }
+
+                Text(t.homeDestinationTitle)
+                    .font(.tText(18, weight: .bold))
+                    .foregroundColor(.tText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+
+                Text(t.homeDateLine)
+                    .font(.tText(12, weight: .semibold))
+                    .foregroundColor(.tTextMute)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+            }
+
+            Spacer(minLength: 6)
+
+            VStack(alignment: .trailing, spacing: 4) {
+                TransportModeGlyph(mode: t.transportMode, size: 18, stroke: .tAccent2)
+                    .frame(width: 34, height: 34)
+                    .background(Circle().fill(Color.tAccent2.opacity(0.12)))
+
+                Text("\(t.spent)\(defaultCurrency.currencySymbol)")
+                    .font(.tText(11, weight: .bold))
+                    .foregroundColor(.tTextMute)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+        }
+    }
+
+    private var editDeleteActions: some View {
+        HStack(spacing: 10) {
+            if let onModify {
+                Button(action: onModify) {
+                    actionButtonLabel("Modifier", glyph: .edit, color: .tAccent2)
+                }
+                .buttonStyle(.plain)
+            }
+
+            if let onDelete {
+                Button(action: onDelete) {
+                    HStack(spacing: 7) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("Supprimer")
+                            .font(.tText(13, weight: .bold))
+                    }
+                    .foregroundColor(.tRose)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 42)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.tRose.opacity(0.10))
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 4)
+        .padding(.bottom, 10)
+    }
+
+    private func actionButtonLabel(_ title: String, glyph: TIcon.Glyph, color: Color) -> some View {
+        HStack(spacing: 7) {
+            TIcon(glyph: glyph, size: 14, stroke: color)
+            Text(title)
+                .font(.tText(13, weight: .bold))
+        }
+        .foregroundColor(color)
+        .frame(maxWidth: .infinity)
+        .frame(height: 42)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(color.opacity(0.12))
+        )
+    }
+
     private var tripActionChips: some View {
         HStack(spacing: 8) {
             if let onPlan {
-                TripRowActionChip(title: "Planifier", glyph: .cal, accent: .tMint, action: onPlan)
+                TripRowActionChip(title: "Planning", glyph: .cal, accent: .tMint, action: onPlan)
             }
             if let onBudget {
                 TripRowActionChip(title: "Budget", glyph: .wallet, accent: .tBlue, action: onBudget)
@@ -377,84 +501,160 @@ struct TripRow: View {
                 TripRowActionChip(title: "Spots", glyph: .spot, accent: .tAccent2, action: onSpots)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.bottom, 12)
-        .padding(.top, 4)
-    }
-
-    private var tripMenu: some View {
-        Menu {
-            if let onEdit {
-                Button(action: onEdit) {
-                    Label("Modifier", systemImage: "pencil")
-                }
-            }
-            if onEdit != nil {
-                Divider()
-            }
-            if let onDelete {
-                Button(role: .destructive, action: onDelete) {
-                    Label("Supprimer", systemImage: "trash")
-                }
-            }
-        } label: {
-            TIcon(glyph: .more, size: 18, stroke: .tTextMute)
-                .frame(width: 36, height: 36)
-                .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color(hex: 0x8b5cf6, opacity: 0.06))
-                )
-        }
-        .buttonStyle(.plain)
     }
 
     private var rowHeader: some View {
-        HStack(alignment: .top, spacing: 14) {
+        ZStack(alignment: .bottomLeading) {
             TripPhoto(
                 destination: t.dest,
                 country: t.country,
                 hue: t.hue,
-                radius: 14,
+                radius: 0,
+                showBorder: false,
                 coverKind: t.coverKind,
                 tripId: t.id
             )
-            .aspectRatio(TripCoverLayout.aspectRatio, contentMode: .fill)
-            .frame(width: 72, height: 72)
+            .frame(maxWidth: .infinity)
+            .frame(height: 156)
             .clipped()
 
-            VStack(alignment: .leading, spacing: 5) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(t.homeDestinationTitle)
-                        .font(.tText(17, weight: .bold))
-                        .tracking(-0.3)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
-                    if t.photoCount > 0 {
-                        Label("\(t.photoCount)", systemImage: "photo")
-                            .font(.tText(10, weight: .semibold))
-                            .foregroundColor(.tAccent2)
+            LinearGradient(
+                stops: [
+                    .init(color: .black.opacity(0.14), location: 0),
+                    .init(color: .black.opacity(0.24), location: 0.42),
+                    .init(color: .black.opacity(0.84), location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .center) {
+                    statusPill
+
+                    Spacer(minLength: 8)
+
+                    HStack(spacing: 8) {
+                        if t.photoCount > 0 {
+                            Label("\(t.photoCount)", systemImage: "photo")
+                                .font(.tText(10, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 5)
+                                .background(Capsule().fill(Color.black.opacity(0.34)))
+                        }
+
+                        if let onGoToDestination {
+                            Button(action: onGoToDestination) {
+                                Image(systemName: "mappin.and.ellipse")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 28, height: 28)
+                                    .background(Circle().fill(Color.black.opacity(0.34)))
+                                    .overlay(Circle().stroke(Color.white.opacity(0.16), lineWidth: 1))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Voir sur la planète")
+                        }
+
+                        if isSelected, let onClose {
+                            Button(action: onClose) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 28, height: 28)
+                                    .background(Circle().fill(Color.black.opacity(0.34)))
+                                    .overlay(Circle().stroke(Color.white.opacity(0.16), lineWidth: 1))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Fermer")
+                        }
                     }
                 }
 
-                Text(t.tripsListRouteLine)
-                    .font(.tText(12))
-                    .foregroundColor(.tTextMute)
-                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
 
-                Text(departureScheduleLine)
-                    .font(.tText(11, weight: .semibold))
-                    .foregroundColor(.tTextMute)
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .bottom, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(t.homeDestinationTitle)
+                            .font(.tDisplay(26))
+                            .tracking(-0.5)
+                            .foregroundColor(.white)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.82)
 
-                if let returnLine = returnScheduleLine {
-                    Text(returnLine)
-                        .font(.tText(11, weight: .semibold))
-                        .foregroundColor(.tTextMute)
-                        .fixedSize(horizontal: false, vertical: true)
+                        Text(t.tripsListRouteLine)
+                            .font(.tText(12, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.76))
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.84)
+                    }
+
+                    Spacer(minLength: 6)
+
+                    TransportModeGlyph(mode: t.transportMode, size: 20, stroke: .white)
+                        .frame(width: 38, height: 38)
+                        .background(Circle().fill(Color.white.opacity(0.14)))
+                        .overlay(Circle().stroke(Color.white.opacity(0.16), lineWidth: 1))
                 }
             }
+            .padding(16)
         }
-        .padding(14)
+        .frame(height: 156)
+    }
+
+    private var statusPill: some View {
+        HStack(spacing: 7) {
+            Circle()
+                .fill(statusColor)
+                .frame(width: 7, height: 7)
+                .shadow(color: statusColor.opacity(0.75), radius: 5)
+            Text(statusLabel)
+                .font(.tText(10, weight: .heavy))
+                .tracking(1.1)
+                .foregroundColor(statusColor)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Capsule().fill(Color.black.opacity(0.38)))
+        .overlay(Capsule().stroke(statusColor.opacity(0.30), lineWidth: 1))
+    }
+
+    private var statusColor: Color {
+        switch t.status {
+        case .active: return .tMint
+        case .planned: return .tBlue
+        case .done: return .tGold
+        }
+    }
+
+    private var statusLabel: String {
+        switch t.status {
+        case .active: return "EN COURS"
+        case .planned: return "PLANIFIÉ"
+        case .done: return "TERMINÉ"
+        }
+    }
+
+    private var scheduleSummary: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            scheduleLine(glyph: .plane, text: departureScheduleLine, color: .tBlue)
+            if let returnLine = returnScheduleLine {
+                scheduleLine(glyph: .back, text: returnLine, color: .tGold)
+            }
+        }
+    }
+
+    private func scheduleLine(glyph: TIcon.Glyph, text: String, color: Color) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            TIcon(glyph: glyph, size: 14, stroke: color, strokeWidth: 2)
+                .frame(width: 22, height: 22)
+                .background(Circle().fill(color.opacity(0.12)))
+            Text(text)
+                .font(.tText(11, weight: .semibold))
+                .foregroundColor(.tTextMute)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private var departureScheduleLine: String {
@@ -474,57 +674,42 @@ struct TripRow: View {
     }
 
     private var rowFooter: some View {
-        VStack(spacing: 0) {
-            Divider().background(Color.tBorder).padding(.horizontal, 14)
+        VStack(spacing: 12) {
+            scheduleSummary
 
-            HStack(spacing: 10) {
+            HStack(alignment: .center, spacing: 10) {
                 if let onSetCompleted {
                     TripDoneStatusControl(isDone: t.status == .done, style: .card, onChange: onSetCompleted)
                 }
 
                 Spacer()
 
-                Text("\(t.spent)\(defaultCurrency.currencySymbol) / \(t.budget)\(defaultCurrency.currencySymbol)")
-                    .font(.tText(11))
-                    .foregroundColor(.tTextMute)
-
-                Text("\(pct)%")
-                    .font(.tText(11, weight: .bold))
-                    .foregroundColor(pct > 100 ? .tRose : .tAccent2)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("\(pct)%")
+                        .font(.tText(15, weight: .heavy))
+                        .foregroundColor(pct > 100 ? .tRose : .tAccent2)
+                        .monospacedDigit()
+                    Text("\(t.spent)\(defaultCurrency.currencySymbol) / \(t.budget)\(defaultCurrency.currencySymbol)")
+                        .font(.tText(10, weight: .semibold))
+                        .foregroundColor(.tTextMute)
+                }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
 
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color(hex: 0xa78bfa, opacity: 0.10)).frame(height: 3)
+                    Capsule().fill(Color(hex: 0xa78bfa, opacity: 0.12)).frame(height: 5)
                     Capsule()
-                        .fill(pct > 100 ? Color.tRose : (t.status == .done ? .tTextMute : .tAccent2))
-                        .frame(width: min(geo.size.width, geo.size.width * CGFloat(min(100, pct)) / 100), height: 3)
+                        .fill(LinearGradient(
+                            colors: pct > 100 ? [.tRose, .tRose.opacity(0.75)] : [.tAccent2, .tBlue],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ))
+                        .frame(width: min(geo.size.width, geo.size.width * CGFloat(min(100, pct)) / 100), height: 5)
                 }
             }
-            .frame(height: 3)
-            .padding(.horizontal, 14)
-            .padding(.bottom, 12)
+            .frame(height: 5)
         }
-    }
-}
-
-/// Pastille verte + coche blanche (voyage sélectionné).
-private struct TripSelectedBadge: View {
-    private let fill = Color(hex: 0x4CD964)
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(fill)
-                .frame(width: 22, height: 22)
-            Image(systemName: "checkmark")
-                .font(.system(size: 11, weight: .heavy))
-                .foregroundColor(.white)
-        }
-        .shadow(color: fill.opacity(0.35), radius: 4, y: 2)
-        .accessibilityHidden(true)
+        .padding(14)
     }
 }
 
