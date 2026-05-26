@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tripnest — App mobile</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; overflow: hidden; }
+  * { -webkit-font-smoothing: antialiased; }
+  ::-webkit-scrollbar { display: none; }
+  * { scrollbar-width: none; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="theme.jsx"></script>
+<script type="text/babel" src="screens-auth.jsx"></script>
+<script type="text/babel" src="screens-main.jsx"></script>
+<script type="text/babel" src="screens-more.jsx"></script>
+<script type="text/babel" src="screens-onboarding.jsx"></script>
+<script type="text/babel" src="screens-onboarding-v2a.jsx"></script>
+<script type="text/babel" src="screens-onboarding-v2b.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState } = React;
+
+// Phone wrapper — uses the IOSDevice frame, dark theme
+function Phone({ children, w = 390, h = 844 }) {
+  return (
+    <div style={{
+      width: w, height: h, borderRadius: 52,
+      background: '#000',
+      padding: 12, boxSizing: 'border-box',
+      boxShadow: '0 40px 80px rgba(15,5,35,0.45), 0 0 0 1px rgba(167,139,250,0.18), inset 0 0 0 1px rgba(255,255,255,0.04)',
+      position: 'relative',
+    }}>
+      <div style={{
+        width: '100%', height: '100%',
+        borderRadius: 42, overflow: 'hidden', position: 'relative',
+        background: '#0e0620',
+      }}>
+        {/* dynamic island */}
+        <div style={{
+          position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)',
+          width: 110, height: 32, borderRadius: 24, background: '#000', zIndex: 60,
+        }}/>
+        {children}
+        {/* home indicator */}
+        <div style={{
+          position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+          width: 130, height: 4, borderRadius: 100, background: 'rgba(255,255,255,0.55)', zIndex: 70, pointerEvents: 'none',
+        }}/>
+      </div>
+    </div>
+  );
+}
+
+// Interactive "Main" mini-app for the focused/standalone artboard
+function MainApp() {
+  const [route, setRoute] = useState('home');
+  const onNav = (r) => {
+    if (r === 'add') setRoute('add');
+    else if (r === 'home') setRoute('home');
+    else if (r === 'trips') setRoute('trips');
+    else if (r === 'budget') setRoute('budget');
+    else if (r === 'profile') setRoute('profile');
+    else if (r === 'trip') setRoute('trip');
+  };
+  const screen =
+    route === 'home' ? <HomeScreen onNav={onNav}/> :
+    route === 'trips' ? <TripsScreen onNav={onNav}/> :
+    route === 'trip' ? <TripDetailScreen onNav={onNav}/> :
+    route === 'budget' ? <BudgetScreen onNav={onNav}/> :
+    route === 'profile' ? <ProfileScreen onNav={onNav}/> :
+    route === 'add' ? <AddExpenseScreen onNav={() => setRoute('home')}/> :
+    <HomeScreen onNav={onNav}/>;
+  return screen;
+}
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="intro" title="Tripnest — App mobile" subtitle="Budget de voyage · Vols · Spots · Souvenirs">
+        <DCArtboard id="overview" label="Overview" width={1080} height={620}>
+          <OverviewCard/>
+        </DCArtboard>
+        <DCArtboard id="interactive" label="App interactive (cliquez les onglets)" width={420} height={870}>
+          <Phone><MainApp/></Phone>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="auth" title="Auth" subtitle="Connexion · point de départ donné par l'utilisateur">
+        <DCArtboard id="login" label="01 · Connexion" width={420} height={870}>
+          <Phone><LoginScreen/></Phone>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="funnel" title="Funnel agressif · 29 écrans → Hard paywall" subtitle="Hook → Réflexion → Qualifying ×6 → Goals & engagement ×5 → Affirmation ×4 → Plan ×5 → Lock-in ×2 → Hard paywall → Success">
+        <DCArtboard id="v201" label="01 · Hook / Welcome" width={420} height={870}><Phone><V2_01/></Phone></DCArtboard>
+        <DCArtboard id="v202" label="02 · Réflexion · pourquoi" width={420} height={870}><Phone><V2_02/></Phone></DCArtboard>
+        <DCArtboard id="v203" label="03 · Réflexion · ton défi" width={420} height={870}><Phone><V2_03/></Phone></DCArtboard>
+        <DCArtboard id="v204" label="04 · Affirmation · tu n'es pas seul·e" width={420} height={870}><Phone><V2_04/></Phone></DCArtboard>
+        <DCArtboard id="v205" label="05 · Qualifying · style" width={420} height={870}><Phone><V2_05/></Phone></DCArtboard>
+        <DCArtboard id="v206" label="06 · Qualifying · fréquence" width={420} height={870}><Phone><V2_06/></Phone></DCArtboard>
+        <DCArtboard id="v207" label="07 · Vérité · déjà dépassé ?" width={420} height={870}><Phone><V2_07/></Phone></DCArtboard>
+        <DCArtboard id="v208" label="08 · Vérité · de combien" width={420} height={870}><Phone><V2_08/></Phone></DCArtboard>
+        <DCArtboard id="v209" label="09 · Outils actuels (multi)" width={420} height={870}><Phone><V2_09/></Phone></DCArtboard>
+        <DCArtboard id="v210" label="10 · Frustrations (multi)" width={420} height={870}><Phone><V2_10/></Phone></DCArtboard>
+        <DCArtboard id="v211" label="11 · Objectif principal" width={420} height={870}><Phone><V2_11/></Phone></DCArtboard>
+        <DCArtboard id="v212" label="12 · Budget moyen" width={420} height={870}><Phone><V2_12/></Phone></DCArtboard>
+        <DCArtboard id="v213" label="13 · Destinations rêvées" width={420} height={870}><Phone><V2_13/></Phone></DCArtboard>
+        <DCArtboard id="v214" label="14 · Engagement · prochain voyage" width={420} height={870}><Phone><V2_14/></Phone></DCArtboard>
+        <DCArtboard id="v215" label="15 · Engagement · objectif économie" width={420} height={870}><Phone><V2_15/></Phone></DCArtboard>
+        <DCArtboard id="v216" label="16 · Affirmation · tu as ce qu'il faut" width={420} height={870}><Phone><V2_16/></Phone></DCArtboard>
+        <DCArtboard id="v217" label="17 · Témoignages similaires" width={420} height={870}><Phone><V2_17/></Phone></DCArtboard>
+        <DCArtboard id="v218" label="18 · Communauté · stats" width={420} height={870}><Phone><V2_18/></Phone></DCArtboard>
+        <DCArtboard id="v219" label="19 · 4 étapes promise" width={420} height={870}><Phone><V2_19/></Phone></DCArtboard>
+        <DCArtboard id="v220" label="20 · Loading · analyse" width={420} height={870}><Phone><V2_20/></Phone></DCArtboard>
+        <DCArtboard id="v221" label="21 · Loading · calibrage" width={420} height={870}><Phone><V2_21/></Phone></DCArtboard>
+        <DCArtboard id="v222" label="22 · Identité · ton type" width={420} height={870}><Phone><V2_22/></Phone></DCArtboard>
+        <DCArtboard id="v223" label="23 · Reveal · ton plan" width={420} height={870}><Phone><V2_23/></Phone></DCArtboard>
+        <DCArtboard id="v224" label="24 · Projection · −1 248€" width={420} height={870}><Phone><V2_24/></Phone></DCArtboard>
+        <DCArtboard id="v225" label="25 · Lock-in · notifications" width={420} height={870}><Phone><V2_25/></Phone></DCArtboard>
+        <DCArtboard id="v226" label="26 · Lock-in · compte" width={420} height={870}><Phone><V2_26/></Phone></DCArtboard>
+        <DCArtboard id="v227" label="27 · Récap · ton plan prêt" width={420} height={870}><Phone><V2_27/></Phone></DCArtboard>
+        <DCArtboard id="v228" label="28 · HARD PAYWALL" width={420} height={870}><Phone><V2_28/></Phone></DCArtboard>
+        <DCArtboard id="v229" label="29 · Success · décollage" width={420} height={870}><Phone><V2_29/></Phone></DCArtboard>
+      </DCSection>
+
+      <DCSection id="onboarding" title="Onboarding doux · v1 (15 écrans)" subtitle="Première version, conservée pour référence">
+        <DCArtboard id="ob01" label="01 · Hook / Welcome" width={420} height={870}>
+          <Phone><OB01_Welcome/></Phone>
+        </DCArtboard>
+        <DCArtboard id="ob02" label="02 · Valeur · Budget" width={420} height={870}>
+          <Phone><OB02_Budget/></Phone>
+        </DCArtboard>
+        <DCArtboard id="ob03" label="03 · Valeur · Vols" width={420} height={870}>
+          <Phone><OB03_Flights/></Phone>
+        </DCArtboard>
+        <DCArtboard id="ob04" label="04 · Valeur · Spots" width={420} height={870}>
+          <Phone><OB04_Spots/></Phone>
+        </DCArtboard>
+        <DCArtboard id="ob05" label="05 · Preuve sociale" width={420} height={870}>
+          <Phone><OB05_Social/></Phone>
+        </DCArtboard>
+        <DCArtboard id="ob06" label="06 · Q1 · Style de voyage" width={420} height={870}>
+          <Phone><OB06_Travel/></Phone>
+        </DCArtboard>
+        <DCArtboard id="ob07" label="07 · Q2 · Fréquence" width={420} height={870}>
+          <Phone><OB07_Frequency/></Phone>
+        </DCArtboard>
+        <DCArtboard id="ob08" label="08 · Q3 · Budget moyen" width={420} height={870}>
+          <Phone><OB08_BudgetQ/></Phone>
+        </DCArtboard>
+        <DCArtboard id="ob09" label="09 · Q4 · Destinations rêvées" width={420} height={870}>
+          <Phone><OB09_Dreams/></Phone>
+        </DCArtboard>
+        <DCArtboard id="ob10" label="10 · Q5 · Notifications" width={420} height={870}>
+          <Phone><OB10_Notifs/></Phone>
+        </DCArtboard>
+        <DCArtboard id="ob11" label="11 · Loading personnalisé" width={420} height={870}>
+          <Phone><OB11_Loading/></Phone>
+        </DCArtboard>
+        <DCArtboard id="ob12" label="12 · Reveal · Plan perso" width={420} height={870}>
+          <Phone><OB12_Reveal/></Phone>
+        </DCArtboard>
+        <DCArtboard id="ob13" label="13 · Paywall · Essai gratuit" width={420} height={870}>
+          <Phone><OB13_Paywall/></Phone>
+        </DCArtboard>
+        <DCArtboard id="ob14" label="14 · Création de compte" width={420} height={870}>
+          <Phone><OB14_Account/></Phone>
+        </DCArtboard>
+        <DCArtboard id="ob15" label="15 · Success · Bienvenue" width={420} height={870}>
+          <Phone><OB15_Success/></Phone>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="main" title="Navigation principale" subtitle="5 écrans coeur de l'app">
+        <DCArtboard id="home" label="02 · Accueil" width={420} height={870}>
+          <Phone><HomeScreen onNav={() => {}}/></Phone>
+        </DCArtboard>
+        <DCArtboard id="trips-list" label="03 · Mes voyages" width={420} height={870}>
+          <Phone><TripsScreen onNav={() => {}}/></Phone>
+        </DCArtboard>
+        <DCArtboard id="trip" label="04 · Détail voyage" width={420} height={870}>
+          <Phone><TripDetailScreen onNav={() => {}}/></Phone>
+        </DCArtboard>
+        <DCArtboard id="budget" label="05 · Budget" width={420} height={870}>
+          <Phone><BudgetScreen onNav={() => {}}/></Phone>
+        </DCArtboard>
+        <DCArtboard id="profile" label="06 · Profil" width={420} height={870}>
+          <Phone><ProfileScreen onNav={() => {}}/></Phone>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="features" title="Fonctionnalités" subtitle="Vols, spots, souvenirs">
+        <DCArtboard id="flights" label="07 · Vols (boarding pass)" width={420} height={870}>
+          <Phone><FlightsScreen onNav={() => {}}/></Phone>
+        </DCArtboard>
+        <DCArtboard id="spots" label="08 · Spots & carte" width={420} height={870}>
+          <Phone><SpotsScreen onNav={() => {}}/></Phone>
+        </DCArtboard>
+        <DCArtboard id="memories" label="09 · Souvenirs" width={420} height={870}>
+          <Phone><MemoriesScreen onNav={() => {}}/></Phone>
+        </DCArtboard>
+        <DCArtboard id="add" label="10 · Ajouter une dépense" width={420} height={870}>
+          <Phone><AddExpenseScreen onNav={() => {}}/></Phone>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────
+// Overview card — brand sheet
+// ──────────────────────────────────────────────────────────────
+function OverviewCard() {
+  return (
+    <div style={{
+      width: '100%', height: '100%',
+      background: 'radial-gradient(120% 80% at 80% 20%, #1e1238 0%, #150a2a 50%, #0e0620 100%)',
+      color: '#f5f0ff', fontFamily: T.font,
+      padding: 40, boxSizing: 'border-box', position: 'relative', overflow: 'hidden',
+      borderRadius: 18,
+    }}>
+      <PlaneMotif count={22}/>
+      <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40, height: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+              <Logo size={84}/>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, color: '#a78bfa' }}>APP MOBILE iOS · DARK</div>
+                <div style={{ fontSize: 56, fontWeight: 800, letterSpacing: -2, marginTop: 2, lineHeight: 1 }}>Tripnest</div>
+                <div style={{ fontSize: 16, color: 'rgba(245,240,255,0.7)', marginTop: 6 }}>Le carnet de voyage qui pense à ton budget.</div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 40, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              {[
+                { i: I.wallet, l: 'Budget voyage', d: 'Suivi temps réel, conversions, alertes' },
+                { i: I.plane, l: 'Vols', d: 'Boarding pass, retours, escales' },
+                { i: I.spot, l: 'Spots', d: 'Carte des lieux sauvés, par voyage' },
+                { i: I.cam, l: 'Souvenirs', d: 'Carnet visuel des voyages passés' },
+              ].map(f => (
+                <div key={f.l} style={{
+                  background: 'rgba(139,92,246,0.08)',
+                  border: '1px solid rgba(167,139,250,0.18)',
+                  borderRadius: 14, padding: '14px 16px',
+                  display: 'flex', gap: 12, alignItems: 'flex-start',
+                }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 11, background: 'rgba(139,92,246,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <f.i size={18} stroke="#a78bfa"/>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>{f.l}</div>
+                    <div style={{ fontSize: 12, color: 'rgba(245,240,255,0.6)', marginTop: 2 }}>{f.d}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 28, alignItems: 'flex-end' }}>
+            <div>
+              <div style={{ fontSize: 10, color: 'rgba(245,240,255,0.5)', letterSpacing: 1.5, fontWeight: 700 }}>PALETTE</div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                {[
+                  ['#0e0620', 'bg'],
+                  ['#150a2a', 'surface'],
+                  ['#8b5cf6', 'accent'],
+                  ['#a78bfa', 'accent 2'],
+                  ['#f5c150', 'or'],
+                  ['#f472b6', 'rose'],
+                  ['#86efac', 'mint'],
+                ].map(([c, l]) => (
+                  <div key={c} style={{ textAlign: 'center' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: c, border: '1px solid rgba(167,139,250,0.2)' }}/>
+                    <div style={{ fontSize: 9, color: 'rgba(245,240,255,0.5)', marginTop: 4 }}>{l}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 10, color: 'rgba(245,240,255,0.5)', letterSpacing: 1.5, fontWeight: 700 }}>TYPOGRAPHIE</div>
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, lineHeight: 1 }}>Aa</div>
+                <div style={{ fontSize: 11, color: 'rgba(245,240,255,0.6)', marginTop: 4 }}>SF Pro Display · 800 / 700 / 600 / 400</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* phone mini */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          <div style={{ transform: 'rotate(-3deg) scale(0.58)', transformOrigin: 'center', filter: 'drop-shadow(0 30px 60px rgba(15,5,35,0.6))' }}>
+            <Phone><HomeScreen onNav={() => {}}/></Phone>
+          </div>
+          <div style={{ position: 'absolute', right: -10, bottom: 30, transform: 'rotate(4deg) scale(0.46)', transformOrigin: 'center right', filter: 'drop-shadow(0 30px 60px rgba(15,5,35,0.6))' }}>
+            <Phone><FlightsScreen onNav={() => {}}/></Phone>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

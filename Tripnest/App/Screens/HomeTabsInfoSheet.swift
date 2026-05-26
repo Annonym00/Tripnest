@@ -1,0 +1,69 @@
+import SwiftUI
+
+struct HomeTabsInfoSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Petit rappel sur les onglets de Tripnest.")
+                        .font(.tText(14))
+                        .foregroundColor(.tTextMute)
+
+                    infoCard(
+                        title: "Accueil",
+                        icon: .home,
+                        description: "Vue d’ensemble de ton voyage en cours : carte, résumé du trajet et accès rapide aux billets."
+                    )
+
+                    infoCard(
+                        title: "Voyages",
+                        icon: .globe,
+                        description: "Tous tes voyages planifiés ou réalisés. C’est ici que tu peux en créer un nouveau, le modifier, l’archiver et accéder au budget, aux souvenirs ou aux spots."
+                    )
+
+                    infoCard(
+                        title: "Spots",
+                        icon: .spot,
+                        description: "Tes lieux importants pour le voyage sélectionné : restaurants, hôtels, activités… Chaque spot est relié à un voyage."
+                    )
+
+                    infoCard(
+                        title: "Budget",
+                        icon: .wallet,
+                        description: "Choisis un voyage en cours, définis ton budget puis suis tes dépenses par catégorie."
+                    )
+                }
+                .padding(18)
+            }
+            .background(Color.tBg0.ignoresSafeArea())
+            .navigationTitle("Comment fonctionne Tripnest ?")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fermer") { dismiss() }
+                        .fontWeight(.semibold)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private func infoCard(title: String, icon: TIcon.Glyph, description: String) -> some View {
+        TCard(padding: 16) {
+            HStack(alignment: .top, spacing: 12) {
+                TIcon(glyph: icon, size: 22, stroke: .tAccent2)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(title)
+                        .font(.tText(15, weight: .bold))
+                    Text(description)
+                        .font(.tText(13))
+                        .foregroundColor(.tTextMute)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+}
+

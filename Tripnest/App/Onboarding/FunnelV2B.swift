@@ -1,0 +1,1247 @@
+import SwiftUI
+
+// MARK: - 16 · TU AS CE QU'IL FAUT ───────────────────────────────────────────
+
+struct V2_16: View {
+    var body: some View {
+        ScreenShell {
+            VStack(spacing: 0) {
+                OBHeader(step: 16, label: "Tu as ce qu'il faut")
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("BONNE NOUVELLE")
+                        .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tMint)
+                    (Text("Tu as tout pour réussir\nton objectif").font(.tDisplay(30)).tracking(-0.9)
+                     + Text(".").foregroundColor(.tMint).font(.tDisplay(30)))
+                        .padding(.top, 8)
+                    Text("Tes réponses vont servir à préparer ton espace.")
+                        .font(.tText(14)).foregroundColor(.tTextMute).padding(.top, 8)
+
+                    VStack(spacing: 10) {
+                        infoCard(.filter, title: "Ton objectif",
+                                 content: "Construire ", highlight: "ton budget", trailing: " de voyage",
+                                 highlightColor: .tMint, color: .tMint, bg: Color(hex: 0x8b5cf6, opacity: 0.18))
+                        infoCard(.user, title: "Ton profil",
+                                 content: "Profil voyageur à affiner",
+                                 color: .tBlue, bg: Color.tBlue.opacity(0.18))
+                        infoCard(.star, title: "Ta motivation",
+                                 content: "Prête à organiser tes voyages",
+                                 color: .tRose, bg: Color.tRose.opacity(0.18))
+                        predictionCard
+                    }
+                    .padding(.top, 22)
+
+                    Spacer(minLength: 0)
+                    CTA(label: "Voir mon plan personnalisé →").padding(.top, 12)
+                }
+                .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
+            }
+        }
+    }
+
+    private func infoCard(_ glyph: TIcon.Glyph, title: String,
+                          content: String, highlight: String = "", trailing: String = "",
+                          highlightColor: Color = .tMint,
+                          color: Color = .tAccent2,
+                          bg: Color) -> some View {
+        TCard(padding: 16) {
+            HStack(spacing: 14) {
+                IconBubble(glyph: glyph, color: color, size: 48)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title).font(.tText(13)).foregroundColor(.tTextMute)
+                    if highlight.isEmpty {
+                        Text(content).font(.tText(17, weight: .bold)).tracking(-0.3)
+                    } else {
+                        (Text(content).font(.tText(17, weight: .bold)).tracking(-0.3)
+                         + Text(highlight).font(.tText(17, weight: .bold)).foregroundColor(highlightColor)
+                         + Text(trailing).font(.tText(17, weight: .bold)).tracking(-0.3))
+                    }
+                }
+                Spacer()
+            }
+        }
+    }
+
+    private var predictionCard: some View {
+        TCard(padding: 16, bg: AnyShapeStyle(Color.tMint.opacity(0.06)), border: Color.tMint.opacity(0.18)) {
+            HStack(alignment: .top, spacing: 14) {
+                IconBubble(glyph: .star, color: .tMint, size: 48)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Ce qui compte").font(.tText(13, weight: .bold)).foregroundColor(.tMint)
+                    (Text("Le plan se remplira avec ").font(.tText(14))
+                     + Text("tes vrais voyages").font(.tText(14, weight: .bold)).foregroundColor(.tMint)
+                     + Text(", tes dépenses et tes lieux sauvegardés.").font(.tText(14)))
+                }
+            }
+        }
+    }
+}
+
+// MARK: - 17 · TÉMOIGNAGES ──────────────────────────────────────────────────
+
+struct V2_17: View {
+    private struct T { let glyph: TIcon.Glyph; let title, detail: String; let color: Color }
+    private let testimonials: [T] = [
+        .init(glyph: .wallet, title: "Budget réel", detail: "Chaque dépense ajoutée met ton budget à jour.", color: .tRose),
+        .init(glyph: .plane, title: "Voyages réels", detail: "Tes prochains voyages apparaissent dès que tu les crées.", color: .tBlue),
+        .init(glyph: .spot, title: "Spots sauvegardés", detail: "Tes lieux favoris restent rattachés au bon voyage.", color: .tGold),
+    ]
+
+    var body: some View {
+        ScreenShell {
+            VStack(spacing: 0) {
+                OBHeader(step: 17, label: "Fonctions clés")
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("CE QUE TU VAS UTILISER")
+                        .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
+                    Text("Des écrans branchés\nsur tes données.")
+                        .font(.tDisplay(28)).tracking(-0.8)
+                        .padding(.top, 8)
+
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 12) {
+                            ForEach(testimonials, id: \.title) { t in
+                                testimonialCard(t)
+                            }
+                        }
+                        .padding(.top, 22)
+                    }
+
+                    CTA(label: "Suivant →").padding(.top, 12)
+                }
+                .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
+            }
+        }
+    }
+
+    private func testimonialCard(_ t: T) -> some View {
+        TCard(padding: 16) {
+            HStack(alignment: .top, spacing: 12) {
+                IconBubble(glyph: t.glyph, color: t.color, size: 44)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(t.title).font(.tText(14, weight: .bold))
+                    Text(t.detail).font(.tText(13)).foregroundColor(.tTextMute).padding(.top, 4)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - 18 · COMMUNAUTÉ ───────────────────────────────────────────────────
+
+struct V2_18: View {
+    var body: some View {
+        ScreenShell {
+            VStack(spacing: 0) {
+                OBHeader(step: 18, label: "La communauté")
+                VStack(spacing: 18) {
+                    VStack(spacing: 8) {
+                        Text("UNE VRAIE COMMUNAUTÉ")
+                            .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
+                        Text("Ton espace voyage\nest presque prêt.")
+                            .font(.tDisplay(30)).tracking(-0.9)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    Spacer()
+
+                    ZStack {
+                        RadialGradient(colors: [Color.tAccent.opacity(0.30), .clear],
+                                       center: .center, startRadius: 0, endRadius: 200)
+                        VStack(spacing: 4) {
+                            GradientNumber(text: "0", size: 80, colors: [.white, .tAccent2])
+                            Text("voyage importé pour l'instant")
+                                .font(.tText(13)).foregroundColor(.tTextMute)
+                        }
+                    }
+                    .padding(.vertical, 24)
+
+                    TCard(padding: 4) {
+                        VStack(spacing: 0) {
+                            row(glyph: .globe, label: "voyages créés",            value: "0", last: false)
+                            row(glyph: .spot,  label: "spots sauvegardés",        value: "0", last: false)
+                            row(glyph: .plane, label: "vols suivis",              value: "0", last: false)
+                            row(glyph: .heart, label: "exemples visibles",        value: "0", last: true)
+                        }
+                    }
+
+                    HStack(spacing: 10) {
+                        Circle().fill(Color.tMint).frame(width: 8, height: 8).shadow(color: .tMint, radius: 4)
+                        (Text("Tes données").font(.tText(12, weight: .bold))
+                         + Text(" seront créées par toi, dans l'app.").font(.tText(12)))
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 10)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.tRose.opacity(0.06)))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.tRose.opacity(0.18), lineWidth: 1))
+
+                    CTA(label: "Je rejoins l'aventure →")
+                }
+                .padding(.horizontal, 26).padding(.top, 24).padding(.bottom, 30)
+            }
+        }
+    }
+
+    private func row(glyph: TIcon.Glyph, label: String, value: String, last: Bool) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .fill(Color(hex: 0x8b5cf6, opacity: 0.15))
+                    TIcon(glyph: glyph, size: 16, stroke: .tAccent2)
+                }
+                .frame(width: 36, height: 36)
+                Text(label).font(.tText(14, weight: .semibold))
+                Spacer()
+                Text(value).font(.tText(17, weight: .black)).tracking(-0.4).foregroundColor(.tAccent2)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 12)
+            if !last { Rectangle().fill(Color.tBorder).frame(height: 1) }
+        }
+    }
+}
+
+// MARK: - 19 · 4 ÉTAPES ─────────────────────────────────────────────────────
+
+struct V2_19: View {
+    private struct Step { let n, label, detail: String; var done = false; var busy = false; var wait = false }
+    private let steps: [Step] = [
+        .init(n: "01", label: "Analyse de ton profil",     detail: "On croise tes 15 réponses",        done: true),
+        .init(n: "02", label: "Calibrage de ton budget",   detail: "On ajuste avec tes réponses",  done: true),
+        .init(n: "03", label: "Recommandations de spots",  detail: "Sélection adaptée à ton style",   busy: true),
+        .init(n: "04", label: "Stratégie d'économie",      detail: "On prépare ton objectif", wait: true),
+    ]
+
+    var body: some View {
+        ScreenShell {
+            VStack(spacing: 0) {
+                OBHeader(step: 19, label: "On y est presque")
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("DERNIÈRE LIGNE DROITE")
+                        .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
+                    (Text("On va construire ton plan\nen 4 étapes").font(.tDisplay(30)).tracking(-0.9)
+                     + Text(".").foregroundColor(.tAccent2).font(.tDisplay(30)))
+                        .padding(.top, 8)
+
+                    VStack(spacing: 14) {
+                        ForEach(steps, id: \.n) { s in
+                            stepRow(s)
+                        }
+                    }
+                    .padding(.top, 26)
+
+                    Spacer()
+                    CTA(label: "Lancer la construction →")
+                }
+                .padding(.horizontal, 26).padding(.top, 24).padding(.bottom, 30)
+            }
+        }
+    }
+
+    private func stepRow(_ s: Step) -> some View {
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(s.done ? Color.tMint : s.busy ? Color(hex: 0x8b5cf6, opacity: 0.18) : Color.tSurface)
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(s.done ? Color.tMint : s.busy ? Color.tAccent2 : Color.tBorder, lineWidth: 1))
+                if s.done {
+                    TIcon(glyph: .check, size: 20, stroke: .tBg0, strokeWidth: 3)
+                } else {
+                    Text(s.n).font(.tText(13, weight: .black))
+                        .foregroundColor(s.busy ? .tAccent2 : .tTextDim)
+                }
+            }
+            .frame(width: 46, height: 46)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(s.label).font(.tText(15, weight: .bold))
+                    .foregroundColor(s.wait ? .tTextMute : .tText)
+                Text(s.detail).font(.tText(12)).foregroundColor(.tTextMute)
+            }
+            Spacer()
+            if s.busy {
+                Text("EN COURS")
+                    .font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tAccent2)
+            }
+        }
+    }
+}
+
+// MARK: - 20 · LOADING ANALYSE ──────────────────────────────────────────────
+
+struct V2_20: View {
+    @Environment(\.tripnestDefaultCTAAction) private var advance
+    @State private var progress: Double = 12
+    @State private var thirdLineDone = false
+    @State private var planeSpin = false
+    @State private var loadingTask: Task<Void, Never>?
+
+    var body: some View {
+        ScreenShell {
+            VStack(spacing: 0) {
+                OBHeader(step: 20, label: "Construction · 1/4")
+
+                Spacer()
+
+                VStack(spacing: 22) {
+                    ZStack {
+                        RadialGradient(colors: [Color.tAccent.opacity(0.30), .clear],
+                                       center: .center, startRadius: 0, endRadius: 130)
+                            .frame(width: 200, height: 200)
+                        ProgressRing(value: progress, max: 100, size: 200, stroke: 6, color: .tAccent2) {
+                            VStack(spacing: 0) {
+                                Text("ANALYSE").font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tTextMute)
+                                Text("\(Int(progress))%").font(.tDisplay(48)).tracking(-2)
+                                    .contentTransition(.numericText())
+                            }
+                        }
+                        ForEach([0.0, 90.0, 180.0, 270.0], id: \.self) { deg in
+                            PaperPlaneSilhouette()
+                                .frame(width: 12, height: 12)
+                                .offset(y: -100)
+                                .rotationEffect(.degrees(deg + (planeSpin ? 360 : 0)))
+                        }
+                    }
+                    .frame(width: 200, height: 200)
+                    .animation(.linear(duration: 3).repeatForever(autoreverses: false), value: planeSpin)
+
+                    VStack(spacing: 6) {
+                        Text("Analyse de ton profil…").font(.tDisplay(24)).tracking(-0.7)
+                        Text("On croise tes 15 réponses pour construire un plan vraiment perso.")
+                            .font(.tText(13)).foregroundColor(.tTextMute)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        stepLine("Préférences d'onboarding enregistrées", done: progress >= 35)
+                        stepLine("Écrans principaux reliés", done: progress >= 65)
+                        stepLine("Préparation de ton premier voyage…", done: thirdLineDone)
+                    }
+                    .frame(maxWidth: 280)
+                }
+                .padding(.horizontal, 26)
+
+                Spacer()
+
+                Text("Étape 1 sur 4 · ne ferme pas l'app")
+                    .font(.tText(11)).foregroundColor(.tTextDim)
+                    .padding(.bottom, 30)
+            }
+        }
+        .onAppear { startLoading() }
+        .onDisappear {
+            loadingTask?.cancel()
+            loadingTask = nil
+        }
+    }
+
+    private func startLoading() {
+        loadingTask?.cancel()
+        progress = 12
+        thirdLineDone = false
+        planeSpin = false
+        planeSpin = true
+
+        loadingTask = OBLoadingRunner.start(duration: 2.9, onProgress: { pct in
+            progress = pct
+            if pct >= 88 { thirdLineDone = true }
+        }, onComplete: advance)
+    }
+
+    private func stepLine(_ label: String, done: Bool) -> some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle().fill(done ? Color.tMint : Color(hex: 0xa78bfa, opacity: 0.15))
+                if done {
+                    TIcon(glyph: .check, size: 10, stroke: .tBg0, strokeWidth: 3)
+                } else {
+                    Circle().fill(Color.tAccent2).frame(width: 6, height: 6)
+                }
+            }
+            .frame(width: 16, height: 16)
+            Text(label).font(.tText(12)).foregroundColor(done ? .tText : .tTextMute)
+            Spacer()
+        }
+    }
+}
+
+// MARK: - 21 · LOADING CALIBRAGE ────────────────────────────────────────────
+
+struct V2_21: View {
+    @Environment(\.tripnestDefaultCTAAction) private var advance
+    @State private var barReveal: CGFloat = 0.08
+    @State private var progress: Double = 0
+    @State private var loadingTask: Task<Void, Never>?
+
+    private let bars: [(value: CGFloat, isYou: Bool)] = [
+        (68, false), (90, false), (55, false),
+        (78, false), (100, true), (82, false),
+    ]
+
+    var body: some View {
+        ScreenShell {
+            VStack(spacing: 0) {
+                OBHeader(step: 21, label: "Construction · 2/4")
+
+                Spacer()
+
+                VStack(spacing: 24) {
+                    barsChart
+                    VStack(spacing: 6) {
+                        Text("Calibrage du budget…").font(.tDisplay(24)).tracking(-0.7)
+                        Text("On prépare une base que tu pourras remplacer par tes vraies données.")
+                            .font(.tText(13)).foregroundColor(.tTextMute)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 10)
+                        Text("\(Int(progress))%")
+                            .font(.tText(12, weight: .bold))
+                            .foregroundColor(.tAccent2)
+                            .contentTransition(.numericText())
+                    }
+                    TCard(padding: 14) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("MICRO-INSIGHT")
+                                .font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tTextMute)
+                            (Text("Ton budget sera ").font(.tText(13))
+                             + Text("basé sur tes saisies").font(.tText(13, weight: .bold)).foregroundColor(.tMint)
+                             + Text(", pas sur des exemples.").font(.tText(13)))
+                        }
+                    }
+                    .frame(maxWidth: 320)
+                    .opacity(progress > 20 ? 1 : 0.4)
+                }
+                .padding(.horizontal, 26)
+
+                Spacer()
+
+                Text("Étape 2 sur 4 · ne ferme pas l'app")
+                    .font(.tText(11)).foregroundColor(.tTextDim)
+                    .padding(.bottom, 30)
+            }
+        }
+        .onAppear { startLoading() }
+        .onDisappear {
+            loadingTask?.cancel()
+            loadingTask = nil
+        }
+    }
+
+    private func startLoading() {
+        loadingTask?.cancel()
+        barReveal = 0.08
+        progress = 0
+
+        withAnimation(.spring(response: 0.9, dampingFraction: 0.78)) {
+            barReveal = 1
+        }
+
+        loadingTask = OBLoadingRunner.start(duration: 2.7, onProgress: { pct in
+            progress = pct
+        }, onComplete: advance)
+    }
+
+    private var barsChart: some View {
+        ZStack {
+            RadialGradient(colors: [Color.tGold.opacity(0.18), .clear],
+                           center: .center, startRadius: 0, endRadius: 110)
+            HStack(alignment: .bottom, spacing: 12) {
+                ForEach(Array(bars.enumerated()), id: \.offset) { _, b in
+                    VStack(spacing: 0) {
+                        if b.isYou {
+                            Text("TOI")
+                                .font(.tText(10, weight: .black)).foregroundColor(.tBg0)
+                                .padding(.horizontal, 8).padding(.vertical, 3)
+                                .background(Capsule().fill(Color.tGold))
+                                .offset(y: 6)
+                                .opacity(barReveal > 0.85 ? 1 : 0)
+                        }
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(b.isYou
+                                  ? AnyShapeStyle(LinearGradient(colors: [.tGold, .tAccent2],
+                                                                 startPoint: .top, endPoint: .bottom))
+                                  : AnyShapeStyle(Color(hex: 0xa78bfa, opacity: 0.25)))
+                            .frame(width: 24, height: max(8, b.value * 1.5 * barReveal))
+                            .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .stroke(b.isYou ? Color.tGold : Color.tBorder, lineWidth: 1))
+                            .shadow(color: b.isYou ? Color.tGold.opacity(0.4) : .clear, radius: 8)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+        .frame(width: 220, height: 200)
+    }
+}
+
+// MARK: - 22 · IDENTITÉ ─────────────────────────────────────────────────────
+
+struct V2_22: View {
+    var body: some View {
+        ScreenShell {
+            VStack(spacing: 0) {
+                OBHeader(step: 22, label: "Ton profil voyageur")
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("ANALYSE TERMINÉE")
+                        .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
+                    (Text("Tu es une\n").font(.tDisplay(30)).tracking(-0.9)
+                     + Text("Voyageur organisé").font(.tDisplay(30)).foregroundColor(.tAccent2)
+                     + Text(".").font(.tDisplay(30)))
+                        .padding(.top, 8)
+                    Text("Ce profil évoluera avec tes vrais voyages.")
+                        .font(.tText(13)).foregroundColor(.tTextMute).padding(.top, 8)
+
+                    identityCard.padding(.top, 18)
+
+                    Spacer()
+                    CTA(label: "Voir mon plan de voyage →")
+                }
+                .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
+            }
+        }
+    }
+
+    private var identityCard: some View {
+        TCard(padding: 20) {
+            VStack(spacing: 0) {
+                ZStack {
+                    RadialGradient(colors: [Color.tAccent.opacity(0.30), .clear],
+                                   center: .center, startRadius: 0, endRadius: 80)
+                        .frame(width: 128, height: 128)
+                    Circle().fill(LinearGradient(colors: [.tAccent2, .tRose],
+                                                 startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 96, height: 96)
+                        .overlay(Circle().stroke(Color.tBorderStrong, lineWidth: 3))
+                    TIcon(glyph: .globe, size: 44, stroke: .white, strokeWidth: 2.2)
+                }
+                Text("TYPE").font(.tText(12, weight: .bold)).tracking(1.5)
+                    .foregroundColor(.tTextMute).padding(.top, 14)
+                Text("Voyageur organisé").font(.tDisplay(22)).tracking(-0.5).padding(.top, 2)
+                Text("Tu aimes voyager en autonomie, mais tu veux du contrôle. Tu optimises sans sacrifier le plaisir.")
+                    .font(.tText(13)).foregroundColor(.tTextMute)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 6).padding(.horizontal, 10)
+
+                VStack(spacing: 10) {
+                    trait("Budget", 0)
+                    trait("Spots", 0)
+                    trait("Vols", 0)
+                    trait("Organisation", 0)
+                }
+                .padding(.top, 18)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private func trait(_ label: String, _ v: Int) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(label).font(.tText(12)).foregroundColor(.tTextMute)
+                Spacer()
+                Text("\(v)%").font(.tText(12, weight: .bold))
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color(hex: 0xa78bfa, opacity: 0.15)).frame(height: 4)
+                    Capsule().fill(LinearGradient(colors: [.tAccent2, .tAccent],
+                                                  startPoint: .leading, endPoint: .trailing))
+                        .frame(width: geo.size.width * CGFloat(v) / 100, height: 4)
+                }
+            }
+            .frame(height: 4)
+        }
+    }
+}
+
+// MARK: - 23 · REVEAL PLAN ──────────────────────────────────────────────────
+
+struct V2_23: View {
+    private let included: [(String, String)] = [
+        ("Itinéraire",                       "À compléter avec tes étapes"),
+        ("Spots sauvegardés",                "Tes vrais lieux à retrouver"),
+        ("Vol à suivre",                     "Ajoute tes vrais billets"),
+        ("Alertes budget intelligentes",     "On t'avertit avant 100%"),
+        ("Souvenirs",                        "Tes voyages terminés"),
+    ]
+
+    var body: some View {
+        ScreenShell {
+            VStack(spacing: 0) {
+                OBHeader(step: 23, label: "Ton plan")
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("TON PLAN PERSONNALISÉ")
+                            .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
+                        Text("Ton prochain voyage\ndéjà esquissé pour toi.")
+                            .font(.tDisplay(28)).tracking(-0.8)
+                            .padding(.top, 8)
+
+                        coverBlock.padding(.top, 18)
+                        statsCard.padding(.top, 12)
+
+                        Text("INCLUS DANS TON PLAN")
+                            .font(.tText(12, weight: .bold)).tracking(1).foregroundColor(.tTextMute)
+                            .padding(.top, 12)
+                        VStack(alignment: .leading, spacing: 6) {
+                            ForEach(included, id: \.0) { item in
+                                inclusionRow(item.0, item.1)
+                            }
+                        }
+                        .padding(.top, 8)
+
+                        CTA(label: "Continuer →").padding(.top, 18)
+                    }
+                    .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
+                }
+            }
+        }
+    }
+
+    private var coverBlock: some View {
+        ZStack(alignment: .topLeading) {
+            DestPhoto(label: "Destination à définir", hue: 340, radius: 0)
+                .frame(height: 170)
+            LinearGradient(stops: [
+                .init(color: Color.tBg0.opacity(0.1), location: 0),
+                .init(color: Color.tBg0.opacity(0.85), location: 0.9),
+            ], startPoint: .top, endPoint: .bottom)
+            .frame(height: 170)
+            Text("FAIT POUR TOI")
+                .font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tGold)
+                .padding(.horizontal, 10).padding(.vertical, 4)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color.tGold.opacity(0.20)))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.tGold.opacity(0.4), lineWidth: 1))
+                .padding(14)
+            VStack {
+                Spacer()
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Ton voyage").font(.tDisplay(26)).tracking(-0.8).foregroundColor(.white)
+                    Text("Dates à définir · durée à définir")
+                        .font(.tText(12)).foregroundColor(.white.opacity(0.8))
+                }
+                .padding(14)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .stroke(Color.tBorderStrong, lineWidth: 1))
+    }
+
+    private var statsCard: some View {
+        TCard(padding: 14) {
+            HStack {
+                statBlock("BUDGET", "À définir", .tAccent2)
+                Spacer()
+                statBlock("ÉCONOMIE", "À définir", .tMint)
+                Spacer()
+                statBlock("SPOTS", "0", .tRose)
+            }
+        }
+    }
+
+    private func statBlock(_ k: String, _ v: String, _ c: Color) -> some View {
+        VStack(spacing: 2) {
+            Text(k).font(.tText(10, weight: .semibold)).tracking(0.5).foregroundColor(.tTextMute)
+            Text(v).font(.tText(18, weight: .black)).tracking(-0.4).foregroundColor(c)
+        }
+    }
+
+    private func inclusionRow(_ l: String, _ d: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            ZStack {
+                Circle().fill(Color.tMint.opacity(0.18))
+                    .overlay(Circle().stroke(Color.tMint.opacity(0.3), lineWidth: 1))
+                TIcon(glyph: .check, size: 11, stroke: .tMint, strokeWidth: 3)
+            }
+            .frame(width: 18, height: 18).padding(.top, 2)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(l).font(.tText(13, weight: .semibold))
+                Text(d).font(.tText(11)).foregroundColor(.tTextMute)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - 24 · PROJECTION ───────────────────────────────────────────────────
+
+struct V2_24: View {
+    var body: some View {
+        ScreenShell {
+            VStack(spacing: 0) {
+                OBHeader(step: 24, label: "Projection")
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("PROJECTION SUR 12 MOIS")
+                        .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tMint)
+                    Text("Ton suivi va se baser\nsur tes dépenses.")
+                        .font(.tDisplay(30)).tracking(-0.9)
+                        .padding(.top, 8)
+
+                    VStack(spacing: 6) {
+                        Color.clear.frame(height: 26)
+                        GradientNumber(text: "0€", size: 90, colors: [.tMint, .tAccent2])
+                            .shadow(color: Color.tMint.opacity(0.5), radius: 40)
+                        Text("avant d'ajouter tes vraies dépenses")
+                            .font(.tText(13)).foregroundColor(.tTextMute)
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    graphCard.padding(.top, 22)
+                    bonusCard.padding(.top, 12)
+
+                    Spacer(minLength: 0)
+                    CTA(label: "Sauvegarder mon plan →").padding(.top, 12)
+                }
+                .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
+            }
+        }
+    }
+
+    private var graphCard: some View {
+        TCard(padding: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Budget").font(.tText(11, weight: .semibold)).foregroundColor(.tTextMute)
+                    Spacer()
+                    Text("Dépenses").font(.tText(11, weight: .semibold)).foregroundColor(.tTextMute)
+                }
+                Canvas { ctx, rect in
+                    let w = rect.width, h: CGFloat = 100
+                    let mapX: (Double) -> CGFloat = { $0 * w / 300 }
+                    let mapY: (Double) -> CGFloat = { $0 * h / 100 }
+
+                    var roseLine = Path()
+                    let rosePts: [(Double, Double)] = [(0, 30), (60, 35), (120, 25), (180, 40), (240, 35), (300, 50)]
+                    for (i, p) in rosePts.enumerated() {
+                        let pt = CGPoint(x: mapX(p.0), y: mapY(p.1))
+                        i == 0 ? roseLine.move(to: pt) : roseLine.addLine(to: pt)
+                    }
+                    ctx.stroke(roseLine, with: .color(.tRose.opacity(0.7)),
+                               style: StrokeStyle(lineWidth: 2.5, dash: [4, 4]))
+
+                    var mintLine = Path()
+                    let mintPts: [(Double, Double)] = [(0, 30), (60, 25), (120, 18), (180, 15), (240, 8), (300, 4)]
+                    for (i, p) in mintPts.enumerated() {
+                        let pt = CGPoint(x: mapX(p.0), y: mapY(p.1))
+                        i == 0 ? mintLine.move(to: pt) : mintLine.addLine(to: pt)
+                    }
+                    ctx.stroke(mintLine, with: .color(.tMint), lineWidth: 2.5)
+                    ctx.fill(Path(ellipseIn: CGRect(x: w - 6, y: mapY(4) - 5, width: 10, height: 10)),
+                             with: .color(.tMint))
+                }
+                .frame(height: 100)
+                HStack {
+                    Text("Jan"); Spacer()
+                    Text("Avr"); Spacer()
+                    Text("Juil"); Spacer()
+                    Text("Oct"); Spacer()
+                    Text("Déc")
+                }
+                .font(.tText(11)).foregroundColor(.tTextMute)
+            }
+        }
+    }
+
+    private var bonusCard: some View {
+        TCard(padding: 14, bg: AnyShapeStyle(Color.tMint.opacity(0.06)), border: Color.tMint.opacity(0.18)) {
+            HStack(spacing: 12) {
+                IconBubble(glyph: .gift, color: .tMint, size: 46)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Démarre à 0€")
+                        .font(.tText(12, weight: .bold)).foregroundColor(.tMint)
+                    Text("Crée un voyage, ajoute tes dépenses, puis Tripnest calcule le reste.")
+                        .font(.tText(13))
+                }
+            }
+        }
+    }
+}
+
+// MARK: - 25 · NOTIFICATIONS ────────────────────────────────────────────────
+
+struct V2_25: View {
+    @Environment(\.tripnestDefaultCTAAction) private var advance
+    private struct Notif { let label, detail: String; let glyph: TIcon.Glyph; let color: Color; let on: Bool }
+    @State private var enabled: Set<String> = [
+        "Alerte dépassement de budget",
+        "Rappels avant tes vols",
+        "Suggestion de spots à proximité",
+    ]
+    private let items: [Notif] = [
+        .init(label: "Alerte dépassement de budget",     detail: "Avant que tu atteignes 100%", glyph: .wallet, color: .tGold, on: true),
+        .init(label: "Rappels avant tes vols",            detail: "24h avant chaque départ",     glyph: .plane,  color: .tAccent2, on: true),
+        .init(label: "Suggestion de spots à proximité",   detail: "Quand tu es sur place",        glyph: .spot,   color: .tRose, on: true),
+        .init(label: "Bilan hebdo de tes économies",      detail: "Le lundi matin",               glyph: .sun,    color: .tBlue, on: false),
+    ]
+
+    var body: some View {
+        ScreenShell {
+            VStack(spacing: 0) {
+                OBHeader(step: 25, label: "Notifications")
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("RAPPELS INTELLIGENTS")
+                        .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
+                    Text("On t'aide à tenir\ntes objectifs.")
+                        .font(.tDisplay(26)).tracking(-0.8).padding(.top, 8)
+                    Text("Autorise les alertes iOS pour tes rappels de budget, vols et spots.")
+                        .font(.tText(13)).foregroundColor(.tTextMute).padding(.top, 6)
+
+                    VStack(spacing: 8) {
+                        ForEach(items, id: \.label) { n in
+                            notifRow(n)
+                        }
+                    }
+                    .padding(.top, 22)
+
+                    Spacer()
+                    CTA(label: "Activer les notifications", action: activateAndContinue)
+                }
+                .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
+            }
+        }
+    }
+
+    private func notifRow(_ n: Notif) -> some View {
+        Button(action: {
+            if enabled.contains(n.label) {
+                enabled.remove(n.label)
+            } else {
+                enabled.insert(n.label)
+            }
+        }) {
+            TCard(padding: 14) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 11, style: .continuous).fill(n.color.opacity(0.13))
+                        TIcon(glyph: n.glyph, size: 18, stroke: n.color)
+                    }
+                    .frame(width: 38, height: 38)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(n.label).font(.tText(14, weight: .bold))
+                        Text(n.detail).font(.tText(11)).foregroundColor(.tTextMute)
+                    }
+                    Spacer()
+                    toggle(on: enabled.contains(n.label))
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func activateAndContinue() {
+        Task {
+            _ = await TripnestNotifications.activate()
+            await MainActor.run { advance() }
+        }
+    }
+
+    private func toggle(on: Bool) -> some View {
+        ZStack(alignment: on ? .trailing : .leading) {
+            Capsule().fill(on ? Color.tAccent : Color(hex: 0xa78bfa, opacity: 0.15))
+            Circle().fill(Color.white)
+                .frame(width: 20, height: 20)
+                .padding(2)
+                .shadow(color: .black.opacity(0.2), radius: 1, y: 1)
+        }
+        .frame(width: 42, height: 26)
+        .overlay(Capsule().stroke(on ? Color.tAccent : Color.tBorder, lineWidth: 1))
+    }
+}
+
+// MARK: - 26 · CRÉATION DE COMPTE ───────────────────────────────────────────
+
+struct V2_26: View {
+    var body: some View {
+        ScreenShell {
+            VStack(spacing: 0) {
+                OBHeader(step: 26, label: "Sauvegarde")
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("SAUVEGARDE TON PROFIL")
+                        .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
+                    Text("Ton espace local\nest prêt.")
+                        .font(.tDisplay(26)).tracking(-0.8).padding(.top, 8)
+
+                    summaryCard.padding(.top, 14)
+
+                    TCard(padding: 16) {
+                        HStack(spacing: 12) {
+                            TIcon(glyph: .check, size: 20, stroke: .tMint)
+                            Text("Aucun compte requis pour commencer. Les données créées dans l'app restent locales pour l'instant.")
+                                .font(.tText(13))
+                                .foregroundColor(.tTextMute)
+                        }
+                    }
+                    .padding(.top, 18)
+
+                    Spacer(minLength: 0)
+                    CTA(label: "Continuer").padding(.top, 12)
+                    Text("Tu pourras ajouter tes voyages, dépenses et lieux dès l'écran d'accueil.")
+                        .font(.tText(10))
+                        .foregroundColor(.tTextDim)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 8)
+                }
+                .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
+            }
+        }
+    }
+
+    private var summaryCard: some View {
+        TCard(padding: 14,
+              bg: AnyShapeStyle(Color(hex: 0x8b5cf6, opacity: 0.08)),
+              border: Color(hex: 0x8b5cf6, opacity: 0.22)) {
+            HStack {
+                HStack(spacing: 10) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .fill(LinearGradient(colors: [.tAccent2, .tRose],
+                                                 startPoint: .topLeading, endPoint: .bottomTrailing))
+                        TIcon(glyph: .globe, size: 20, stroke: .white, strokeWidth: 2.2)
+                    }
+                    .frame(width: 40, height: 40)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Profil prêt à sauvegarder").font(.tText(12)).foregroundColor(.tTextMute)
+                        Text("Données locales").font(.tText(14, weight: .bold))
+                    }
+                }
+                Spacer()
+                Text("local")
+                    .font(.tText(11, weight: .bold)).foregroundColor(.tMint)
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(RoundedRectangle(cornerRadius: 7).fill(Color.tMint.opacity(0.12)))
+            }
+        }
+    }
+}
+
+// MARK: - 27 · RÉCAP ────────────────────────────────────────────────────────
+
+struct V2_27: View {
+    private let summary: [(TIcon.Glyph, String, String)] = [
+        (.globe, "Profil voyageur",     "À construire"),
+        (.filter, "Objectif d'économie", "À définir"),
+        (.plane, "Voyage planifié",     "À créer"),
+        (.wallet, "Budget calibré",      "À définir"),
+        (.spot, "Spots sélectionnés",  "0 lieu"),
+        (.trips, "Projection",          "Selon tes dépenses"),
+        (.bell, "Alertes",             "À activer"),
+    ]
+
+    var body: some View {
+        ScreenShell {
+            VStack(spacing: 0) {
+                OBHeader(step: 27, label: "Récapitulatif")
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 8) {
+                        TIcon(glyph: .check, size: 14, stroke: .tMint, strokeWidth: 3)
+                        Text("PROFIL SAUVEGARDÉ")
+                            .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tMint)
+                    }
+                    Text("Ton plan complet\nest prêt à décoller.")
+                        .font(.tDisplay(28)).tracking(-0.8)
+                        .padding(.top, 8)
+                    Text("Tu peux maintenant entrer dans l'app.")
+                        .font(.tText(13)).foregroundColor(.tTextMute).padding(.top, 6)
+
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 8) {
+                            ForEach(summary, id: \.1) { item in
+                                recapRow(item.0, item.1, item.2)
+                            }
+                        }
+                        .padding(.top, 18)
+                    }
+
+                    CTA(label: "Continuer →").padding(.top, 8)
+                }
+                .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
+            }
+        }
+    }
+
+    private func recapRow(_ glyph: TIcon.Glyph, _ k: String, _ v: String) -> some View {
+        HStack(spacing: 12) {
+            IconBubble(glyph: glyph, color: .tAccent2, size: 38)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(k).font(.tText(11)).foregroundColor(.tTextMute)
+                Text(v).font(.tText(14, weight: .bold))
+            }
+            Spacer()
+            TIcon(glyph: .check, size: 16, stroke: .tMint, strokeWidth: 2.5)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 12)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.tSurface))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.tBorder, lineWidth: 1))
+    }
+}
+
+// MARK: - 28 · HARD PAYWALL ─────────────────────────────────────────────────
+
+struct V2_28: View {
+    @Environment(\.tripnestDefaultCTAAction) private var defaultAction
+
+    var body: some View {
+        ScreenShell {
+            VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+                    Button(action: defaultAction) {
+                        TIcon(glyph: .close, size: 12, stroke: .tTextMute)
+                            .frame(width: 24, height: 24)
+                            .opacity(0.35)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 22).padding(.top, 8)
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        titleBlock.padding(.top, 14)
+                        valueCard.padding(.top, 16)
+                        trialTimeline.padding(.top, 14)
+                        CTA(label: "Entrer dans Tripnest", height: 60, fontSize: 17)
+                            .padding(.top, 12)
+                        Text("Aucun paiement configuré dans cette version.")
+                            .font(.tText(10)).foregroundColor(.tTextDim)
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 8)
+                    }
+                    .padding(.horizontal, 24).padding(.bottom, 26)
+                }
+            }
+        }
+    }
+
+    private var urgencyBanner: some View {
+        HStack(spacing: 8) {
+            Circle().fill(Color.tGold).frame(width: 6, height: 6)
+                .shadow(color: .tGold, radius: 5)
+            Text("TON ESPACE EST PRÊT")
+                .font(.tText(11, weight: .black)).tracking(1).foregroundColor(.tGold)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 6)
+        .background(Capsule().fill(Color.tGold.opacity(0.12)))
+        .overlay(Capsule().stroke(Color.tGold.opacity(0.35), lineWidth: 1))
+    }
+
+    private var titleBlock: some View {
+        VStack(spacing: 8) {
+            Text("DERNIÈRE ÉTAPE")
+                .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
+            (Text("Lance ton espace\n").font(.tDisplay(30)).tracking(-1)
+             + Text("Tripnest.").font(.tDisplay(30))
+                .foregroundStyle(LinearGradient(colors: [.tGold, .tAccent2],
+                                                startPoint: .topLeading, endPoint: .bottomTrailing)))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var valueCard: some View {
+        TCard(padding: 14, bg: AnyShapeStyle(Color.tMint.opacity(0.06)), border: Color.tMint.opacity(0.25)) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("DÉPART")
+                        .font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tMint)
+                    Text("0€")
+                        .font(.tDisplay(28)).tracking(-0.8).foregroundColor(.tMint)
+                    Text("dépense enregistrée")
+                        .font(.tText(10)).foregroundColor(.tTextMute)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Données").font(.tText(11)).foregroundColor(.tTextMute)
+                    Text("Locales").font(.tText(18, weight: .black))
+                    Text("stockées sur l'appareil").font(.tText(10)).foregroundColor(.tTextMute)
+                }
+            }
+        }
+    }
+
+    private var plansBlock: some View {
+        VStack(spacing: 10) {
+            annualPlan
+            monthlyPlan
+        }
+    }
+
+    private var annualPlan: some View {
+        ZStack(alignment: .topTrailing) {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle().fill(Color.tAccent)
+                    Circle().fill(Color.white).frame(width: 8, height: 8)
+                }
+                .frame(width: 22, height: 22)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Annuel · 7 jours offerts").font(.tText(16, weight: .black))
+                    Text("Tarif non configuré").font(.tText(12)).foregroundColor(.tTextMute)
+                    Text("OPTION À BRANCHER PLUS TARD")
+                        .font(.tText(10, weight: .bold)).tracking(0.5).foregroundColor(.tGold)
+                        .padding(.top, 2)
+                }
+                Spacer()
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(LinearGradient(colors: [
+                    Color(hex: 0x8b5cf6, opacity: 0.20),
+                    Color(hex: 0x8b5cf6, opacity: 0.06),
+                ], startPoint: .topLeading, endPoint: .bottomTrailing)))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.tAccent, lineWidth: 2))
+            .shadow(color: Color.tAccent.opacity(0.3), radius: 18, x: 0, y: 18)
+
+            Text("OPTIONNEL")
+                .font(.tText(10, weight: .black)).tracking(0.5).foregroundColor(.tBg0)
+                .padding(.horizontal, 10).padding(.vertical, 3)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color.tGold))
+                .offset(x: -14, y: -10)
+        }
+    }
+
+    private var monthlyPlan: some View {
+        HStack(spacing: 14) {
+            Circle().stroke(Color.tBorder, lineWidth: 1.5).frame(width: 22, height: 22)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Mensuel").font(.tText(15, weight: .bold))
+                Text("Tarif non configuré").font(.tText(12)).foregroundColor(.tTextMute)
+            }
+            Spacer()
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.tSurface))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.tBorder, lineWidth: 1))
+        .opacity(0.85)
+    }
+
+    private var trialTimeline: some View {
+        TCard(padding: 12) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("PROCHAINES ÉTAPES")
+                    .font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tTextMute)
+                HStack(spacing: 8) {
+                    timelineStep("1", "Créer voyage", .tMint, isLast: false)
+                    timelineStep("2", "Ajouter budget", .tGold, isLast: false)
+                    timelineStep("3", "Suivre dépenses", .tAccent2, isLast: true)
+                }
+                .padding(.top, 10)
+            }
+        }
+    }
+
+    private func timelineStep(_ date: String, _ label: String, _ color: Color, isLast: Bool) -> some View {
+        VStack(spacing: 6) {
+            ZStack {
+                if !isLast {
+                    GeometryReader { _ in
+                        Rectangle().fill(Color.tBorder)
+                            .frame(height: 1)
+                            .offset(x: 14)
+                    }
+                    .frame(height: 1)
+                    .offset(y: 5)
+                }
+                Circle().fill(color).frame(width: 10, height: 10)
+            }
+            Text(date).font(.tText(10, weight: .bold))
+            Text(label).font(.tText(9)).foregroundColor(.tTextMute)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var trustStrip: some View {
+        HStack(spacing: 14) {
+            TIcon(glyph: .check, size: 12, stroke: .tMint)
+            Text("Local"); Text("·")
+            Text("0 exemple"); Text("·")
+            Text("Prêt")
+        }
+        .font(.tText(10)).foregroundColor(.tTextDim)
+    }
+}
+
+// MARK: - 29 · SUCCESS ──────────────────────────────────────────────────────
+
+struct V2_29: View {
+    var body: some View {
+        ScreenShell(motif: false) {
+            GeometryReader { geo in
+                ZStack {
+                    burst(in: geo.size)
+                    content
+                }
+            }
+        }
+    }
+
+    private func burst(in size: CGSize) -> some View {
+        ZStack {
+            ForEach(0..<32, id: \.self) { i in
+                let angle = Double(i) / 32 * .pi * 2
+                let r = 130 + Double(i % 5) * 60
+                let x = 0.5 + cos(angle) * (r / 4) / 100
+                let y = 0.38 + sin(angle) * (r / 6) / 100
+                let colors: [Color] = [.tAccent2, .tRose, .tGold, .tMint, .tBlue]
+                PaperPlaneSilhouette(fill: colors[i % 5])
+                    .frame(width: 14, height: 14)
+                    .rotationEffect(.degrees(Double((i * 37) % 360)))
+                    .opacity(0.85)
+                    .position(x: size.width * x, y: size.height * y)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private var content: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            VStack(spacing: 18) {
+                ZStack {
+                    RadialGradient(colors: [Color.tAccent.opacity(0.5), .clear],
+                                   center: .center, startRadius: 0, endRadius: 110)
+                        .frame(width: 200, height: 200)
+                    TripnestLogo(size: 130)
+                    Circle().fill(Color.tMint)
+                        .frame(width: 44, height: 44)
+                        .overlay(Circle().stroke(Color.tBg0, lineWidth: 4))
+                        .overlay(TIcon(glyph: .check, size: 22, stroke: .tBg0, strokeWidth: 3))
+                        .offset(x: 50, y: 50)
+                }
+                .frame(height: 200)
+
+                VStack(spacing: 10) {
+                    Text("BIENVENUE DANS TRIPNEST")
+                        .font(.tText(11, weight: .bold)).tracking(2.5).foregroundColor(.tAccent2)
+                    Text("Décollage\nimminent.")
+                        .font(.tDisplay(42)).tracking(-1.6)
+                        .multilineTextAlignment(.center)
+                    Text("Ton espace Tripnest t'attend.\nL'aventure commence maintenant.")
+                        .font(.tText(15)).foregroundColor(.tTextMute)
+                        .multilineTextAlignment(.center)
+                }
+
+                TCard(padding: 12, bg: AnyShapeStyle(Color.tGold.opacity(0.06)), border: Color.tGold.opacity(0.18)) {
+                    HStack(spacing: 12) {
+                        IconBubble(glyph: .gift, color: .tGold, size: 42)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("Espace local · activé")
+                                .font(.tText(12, weight: .bold)).foregroundColor(.tGold)
+                            Text("Crée ton premier voyage pour démarrer")
+                                .font(.tText(10)).foregroundColor(.tTextMute)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 28)
+            Spacer()
+            VStack(spacing: 8) {
+                CTA(label: "Entrer dans Tripnest →")
+                CTA(label: "Partager avec un·e ami·e", ghost: true)
+            }
+            .padding(.horizontal, 28).padding(.bottom, 36)
+        }
+    }
+}

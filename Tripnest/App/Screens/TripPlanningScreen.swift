@@ -1,0 +1,639 @@
+import SwiftUI
+
+struct TripPlanningScreen: View {
+    @EnvironmentObject private var store: TripStore
+    var tripId: String?
+    var onNav: (AppRoute) -> Void = { _ in }
+    var onBack: () -> Void = {}
+
+    @State private var calendarDate = Date()
+    @State private var selectedDayKey: String = ""
+    @State private var showPlanSheet = false
+    @State private var sheetEditingItemId: String?
+    @State private var showPlanSettings = false
+    @State private var notificationStatus: TripnestNotificationStatus = .notDetermined
+    @State private var showNotificationPermissionAlert = false
+
+    private static let frLocale = Locale(identifier: "fr_FR")
+    fileprivate static var defaultDraftTime: Date {
+        Calendar.current.date(from: DateComponents(hour: 9, minute: 0)) ?? Date()
+    }
+
+    private var trip: Trip? {
+        if let tripId, let match = store.trips.first(where: { $0.id == tripId }) { return match }
+        return store.activeTrip
+    }
+
+    private var selectedDayLabel: String {
+        TripPlanCalendar.date(from: selectedDayKey)?
+            .formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Self.frLocale))
+            .capitalized ?? ""
+    }
+
+    private var selectedDayItems: [TripPlanItem] {
+        guard let trip, !selectedDayKey.isEmpty else { return [] }
+        return store.planItems(for: trip.id, dayKey: selectedDayKey)
+    }
+
+    var body: some View {
+        ScreenShell(motif: false) {
+            Group {
+                if let trip {
+                    VStack(spacing: 0) {
+                        TripSubpageTopBar(
+                            title: "Planification",
+                            subtitle: trip.homeDestinationTitle,
+                            onSettings: { showPlanSettings = true },
+                            onBack: onBack
+                        )
+
+                        ScrollView(showsIndicators: false) {
+                            VStack(alignment: .leading, spacing: 18) {
+                                baseCalendarCard(trip: trip)
+                                planProgramButton
+                                selectedDayProgramSection
+                            }
+                            .padding(.horizontal, 18)
+                            .padding(.top, 4)
+                            .padding(.bottom, 28)
+                        }
+                        .tripnestScrollBounceWhenNeeded()
+                    }
+                } else {
+                    missingTripState
+                }
+            }
+        }
+        .swipeBack(enabled: true, onBack: onBack)
+        .onAppear {
+            if let tripId { store.selectTrip(id: tripId) }
+            if selectedDayKey.isEmpty, let trip {
+                selectCalendarDay(calendarDate, trip: trip)
+            }
+        }
+        .task {
+            await refreshNotificationStatus()
+            if let trip { await TripPlanNotifications.sync(trip: trip, store: store) }
+        }
+        .sheet(isPresented: $showPlanSettings) {
+            if let trip {
+                PlanificationNotificationSettingsSheet(
+                    trip: trip,
+                    notificationStatus: notificationStatus,
+                    onActivateSystemNotifications: {
+                        Task {
+                            let after = await TripnestNotifications.activate()
+                            notificationStatus = after
+                            if after.isEnabled {
+                                await TripPlanNotifications.sync(trip: trip, store: store)
+                                Haptics.success()
+                            } else if after == .denied {
+                                showNotificationPermissionAlert = true
+                            }
+                        }
+                    },
+                    onPrefsChanged: {
+                        Task { await TripPlanNotifications.sync(trip: trip, store: store) }
+                    }
+                )
+            }
+        }
+        .alert("Notifications désactivées", isPresented: $showNotificationPermissionAlert) {
+            Button("Ouvrir Réglages") {
+                Task { await TripnestNotifications.activate() }
+            }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Active les notifications dans Réglages iOS pour recevoir tes rappels de planification.")
+        }
+        .sheet(isPresented: $showPlanSheet) {
+            if let trip, !selectedDayKey.isEmpty {
+                PlanActivitySheet(
+                    trip: trip,
+                    dayKey: selectedDayKey,
+                    dayLabel: selectedDayLabel,
+                    editingItemId: sheetEditingItemId,
+                    onDismiss: {
+                        showPlanSheet = false
+                        sheetEditingItemId = nil
+                    }
+                )
+            }
+        }
+    }
+
+    // MARK: - Calendrier de base
+
+    private func baseCalendarCard(trip: Trip) -> some View {
+        TCard(padding: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Mon calendrier")
+                    .font(.tText(15, weight: .bold))
+
+                DatePicker(
+                    "Date",
+                    selection: $calendarDate,
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.graphical)
+                .environment(\.locale, Self.frLocale)
+                .tint(.tAccent2)
+                .onChange(of: calendarDate) { _, newDate in
+                    selectCalendarDay(newDate, trip: trip)
+                }
+            }
+        }
+    }
+
+    private var planProgramButton: some View {
+        Button {
+            guard !selectedDayKey.isEmpty else { return }
+            sheetEditingItemId = nil
+            showPlanSheet = true
+            Haptics.selection()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 22, weight: .semibold))
+                Text("Planifie ton programme")
+                    .font(.tText(16, weight: .bold))
+                Spacer()
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.tAccent)
+            )
+        }
+        .buttonStyle(TripnestPressStyle())
+        .disabled(selectedDayKey.isEmpty)
+        .opacity(selectedDayKey.isEmpty ? 0.5 : 1)
+    }
+
+    // MARK: - Programme du jour sélectionné
+
+    @ViewBuilder
+    private var selectedDayProgramSection: some View {
+        if !selectedDayKey.isEmpty {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Programme du \(selectedDayLabel)")
+                .font(.tText(14, weight: .bold))
+
+            if selectedDayItems.isEmpty {
+                TCard(padding: 18) {
+                    Text("Aucune activité ce jour-là.\nAppuie sur « Planifie ton programme » pour en ajouter une.")
+                        .font(.tText(13))
+                        .foregroundColor(.tTextMute)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                }
+            } else {
+                TCard(padding: 0) {
+                    VStack(spacing: 0) {
+                        ForEach(Array(selectedDayItems.enumerated()), id: \.element.id) { index, item in
+                            if index > 0 {
+                                Divider().padding(.leading, 56)
+                            }
+                            programActivityRow(item)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                Text("Modifier ou supprimer une activité avec les icônes à droite.")
+                    .font(.tText(11))
+                    .foregroundColor(.tTextMute)
+            }
+        }
+        }
+    }
+
+    private func programActivityRow(_ item: TripPlanItem) -> some View {
+        HStack(spacing: 12) {
+            Text(item.time.isEmpty ? "—" : item.time)
+                .font(.tText(13, weight: .bold))
+                .foregroundColor(.tMint)
+                .frame(width: 44, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.title)
+                    .font(.tText(15, weight: .semibold))
+                if !item.location.isEmpty {
+                    Text(item.location)
+                        .font(.tText(12, weight: .semibold))
+                        .foregroundColor(.tAccent2)
+                        .lineLimit(1)
+                }
+                if !item.notes.isEmpty {
+                    Text(item.notes)
+                        .font(.tText(12))
+                        .foregroundColor(.tTextMute)
+                        .lineLimit(3)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                sheetEditingItemId = item.id
+                showPlanSheet = true
+                Haptics.selection()
+            } label: {
+                Image(systemName: "pencil")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.tAccent2)
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(Color.tAccent2.opacity(0.12)))
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                store.deletePlanItem(id: item.id)
+                if let trip { syncPlanNotifications(for: trip) }
+                Haptics.selection()
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.tRose)
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(Color.tRose.opacity(0.10)))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - Helpers
+
+    private func selectCalendarDay(_ date: Date, trip: Trip?) {
+        guard let trip else { return }
+        let key = TripPlanCalendar.dayKey(for: date)
+        store.registerPlanDay(tripId: trip.id, date: date)
+        selectedDayKey = key
+        calendarDate = date
+    }
+
+    private func refreshNotificationStatus() async {
+        notificationStatus = await TripnestNotifications.currentStatus()
+    }
+
+    private func syncPlanNotifications(for trip: Trip) {
+        Task { await TripPlanNotifications.sync(trip: trip, store: store) }
+    }
+
+    private var missingTripState: some View {
+        VStack(spacing: 0) {
+            TripSubpageTopBar(title: "Planification", subtitle: "Voyage introuvable", onBack: onBack)
+            Spacer()
+            TIcon(glyph: .cal, size: 36, stroke: .tAccent2)
+            Text("Impossible de charger ce voyage.")
+                .font(.tText(15, weight: .semibold))
+                .padding(.top, 12)
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Ajouter / modifier une activité
+
+private struct PlanActivitySheet: View {
+    @EnvironmentObject private var store: TripStore
+    @Environment(\.dismiss) private var dismiss
+
+    let trip: Trip
+    let dayKey: String
+    let dayLabel: String
+    var editingItemId: String?
+    var onDismiss: () -> Void
+
+    @State private var draftTimeDate = TripPlanningScreen.defaultDraftTime
+    @State private var draftTitle = ""
+    @State private var draftLocation = ""
+    @State private var draftNotes = ""
+
+    private static let frLocale = Locale(identifier: "fr_FR")
+    private var isEditing: Bool { editingItemId != nil }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Pour le \(dayLabel)")
+                        .font(.tText(13))
+                        .foregroundColor(.tTextMute)
+
+                    timeSection
+                    titleSection
+                    locationSection
+                    notesSection
+
+                    Button(action: save) {
+                        Text(isEditing ? "Enregistrer" : "Ajouter")
+                            .font(.tText(15, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .fill(canSave ? Color.tAccent : Color.tAccent.opacity(0.4))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!canSave)
+                }
+                .padding(18)
+            }
+            .background(Color.tBg0.ignoresSafeArea())
+            .navigationTitle(isEditing ? "Modifier l’activité" : "Nouvelle activité")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Annuler") { close() }
+                }
+            }
+            .onAppear { loadEditingIfNeeded() }
+        }
+        .presentationDetents([.large])
+    }
+
+    private var canSave: Bool {
+        !draftTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var timeSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Heure")
+                .font(.tText(11, weight: .semibold))
+                .foregroundColor(.tTextMute)
+            DatePicker("", selection: $draftTimeDate, displayedComponents: .hourAndMinute)
+                .datePickerStyle(.wheel)
+                .labelsHidden()
+                .environment(\.locale, Self.frLocale)
+                .frame(maxWidth: .infinity)
+                .frame(height: 120)
+                .clipped()
+                .background(fieldBackground)
+        }
+    }
+
+    private var titleSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Nom de l’activité")
+                .font(.tText(11, weight: .semibold))
+                .foregroundColor(.tTextMute)
+            TextField("Ex : Musée, Déjeuner…", text: $draftTitle)
+                .font(.tText(15))
+                .padding(12)
+                .background(fieldBackground)
+        }
+    }
+
+    private var locationSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Lieu (facultatif)")
+                .font(.tText(11, weight: .semibold))
+                .foregroundColor(.tTextMute)
+            TextField("Ex : Centre-ville, Hôtel…", text: $draftLocation)
+                .font(.tText(14))
+                .padding(12)
+                .background(fieldBackground)
+        }
+    }
+
+    private var notesSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Note (facultatif)")
+                    .font(.tText(11, weight: .semibold))
+                    .foregroundColor(.tTextMute)
+                Spacer()
+                Text("\(TripPhotoMemory.lineCount(for: draftNotes))/\(TripPhotoMemory.maxCaptionLines) lignes")
+                    .font(.tText(11, weight: .semibold))
+                    .foregroundColor(.tTextMute)
+            }
+            TextField("Détails, adresse, rappels…", text: $draftNotes, axis: .vertical)
+                .font(.tText(14))
+                .lineLimit(6...TripPhotoMemory.maxCaptionLines)
+                .padding(12)
+                .background(fieldBackground)
+                .onChange(of: draftNotes) { _, newValue in
+                    if TripPhotoMemory.lineCount(for: newValue) > TripPhotoMemory.maxCaptionLines {
+                        draftNotes = TripPhotoMemory.clampedCaption(newValue)
+                    }
+                }
+        }
+    }
+
+    private var fieldBackground: some View {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(Color.tSurface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.tBorder, lineWidth: 1)
+            )
+    }
+
+    private func loadEditingIfNeeded() {
+        guard let id = editingItemId,
+              let item = store.planItems.first(where: { $0.id == id }) else { return }
+        applyTimeString(item.time)
+        draftTitle = item.title
+        draftLocation = item.location
+        draftNotes = item.notes
+    }
+
+    private func save() {
+        let time = formattedDraftTime
+        let notes = TripPhotoMemory.clampedCaption(draftNotes)
+        if let editId = editingItemId {
+            store.updatePlanItem(id: editId, time: time, title: draftTitle, location: draftLocation, notes: notes)
+        } else {
+            store.addPlanItem(
+                tripId: trip.id,
+                dayKey: dayKey,
+                time: time,
+                title: draftTitle,
+                location: draftLocation,
+                notes: notes
+            )
+        }
+        Haptics.success()
+        syncAfterSave()
+        close()
+    }
+
+    private func syncAfterSave() {
+        Task { await TripPlanNotifications.sync(trip: trip, store: store) }
+    }
+
+    private func close() {
+        onDismiss()
+        dismiss()
+    }
+
+    private static let _timeFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "HH:mm"
+        return f
+    }()
+
+    private var formattedDraftTime: String {
+        Self._timeFmt.string(from: draftTimeDate)
+    }
+
+    private func applyTimeString(_ time: String) {
+        let parts = time.split(separator: ":")
+        let hour = Int(parts.first ?? "9") ?? 9
+        let minute = parts.count > 1 ? Int(parts[1]) ?? 0 : 0
+        draftTimeDate = Calendar.current.date(from: DateComponents(hour: hour, minute: minute))
+            ?? TripPlanningScreen.defaultDraftTime
+    }
+}
+
+// MARK: - Réglages notifications (planification)
+
+struct PlanificationNotificationSettingsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let trip: Trip
+    let notificationStatus: TripnestNotificationStatus
+    var onActivateSystemNotifications: () -> Void
+    var onPrefsChanged: () -> Void
+
+    @State private var remindActivities: Bool
+    @State private var remindDeparture: Bool
+
+    init(
+        trip: Trip,
+        notificationStatus: TripnestNotificationStatus,
+        onActivateSystemNotifications: @escaping () -> Void,
+        onPrefsChanged: @escaping () -> Void
+    ) {
+        self.trip = trip
+        self.notificationStatus = notificationStatus
+        self.onActivateSystemNotifications = onActivateSystemNotifications
+        self.onPrefsChanged = onPrefsChanged
+        _remindActivities = State(
+            initialValue: TripPlanNotificationPrefs.activitiesEnabled(tripId: trip.id)
+        )
+        _remindDeparture = State(
+            initialValue: TripPlanNotificationPrefs.departureEnabled(tripId: trip.id)
+        )
+    }
+
+    private var hasDepartureDate: Bool { trip.departureDate != nil }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Rappels liés à ce voyage uniquement. Tu seras prévenu 1 h à l’avance.")
+                        .font(.tText(13))
+                        .foregroundColor(.tTextMute)
+
+                    if !notificationStatus.isEnabled {
+                        TCard(padding: 14) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Label("Notifications iOS désactivées", systemImage: "bell.slash")
+                                    .font(.tText(14, weight: .semibold))
+                                    .foregroundColor(.tRose)
+                                Text("Autorise les notifications pour activer les rappels ci-dessous.")
+                                    .font(.tText(12))
+                                    .foregroundColor(.tTextMute)
+                                Button(action: onActivateSystemNotifications) {
+                                    Text("Activer les notifications")
+                                        .font(.tText(13, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(Capsule().fill(Color.tAccent))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+
+                    TCard(padding: 0) {
+                        VStack(spacing: 0) {
+                            toggleRow(
+                                title: "1 h avant chaque activité",
+                                subtitle: "Pour chaque heure planifiée dans ton calendrier",
+                                isOn: $remindActivities
+                            ) {
+                                TripPlanNotificationPrefs.setActivitiesEnabled(remindActivities, tripId: trip.id)
+                                onPrefsChanged()
+                            }
+
+                            Divider().padding(.leading, 16)
+
+                            toggleRow(
+                                title: "1 h avant le départ",
+                                subtitle: departureSubtitle,
+                                isOn: $remindDeparture,
+                                disabled: !hasDepartureDate
+                            ) {
+                                TripPlanNotificationPrefs.setDepartureEnabled(remindDeparture, tripId: trip.id)
+                                onPrefsChanged()
+                            }
+                        }
+                    }
+
+                    if remindActivities || remindDeparture {
+                        Label(
+                            "Les rappels sont mis à jour quand tu ajoutes ou modifies une activité.",
+                            systemImage: "info.circle"
+                        )
+                        .font(.tText(11))
+                        .foregroundColor(.tTextMute)
+                    }
+                }
+                .padding(18)
+            }
+            .background(Color.tBg0.ignoresSafeArea())
+            .navigationTitle("Rappels")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fermer") { dismiss() }.fontWeight(.semibold)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private var departureSubtitle: String {
+        if let dep = trip.departureDate {
+            let label = dep.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "fr_FR")))
+            return "Départ le \(label.capitalized)"
+        }
+        return "Ajoute une date de départ au voyage pour activer ce rappel"
+    }
+
+    private func toggleRow(
+        title: String,
+        subtitle: String,
+        isOn: Binding<Bool>,
+        disabled: Bool = false,
+        onChange: @escaping () -> Void
+    ) -> some View {
+        Toggle(isOn: isOn) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.tText(14, weight: .semibold))
+                    .foregroundColor(disabled ? .tTextMute : .tText)
+                Text(subtitle)
+                    .font(.tText(11))
+                    .foregroundColor(.tTextMute)
+            }
+            .padding(.vertical, 14)
+        }
+        .tint(.tAccent2)
+        .disabled(disabled || !notificationStatus.isEnabled)
+        .padding(.horizontal, 16)
+        .onChange(of: isOn.wrappedValue) { _, _ in onChange() }
+    }
+}
