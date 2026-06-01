@@ -1,11 +1,26 @@
 import SwiftUI
 
-let OB_TOTAL = 29
+// Ordre du funnel : chaque valeur est l'identifiant d'un écran V2_xx.
+// Réordonner ou retirer une valeur suffit à changer le parcours.
+let onboardingFunnel: [Int] = [
+    1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12,
+    17, 18, 19, 20, 21, 23, 25, 26, 29
+]
+
+let OB_TOTAL = onboardingFunnel.count
 
 final class OnboardingNavigator: ObservableObject {
-    @Published var step: Int = 1
+    // DEBUG: TN_START_STEP permet de démarrer l'onboarding à une position donnée
+    // pour itérer sur le design. À retirer avant la livraison.
+    @Published var step: Int = {
+        if let raw = ProcessInfo.processInfo.environment["TN_START_STEP"],
+           let s = Int(raw) { return min(max(s, 1), OB_TOTAL) }
+        return 1
+    }()
     @Published var direction: Int = 1
     @Published var barProgress: CGFloat = 1 / CGFloat(OB_TOTAL)
+
+    init() { barProgress = CGFloat(step) / CGFloat(OB_TOTAL) }
 
     var progress: CGFloat { barProgress }
 }
@@ -16,7 +31,7 @@ enum OnboardingLabels {
         case 4: return "Tu n'es pas seul·e"
         case 16: return "Tu as ce qu'il faut"
         case 17: return "Fonctions clés"
-        case 18: return "La communauté"
+        case 18: return "Ton espace"
         case 19: return "On y est presque"
         case 20: return "Construction · 1/4"
         case 21: return "Construction · 2/4"
@@ -71,7 +86,9 @@ struct OnboardingChromeBar: View {
 
     private var stepCaption: String {
         let base = "Étape \(navigator.step) / \(OB_TOTAL)"
-        guard let label = OnboardingLabels.label(for: navigator.step) else { return base }
+        let position = min(max(navigator.step, 1), OB_TOTAL)
+        let screenID = onboardingFunnel[position - 1]
+        guard let label = OnboardingLabels.label(for: screenID) else { return base }
         return "\(base) · \(label.uppercased())"
     }
 }
@@ -84,7 +101,7 @@ struct OBProgressTrack: View {
             let fill = max(10, geo.size.width * navigator.barProgress)
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color(hex: 0xa78bfa, opacity: 0.14))
+                    .fill(Color(hex: 0x291c47))
                     .frame(height: 5)
                 Capsule()
                     .fill(LinearGradient(
@@ -434,7 +451,7 @@ struct OBSlider: View {
         GeometryReader { geo in
             let value = min(100, max(0, localPct ?? onboarding.slider(step: step, fallback: pct)))
             ZStack(alignment: .leading) {
-                Capsule().fill(Color(hex: 0xa78bfa, opacity: 0.15))
+                Capsule().fill(Color(hex: 0x2b1d49))
                     .frame(height: 8)
                 Capsule().fill(LinearGradient(
                     colors: trackColors,

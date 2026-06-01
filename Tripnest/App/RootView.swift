@@ -2,6 +2,8 @@ import SwiftUI
 
 struct RootView: View {
     @StateObject private var store = TripStore()
+    @StateObject private var localizer = Localizer.shared
+    @StateObject private var avatarStore = ProfileImageStore.shared
     @AppStorage("tripnest.didFinishOnboarding") private var didFinishOnboarding = false
 
     var body: some View {
@@ -17,6 +19,10 @@ struct RootView: View {
             }
         }
         .environmentObject(store)
+        .environmentObject(localizer)
+        .environmentObject(avatarStore)
+        .environment(\.locale, localizer.language.locale)
+        .id(localizer.language)
     }
 
     private func resetApp() {
@@ -123,7 +129,9 @@ struct OnboardingFlow: View {
 
     @ViewBuilder
     private func screen(for step: Int) -> some View {
-        switch step {
+        let position = min(max(step, 1), OB_TOTAL)
+        let screenID = onboardingFunnel[position - 1]
+        switch screenID {
         case 1: V2_01(); case 2: V2_02(); case 3: V2_03()
         case 4: V2_04(); case 5: V2_05(); case 6: V2_06()
         case 7: V2_07(); case 8: V2_08(); case 9: V2_09()

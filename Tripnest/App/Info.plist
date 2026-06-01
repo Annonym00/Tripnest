@@ -47,8 +47,6 @@
     <string>UIInterfaceOrientationLandscapeLeft</string>
     <string>UIInterfaceOrientationLandscapeRight</string>
   </array>
-  <key>UIUserInterfaceStyle</key>
-  <string>Dark</string>
   <key>NSPhotoLibraryUsageDescription</key>
   <string>Tripnest utilise ta galerie pour la couverture du voyage et pour scanner tes billets de transport.</string>
   <key>NSCameraUsageDescription</key>

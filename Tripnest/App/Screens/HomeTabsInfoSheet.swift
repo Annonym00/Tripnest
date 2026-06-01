@@ -20,7 +20,7 @@ struct HomeTabsInfoSheet: View {
                     infoCard(
                         title: "Voyages",
                         icon: .globe,
-                        description: "Tous tes voyages planifiés ou réalisés. C’est ici que tu peux en créer un nouveau, le modifier, l’archiver et accéder au budget, aux souvenirs ou aux spots."
+                        description: "Tous tes voyages planifiés ou réalisés. Crée, modifie, archive et invite des amis pour qu’ils puissent voir et gérer le voyage avec toi."
                     )
 
                     infoCard(
@@ -66,4 +66,3 @@ struct HomeTabsInfoSheet: View {
         }
     }
 }
-

@@ -242,7 +242,7 @@ struct TripRouteMapCard: View {
                 .frame(height: 40)
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(isSelected ? Color.tAccent : Color(hex: 0x8b5cf6, opacity: 0.06))
+                        .fill(isSelected ? Color.tAccent : Color(hex: 0x1c0f36))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -307,7 +307,7 @@ struct TripRouteMapCard: View {
     private func mapPlaceholder(message: String, showsSpinner: Bool) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(hex: 0x8b5cf6, opacity: 0.08))
+                .fill(Color(hex: 0x1e113a))
             VStack(spacing: 10) {
                 if showsSpinner {
                     ProgressView().tint(.tAccent2)

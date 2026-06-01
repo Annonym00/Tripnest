@@ -82,15 +82,9 @@ struct CompletedTripsScreen: View {
                 ForEach(completedTrips) { trip in
                     TripRow(
                         t: trip,
-                        isSelected: trip.id == selectedTripId,
-                        onTap: { toggleTripSelection(trip) },
-                        onClose: { selectedTripId = nil },
-                        onModify: { onEditTrip(trip.id) },
-                        onPlan: { openPlanning(for: trip) },
-                        onBudget: { openBudget(for: trip) },
-                        onSouvenirs: { openSouvenirs(for: trip) },
-                        onSpots: { openSpots(for: trip) },
-                        onDelete: { onDeleteTrip(trip.id) },
+                        isSelected: false,
+                        onTap: { openTripDetail(trip) },
+                        onRestore: { restoreTrip(trip) },
                         primaryTicket: store.primaryTicket(for: trip)
                     )
                 }
@@ -115,34 +109,17 @@ struct CompletedTripsScreen: View {
 
     // MARK: - Actions
 
-    private func toggleTripSelection(_ trip: Trip) {
-        if selectedTripId == trip.id {
-            selectedTripId = nil
-        } else {
-            selectedTripId = trip.id
-            store.selectTrip(id: trip.id)
-        }
+    private func openTripDetail(_ trip: Trip) {
+        store.selectTrip(id: trip.id)
+        selectedTripId = trip.id
         Haptics.selection()
+        onNav(.trip)
     }
 
-    private func openPlanning(for trip: Trip) {
-        store.selectTrip(id: trip.id)
-        onNav(.tripPlanning)
-    }
-
-    private func openBudget(for trip: Trip) {
-        store.selectTrip(id: trip.id)
-        onNav(.tripBudget)
-    }
-
-    private func openSouvenirs(for trip: Trip) {
-        store.selectTrip(id: trip.id)
-        onNav(.tripSouvenirs)
-    }
-
-    private func openSpots(for trip: Trip) {
-        store.selectTrip(id: trip.id)
-        onNav(.spots)
+    private func restoreTrip(_ trip: Trip) {
+        store.setTripCompleted(id: trip.id, completed: false)
+        if selectedTripId == trip.id { selectedTripId = nil }
+        Haptics.success()
     }
 
     private func syncSelectedTrip() {

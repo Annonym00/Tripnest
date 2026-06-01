@@ -3,28 +3,9 @@ import SwiftUI
 // MARK: - 01 · HOOK / WELCOME ────────────────────────────────────────────────
 
 struct V2_01: View {
-    private struct Plane { let x, y, s, rot, op: Double }
-    private let planes: [Plane] = [
-        .init(x: 15, y: 18, s: 28 * 4, rot: -20, op: 0.20),
-        .init(x: 78, y: 22, s: 20 * 4, rot:  30, op: 0.28),
-        .init(x: 22, y: 70, s: 16 * 4, rot:  10, op: 0.22),
-        .init(x: 84, y: 76, s: 24 * 4, rot: -40, op: 0.18),
-    ]
-
     var body: some View {
         ScreenShell(motif: false) {
-            GeometryReader { geo in
-                ZStack(alignment: .topLeading) {
-                    ForEach(Array(planes.enumerated()), id: \.offset) { _, p in
-                        PaperPlaneSilhouette(fill: Color.tAccent2.opacity(p.op))
-                            .frame(width: p.s, height: p.s)
-                            .rotationEffect(.degrees(p.rot))
-                            .position(x: geo.size.width * p.x / 100,
-                                      y: geo.size.height * p.y / 100)
-                    }
-                    contentColumn
-                }
-            }
+            contentColumn
         }
     }
 
@@ -36,11 +17,11 @@ struct V2_01: View {
                     Text("BIENVENUE")
                         .font(.tText(11, weight: .bold)).tracking(2.5)
                         .foregroundColor(.tAccent2)
-                    (Text("Voyage\nsans stress").font(.tDisplay(44)).tracking(-1.6)
-                     + Text(".").foregroundColor(.tAccent2).font(.tDisplay(44)).tracking(-1.6))
+                    (Text("Tes voyages\nau même endroit").font(.tDisplay(38)).tracking(-1.4)
+                     + Text(".").foregroundColor(.tAccent2).font(.tDisplay(38)).tracking(-1.4))
                         .multilineTextAlignment(.center)
                         .lineSpacing(0)
-                    Text("On va te poser quelques questions.\n2 minutes pour construire ton plan voyage.")
+                    Text("On va te poser quelques questions.\n2 minutes pour préparer ton espace voyage.")
                         .font(.tText(15))
                         .foregroundColor(.tTextMute)
                         .multilineTextAlignment(.center)
@@ -78,7 +59,7 @@ struct V2_01: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 8)
         .background(Capsule().fill(Color.tSurface))
-        .overlay(Capsule().stroke(Color.tBorder, lineWidth: 1))
+        .overlay(Capsule().stroke(Color.tAccent2.opacity(0.55), lineWidth: 1.2))
     }
 }
 
@@ -307,7 +288,8 @@ struct V2_07: View {
 
 struct V2_08: View {
     @EnvironmentObject private var onboarding: OnboardingState
-    private var pct: Double { onboarding.slider(step: 8, fallback: 23) }
+    @Environment(\.tripnestOnboardingStep) private var step
+    private var pct: Double { onboarding.slider(step: step, fallback: 23) }
     private var val: Int { Int(50 + pct / 100 * (1500 - 50)) }
 
     var body: some View {
@@ -425,8 +407,9 @@ struct V2_11: View {
 
 struct V2_12: View {
     @EnvironmentObject private var onboarding: OnboardingState
+    @Environment(\.tripnestOnboardingStep) private var step
     @State private var style = "Confort"
-    private var pct: Double { onboarding.slider(step: 12, fallback: 25) }
+    private var pct: Double { onboarding.slider(step: step, fallback: 25) }
     private var v: Int { Int(500 + pct / 100 * (6000 - 500)) }
 
     var body: some View {
@@ -558,53 +541,21 @@ struct V2_13: View {
 struct V2_14: View {
     @Environment(\.tripnestDefaultCTAAction) private var defaultAction
     @AppStorage("tripnest.onboarding.destination") private var destination = ""
-    @AppStorage("tripnest.onboarding.startDate") private var startDate = ""
-    @AppStorage("tripnest.onboarding.endDate") private var endDate = ""
-    @AppStorage("tripnest.onboarding.duration") private var duration = ""
     var body: some View {
         OBQuestion(
             step: 14, label: "Engagement",
             subtitle: "TON PROCHAIN VOYAGE",
-            title: AnyView(Text("As-tu un voyage\nprévu ou en tête ?")),
-            hint: "On l'utilise pour construire ton premier plan.",
+            title: AnyView(Text("Où as-tu envie\nd'aller ?")),
+            hint: "On l'utilise pour construire ton premier plan. Tu pourras ajouter les dates plus tard.",
             cta: "Construire mon plan"
         ) {
-            VStack(spacing: 14) {
+            VStack(spacing: 16) {
                 fieldBox("DESTINATION") {
-                    HStack {
-                        HStack(spacing: 10) {
-                            TIcon(glyph: .plane, size: 22, stroke: .tAccent2)
-                            TextField("Destination à définir", text: $destination)
-                                .font(.tText(16, weight: .semibold))
-                                .foregroundColor(.tText)
-                        }
-                        Spacer()
-                        TIcon(glyph: .search, size: 18, stroke: .tTextMute)
-                    }
-                }
-                HStack(spacing: 10) {
-                    fieldBox("DÉPART") {
-                        HStack(spacing: 8) {
-                            TIcon(glyph: .cal, size: 16, stroke: .tAccent2)
-                            TextField("Date à définir", text: $startDate)
-                                .font(.tText(14, weight: .semibold))
-                        }
-                    }
-                    fieldBox("RETOUR") {
-                        HStack(spacing: 8) {
-                            TIcon(glyph: .cal, size: 16, stroke: .tAccent2)
-                            TextField("Date à définir", text: $endDate)
-                                .font(.tText(14, weight: .semibold))
-                        }
-                    }
-                }
-                fieldBox("BUDGET ENVISAGÉ") {
-                    HStack {
-                        Text("À définir").font(.tText(16, weight: .bold))
-                        Spacer()
-                        TextField("Durée à définir", text: $duration)
-                            .multilineTextAlignment(.trailing)
-                            .font(.tText(14, weight: .semibold))
+                    HStack(spacing: 10) {
+                        TIcon(glyph: .plane, size: 22, stroke: .tAccent2)
+                        TextField("Destination à définir", text: $destination)
+                            .font(.tText(16, weight: .semibold))
+                            .foregroundColor(.tText)
                     }
                 }
                 Button(action: defaultAction) {
@@ -635,7 +586,8 @@ struct V2_14: View {
 
 struct V2_15: View {
     @EnvironmentObject private var onboarding: OnboardingState
-    private var pct: Double { onboarding.slider(step: 15, fallback: 27) }
+    @Environment(\.tripnestOnboardingStep) private var step
+    private var pct: Double { onboarding.slider(step: step, fallback: 27) }
     private var save: Int { Int(100 + pct / 100 * (2000 - 100)) }
 
     var body: some View {

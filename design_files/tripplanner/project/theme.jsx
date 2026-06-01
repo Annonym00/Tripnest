@@ -208,7 +208,7 @@ function TabBar({ active, onChange }) {
   return (
     <div style={{
       position: 'absolute', bottom: 0, left: 0, right: 0,
-      paddingBottom: 28, paddingTop: 10, paddingLeft: 12, paddingRight: 12,
+      paddingBottom: 4, paddingTop: 10, paddingLeft: 12, paddingRight: 12,
       background: 'linear-gradient(180deg, rgba(14,6,32,0) 0%, rgba(14,6,32,0.85) 40%, rgba(14,6,32,0.98) 100%)',
       display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around',
       zIndex: 30,

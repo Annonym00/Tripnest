@@ -5,7 +5,7 @@ struct TripnestApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .preferredColorScheme(.dark)
+                .tripnestPreferredColorScheme()
                 .background(Color.tBg0.ignoresSafeArea())
         }
     }

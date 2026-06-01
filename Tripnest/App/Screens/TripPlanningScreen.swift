@@ -7,6 +7,7 @@ struct TripPlanningScreen: View {
     var onBack: () -> Void = {}
 
     @State private var calendarDate = Date()
+    @State private var displayedMonth = Date()
     @State private var selectedDayKey: String = ""
     @State private var showPlanSheet = false
     @State private var sheetEditingItemId: String?
@@ -67,6 +68,7 @@ struct TripPlanningScreen: View {
         .swipeBack(enabled: true, onBack: onBack)
         .onAppear {
             if let tripId { store.selectTrip(id: tripId) }
+            displayedMonth = calendarDate
             if selectedDayKey.isEmpty, let trip {
                 selectCalendarDay(calendarDate, trip: trip)
             }
@@ -125,24 +127,28 @@ struct TripPlanningScreen: View {
     // MARK: - Calendrier de base
 
     private func baseCalendarCard(trip: Trip) -> some View {
-        TCard(padding: 12) {
-            VStack(alignment: .leading, spacing: 8) {
+        TCard(padding: 14) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text("Mon calendrier")
                     .font(.tText(15, weight: .bold))
 
-                DatePicker(
-                    "Date",
-                    selection: $calendarDate,
-                    displayedComponents: .date
+                PlanMonthCalendar(
+                    month: $displayedMonth,
+                    selection: calendarDate,
+                    programDayKeys: programDayKeys(for: trip),
+                    onSelect: { date in
+                        calendarDate = date
+                        selectCalendarDay(date, trip: trip)
+                    }
                 )
-                .datePickerStyle(.graphical)
-                .environment(\.locale, Self.frLocale)
-                .tint(.tAccent2)
-                .onChange(of: calendarDate) { _, newDate in
-                    selectCalendarDay(newDate, trip: trip)
-                }
             }
         }
+    }
+
+    private func programDayKeys(for trip: Trip) -> Set<String> {
+        Set(store.planItems
+            .filter { $0.tripId == trip.id }
+            .map { $0.dayKey })
     }
 
     private var planProgramButton: some View {
@@ -297,6 +303,143 @@ struct TripPlanningScreen: View {
     }
 }
 
+// MARK: - Calendrier mensuel personnalisé
+
+private struct PlanMonthCalendar: View {
+    @Binding var month: Date
+    let selection: Date
+    let programDayKeys: Set<String>
+    let onSelect: (Date) -> Void
+
+    private static let cal: Calendar = {
+        var c = Calendar(identifier: .gregorian)
+        c.locale = Locale(identifier: "fr_FR")
+        c.firstWeekday = 2
+        return c
+    }()
+
+    private let weekdaySymbols = ["LUN", "MAR", "MER", "JEU", "VEN", "SAM", "DIM"]
+
+    var body: some View {
+        VStack(spacing: 10) {
+            header
+            weekdayRow
+            grid
+        }
+    }
+
+    private var header: some View {
+        HStack {
+            Button { shiftMonth(-1) } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.tAccent2)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            Spacer()
+            Text(monthTitle)
+                .font(.tText(15, weight: .bold))
+            Spacer()
+            Button { shiftMonth(1) } label: {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.tAccent2)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var weekdayRow: some View {
+        HStack(spacing: 0) {
+            ForEach(weekdaySymbols, id: \.self) { symbol in
+                Text(symbol)
+                    .font(.tText(10, weight: .bold))
+                    .foregroundColor(.tTextMute)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    private var grid: some View {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 7)
+        return LazyVGrid(columns: columns, spacing: 4) {
+            ForEach(Array(monthDays.enumerated()), id: \.offset) { _, day in
+                if let day {
+                    dayCell(day)
+                } else {
+                    Color.clear.frame(height: 44)
+                }
+            }
+        }
+    }
+
+    private func dayCell(_ date: Date) -> some View {
+        let cal = Self.cal
+        let isSelected = cal.isDate(date, inSameDayAs: selection)
+        let isToday = cal.isDateInToday(date)
+        let hasProgram = programDayKeys.contains(TripPlanCalendar.dayKey(for: date))
+        return Button { onSelect(date) } label: {
+            VStack(spacing: 3) {
+                Text("\(cal.component(.day, from: date))")
+                    .font(.tText(14, weight: isSelected ? .bold : .regular))
+                    .foregroundColor(isSelected ? .white : .tText)
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(isSelected ? Color.tAccent2 : Color.clear))
+                    .overlay(
+                        Circle().stroke(
+                            isToday && !isSelected ? Color.tAccent2.opacity(0.5) : Color.clear,
+                            lineWidth: 1
+                        )
+                    )
+                Circle()
+                    .fill(hasProgram ? Color.tAccent2 : Color.clear)
+                    .frame(width: 5, height: 5)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private static let _monthTitleFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "fr_FR")
+        f.dateFormat = "LLLL yyyy"
+        return f
+    }()
+
+    private var monthTitle: String {
+        Self._monthTitleFmt.string(from: month).capitalized
+    }
+
+    private var monthDays: [Date?] {
+        let cal = Self.cal
+        guard let interval = cal.dateInterval(of: .month, for: month),
+              let firstWeekday = cal.dateComponents([.weekday], from: interval.start).weekday,
+              let daysInMonth = cal.range(of: .day, in: .month, for: month)?.count
+        else { return [] }
+
+        let leading = (firstWeekday - cal.firstWeekday + 7) % 7
+        var cells: [Date?] = Array(repeating: nil, count: leading)
+        for offset in 0..<daysInMonth {
+            cells.append(cal.date(byAdding: .day, value: offset, to: interval.start))
+        }
+        while cells.count % 7 != 0 { cells.append(nil) }
+        return cells
+    }
+
+    private func shiftMonth(_ delta: Int) {
+        if let next = Self.cal.date(byAdding: .month, value: delta, to: month) {
+            month = next
+        }
+    }
+}
+
 // MARK: - Ajouter / modifier une activité
 
 private struct PlanActivitySheet: View {
@@ -368,14 +511,17 @@ private struct PlanActivitySheet: View {
             Text("Heure")
                 .font(.tText(11, weight: .semibold))
                 .foregroundColor(.tTextMute)
-            DatePicker("", selection: $draftTimeDate, displayedComponents: .hourAndMinute)
-                .datePickerStyle(.wheel)
-                .labelsHidden()
-                .environment(\.locale, Self.frLocale)
-                .frame(maxWidth: .infinity)
-                .frame(height: 120)
-                .clipped()
-                .background(fieldBackground)
+            HStack {
+                DatePicker("", selection: $draftTimeDate, displayedComponents: .hourAndMinute)
+                    .datePickerStyle(.compact)
+                    .labelsHidden()
+                    .environment(\.locale, Self.frLocale)
+                Spacer()
+            }
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .background(fieldBackground)
         }
     }
 
@@ -419,6 +565,7 @@ private struct PlanActivitySheet: View {
                 .lineLimit(6...TripPhotoMemory.maxCaptionLines)
                 .padding(12)
                 .background(fieldBackground)
+                .keyboardDoneBar()
                 .onChange(of: draftNotes) { _, newValue in
                     if TripPhotoMemory.lineCount(for: newValue) > TripPhotoMemory.maxCaptionLines {
                         draftNotes = TripPhotoMemory.clampedCaption(newValue)

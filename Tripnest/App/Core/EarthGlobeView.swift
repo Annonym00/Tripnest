@@ -55,6 +55,7 @@ struct EarthGlobeView: UIViewRepresentable {
     var markersRevision: Int = 0
     var onMarkerTap: ((String) -> Void)?
     var onDismissFocus: (() -> Void)?
+    var onUserInteraction: (() -> Void)?
     /// `present` = milieu du vol (fiche), `complete` = vol terminé.
     var onFocusFlyPhase: ((String) -> Void)?
 
@@ -62,6 +63,7 @@ struct EarthGlobeView: UIViewRepresentable {
         Coordinator(
             onMarkerTap: onMarkerTap,
             onDismissFocus: onDismissFocus,
+            onUserInteraction: onUserInteraction,
             onFocusFlyPhase: onFocusFlyPhase
         )
     }
@@ -85,15 +87,18 @@ struct EarthGlobeView: UIViewRepresentable {
         var pendingRouteDestLabel = ""
         var onMarkerTap: ((String) -> Void)?
         var onDismissFocus: (() -> Void)?
+        var onUserInteraction: (() -> Void)?
         var onFocusFlyPhase: ((String) -> Void)?
 
         init(
             onMarkerTap: ((String) -> Void)?,
             onDismissFocus: (() -> Void)?,
+            onUserInteraction: (() -> Void)?,
             onFocusFlyPhase: ((String) -> Void)?
         ) {
             self.onMarkerTap = onMarkerTap
             self.onDismissFocus = onDismissFocus
+            self.onUserInteraction = onUserInteraction
             self.onFocusFlyPhase = onFocusFlyPhase
         }
 
@@ -162,6 +167,10 @@ struct EarthGlobeView: UIViewRepresentable {
             case "globeDismiss":
                 DispatchQueue.main.async { [weak self] in
                     self?.onDismissFocus?()
+                }
+            case "globeUserInteraction":
+                DispatchQueue.main.async { [weak self] in
+                    self?.onUserInteraction?()
                 }
             case "globeFocusPhase":
                 guard let phase = message.body as? String else { return }
@@ -297,11 +306,13 @@ struct EarthGlobeView: UIViewRepresentable {
         config.defaultWebpagePreferences = prefs
         config.userContentController.add(context.coordinator, name: "markerTap")
         config.userContentController.add(context.coordinator, name: "globeDismiss")
+        config.userContentController.add(context.coordinator, name: "globeUserInteraction")
         config.userContentController.add(context.coordinator, name: "globeFocusPhase")
 
         let webView = WKWebView(frame: .zero, configuration: config)
-        webView.backgroundColor = UIColor(red: 0.01, green: 0, blue: 0.04, alpha: 1)
+        webView.backgroundColor = .clear
         webView.isOpaque = false
+        webView.scrollView.backgroundColor = .clear
         webView.scrollView.isScrollEnabled = false
         webView.scrollView.bounces = false
 
@@ -313,6 +324,7 @@ struct EarthGlobeView: UIViewRepresentable {
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.onMarkerTap = onMarkerTap
         context.coordinator.onDismissFocus = onDismissFocus
+        context.coordinator.onUserInteraction = onUserInteraction
         context.coordinator.onFocusFlyPhase = onFocusFlyPhase
         let coordinator = context.coordinator
         coordinator.applyFlyToIfNeeded(
@@ -352,9 +364,9 @@ struct EarthGlobeView: UIViewRepresentable {
             .replacingOccurrences(of: "__CAMERA_Z__", with: String(cameraDistance))
             .replacingOccurrences(of: "__CAMERA_Y__", with: String(cameraYOffset))
             .replacingOccurrences(of: "__FOCUS_CAMERA_Y__", with: String(cameraYOffset + 0.14))
-            .replacingOccurrences(of: "__MIN_CAM_Z__", with: String(max(1.62, cameraDistance - 1.48)))
+            .replacingOccurrences(of: "__MIN_CAM_Z__", with: String(max(1.18, cameraDistance - 2.22)))
             .replacingOccurrences(of: "__MAX_CAM_Z__", with: String(cameraDistance + 2.85))
-            .replacingOccurrences(of: "__DESTINATION_ZOOM_Z__", with: String(max(1.62, cameraDistance - 1.48)))
+            .replacingOccurrences(of: "__DESTINATION_ZOOM_Z__", with: String(max(1.18, cameraDistance - 2.22)))
             .replacingOccurrences(of: "__COUNTRY_FR_JSON__", with: EarthGlobeCountryNames.frJSON)
             .replacingOccurrences(of: "__COUNTRY_FLAGS_JSON__", with: EarthGlobeCountryNames.flagsJSON)
     }
@@ -368,7 +380,7 @@ struct EarthGlobeView: UIViewRepresentable {
       <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
       <style>
         * { margin:0; padding:0; box-sizing:border-box; }
-        html, body { width:100%; height:100%; background:#03010a; overflow:hidden; }
+        html, body { width:100%; height:100%; background:transparent; overflow:hidden; }
         canvas { width:100%!important; height:100%!important; display:block; touch-action:none; cursor:grab; }
       </style>
     </head>
@@ -384,6 +396,7 @@ struct EarthGlobeView: UIViewRepresentable {
         const canvas = document.getElementById('c');
         const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true, powerPreference:'high-performance'});
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+        renderer.setClearColor(0x000000, 0);
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.05;
 
@@ -546,7 +559,9 @@ struct EarthGlobeView: UIViewRepresentable {
         const markersGroup=new THREE.Group();
         const routesGroup=new THREE.Group();
         const countryLabelsGroup=new THREE.Group();
+        const cityLabelsGroup=new THREE.Group();
         pivot.add(countryLabelsGroup);
+        pivot.add(cityLabelsGroup);
         pivot.add(markersGroup);
         pivot.add(routesGroup);
         const routeRadius=1.036;
@@ -561,6 +576,7 @@ struct EarthGlobeView: UIViewRepresentable {
         const raycaster=new THREE.Raycaster();
         const pointer=new THREE.Vector2();
         const countryProj=new THREE.Vector3();
+        const cityProj=new THREE.Vector3();
 
         function ringArea(ring){
           let a=0;
@@ -661,6 +677,40 @@ struct EarthGlobeView: UIViewRepresentable {
           sprite.userData.isCountry=true;
           sprite.userData.baseScale=sh;
           sprite.renderOrder=12;
+          return sprite;
+        }
+
+        function makeCityLabel(name){
+          const raw=(name||'').trim();
+          const text=raw.length>18?raw.slice(0,18)+'…':raw;
+          const font='600 11px -apple-system, BlinkMacSystemFont, sans-serif';
+          const probe=document.createElement('canvas').getContext('2d');
+          probe.font=font;
+          const tw=Math.ceil(probe.measureText(text||' ').width);
+          const W=tw+10;
+          const H=18;
+          const c=document.createElement('canvas');
+          c.width=W;c.height=H;
+          const ctx=c.getContext('2d');
+          ctx.font=font;
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.lineWidth=2;
+          ctx.strokeStyle='rgba(0,0,0,0.86)';
+          ctx.strokeText(text||' ',W*0.5,H*0.5);
+          ctx.fillStyle='rgba(245,240,255,0.9)';
+          ctx.fillText(text||' ',W*0.5,H*0.5);
+          const tex=new THREE.CanvasTexture(c);
+          tex.needsUpdate=true;
+          const mat=new THREE.SpriteMaterial({
+            map:tex,transparent:true,depthTest:false,depthWrite:false
+          });
+          const sprite=new THREE.Sprite(mat);
+          const sh=0.046;
+          sprite.scale.set(sh*(W/H),sh,1);
+          sprite.userData.labelAspect=W/H;
+          sprite.userData.baseScale=sh;
+          sprite.renderOrder=13;
           return sprite;
         }
 
@@ -895,6 +945,56 @@ struct EarthGlobeView: UIViewRepresentable {
           }
         }
 
+        function updateCityLabels(camDir){
+          const camZ=camera.position.z;
+          const zoomT=Math.max(0,Math.min(1,(defaultCamZ-camZ)/(defaultCamZ-minCamZ+0.001)));
+          const cityT=smooth01(0.45,0.78,zoomT);
+          const maxCities=Math.floor(10+cityT*70);
+          const screenBoxes=[];
+          for(let i=0;i<cityLabelsSorted.length;i++){
+            const sprite=cityLabelsSorted[i];
+            const lat=sprite.userData.lat;
+            const lon=sprite.userData.lon;
+            const face=markerFacingFactor(lat,lon,camDir);
+            let want=0;
+            if(cityT>0.02&&face>0.2&&i<maxCities){
+              cityProj.copy(latLonToVec(lat,lon,1.041)).applyMatrix4(pivot.matrixWorld);
+              cityProj.project(camera);
+              if(cityProj.z<=1&&cityProj.z>=-1&&Math.abs(cityProj.x)<=0.96&&Math.abs(cityProj.y)<=0.96){
+                const base=sprite.userData.baseScale||0.046;
+                const ar=sprite.userData.labelAspect||1;
+                const sh=base*(0.74+0.26*cityT);
+                const box={
+                  l:cityProj.x-sh*ar*0.46,
+                  r:cityProj.x+sh*ar*0.46,
+                  b:cityProj.y-sh*0.45,
+                  t:cityProj.y+sh*0.45
+                };
+                let overlap=false;
+                for(let j=0;j<screenBoxes.length;j++){
+                  if(boxesOverlap(box,screenBoxes[j],0.024)){overlap=true;break;}
+                }
+                if(!overlap){
+                  screenBoxes.push(box);
+                  want=cityT*smooth01(0.16,0.38,face)*0.86;
+                }
+              }
+            }
+            const cur=sprite.userData.fade!=null?sprite.userData.fade:0;
+            const next=cur+(want-cur)*0.18;
+            sprite.userData.fade=next;
+            sprite.material.opacity=next;
+            sprite.visible=next>0.03;
+            if(sprite.visible){
+              const base=sprite.userData.baseScale||0.046;
+              const ar=sprite.userData.labelAspect||1;
+              const sh=base*(0.74+0.26*cityT);
+              sprite.scale.set(sh*ar,sh,1);
+              sprite.center.set(0.5,0.5);
+            }
+          }
+        }
+
         function updateMarkerVisibility(){
           visSerial++;
           pivot.updateMatrixWorld(true);
@@ -928,6 +1028,16 @@ struct EarthGlobeView: UIViewRepresentable {
             }
           }
 
+          if(cameraLocked||flyAnimating||resetAnim){
+            cityLabelsSorted.forEach(function(s){
+              s.visible=false;
+              s.material.opacity=0;
+              s.userData.fade=0;
+            });
+          }else{
+            updateCityLabels(camDirVec);
+          }
+
           updateTripMarkers(camDirVec);
         }
 
@@ -936,7 +1046,7 @@ struct EarthGlobeView: UIViewRepresentable {
           const pt=geomLabelPoint(f.geometry);
           if(!pt)return;
           const area=geomArea(f.geometry);
-          if(area<0.15)return;
+          if(area<0.01)return;
           countryEntries.push({
             f:f,lon:pt[0],lat:pt[1],area:area,
             label:countryNameFr(f.properties),
@@ -954,6 +1064,45 @@ struct EarthGlobeView: UIViewRepresentable {
           sprite.userData.area=entry.area;
           countryLabelsGroup.add(sprite);
           countryLabelsSorted.push(sprite);
+        });
+
+        const cityLabelEntries=[
+          {name:'Paris',lat:48.8566,lon:2.3522,rank:1},{name:'Londres',lat:51.5072,lon:-0.1276,rank:2},
+          {name:'New York',lat:40.7128,lon:-74.0060,rank:3},{name:'Tokyo',lat:35.6762,lon:139.6503,rank:4},
+          {name:'Dubai',lat:25.2048,lon:55.2708,rank:5},{name:'Singapour',lat:1.3521,lon:103.8198,rank:6},
+          {name:'Rome',lat:41.9028,lon:12.4964,rank:7},{name:'Barcelone',lat:41.3874,lon:2.1686,rank:8},
+          {name:'Madrid',lat:40.4168,lon:-3.7038,rank:9},{name:'Amsterdam',lat:52.3676,lon:4.9041,rank:10},
+          {name:'Berlin',lat:52.5200,lon:13.4050,rank:11},{name:'Istanbul',lat:41.0082,lon:28.9784,rank:12},
+          {name:'Marrakech',lat:31.6295,lon:-7.9811,rank:13},{name:'Le Caire',lat:30.0444,lon:31.2357,rank:14},
+          {name:'Lisbonne',lat:38.7223,lon:-9.1393,rank:15},{name:'Athènes',lat:37.9838,lon:23.7275,rank:16},
+          {name:'Los Angeles',lat:34.0522,lon:-118.2437,rank:17},{name:'San Francisco',lat:37.7749,lon:-122.4194,rank:18},
+          {name:'Mexico',lat:19.4326,lon:-99.1332,rank:19},{name:'Rio de Janeiro',lat:-22.9068,lon:-43.1729,rank:20},
+          {name:'São Paulo',lat:-23.5558,lon:-46.6396,rank:21},{name:'Buenos Aires',lat:-34.6037,lon:-58.3816,rank:22},
+          {name:'Lima',lat:-12.0464,lon:-77.0428,rank:23},{name:'Bogotá',lat:4.7110,lon:-74.0721,rank:24},
+          {name:'Montréal',lat:45.5019,lon:-73.5674,rank:25},{name:'Toronto',lat:43.6532,lon:-79.3832,rank:26},
+          {name:'Vancouver',lat:49.2827,lon:-123.1207,rank:27},{name:'Sydney',lat:-33.8688,lon:151.2093,rank:28},
+          {name:'Melbourne',lat:-37.8136,lon:144.9631,rank:29},{name:'Bangkok',lat:13.7563,lon:100.5018,rank:30},
+          {name:'Hong Kong',lat:22.3193,lon:114.1694,rank:31},{name:'Séoul',lat:37.5665,lon:126.9780,rank:32},
+          {name:'Shanghai',lat:31.2304,lon:121.4737,rank:33},{name:'Pékin',lat:39.9042,lon:116.4074,rank:34},
+          {name:'Mumbai',lat:19.0760,lon:72.8777,rank:35},{name:'Delhi',lat:28.6139,lon:77.2090,rank:36},
+          {name:'Hanoï',lat:21.0278,lon:105.8342,rank:37},{name:'Bali',lat:-8.3405,lon:115.0920,rank:38},
+          {name:'Jakarta',lat:-6.2088,lon:106.8456,rank:39},{name:'Le Cap',lat:-33.9249,lon:18.4241,rank:40},
+          {name:'Nairobi',lat:-1.2921,lon:36.8219,rank:41},{name:'Casablanca',lat:33.5731,lon:-7.5898,rank:42},
+          {name:'Stockholm',lat:59.3293,lon:18.0686,rank:43},{name:'Copenhague',lat:55.6761,lon:12.5683,rank:44},
+          {name:'Oslo',lat:59.9139,lon:10.7522,rank:45},{name:'Reykjavik',lat:64.1466,lon:-21.9426,rank:46}
+        ];
+        const cityLabelsSorted=[];
+        cityLabelEntries.sort(function(a,b){return a.rank-b.rank;});
+        cityLabelEntries.forEach(function(entry){
+          const sprite=makeCityLabel(entry.name);
+          sprite.position.copy(latLonToVec(entry.lat,entry.lon,1.041));
+          sprite.userData.lat=entry.lat;
+          sprite.userData.lon=entry.lon;
+          sprite.userData.rank=entry.rank;
+          sprite.visible=false;
+          sprite.material.opacity=0;
+          cityLabelsGroup.add(sprite);
+          cityLabelsSorted.push(sprite);
         });
 
         function transportEmoji(mode){
@@ -1330,6 +1479,11 @@ struct EarthGlobeView: UIViewRepresentable {
           return Math.hypot(dx,dy);
         }
         function clampCamZ(z){return Math.max(minCamZ,Math.min(maxCamZ,z));}
+        function notifyUserInteraction(){
+          if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.globeUserInteraction){
+            window.webkit.messageHandlers.globeUserInteraction.postMessage('');
+          }
+        }
 
         let drag=false,pinch=false,tapMoved=false,lockedTapMoved=false,px=0,py=0,vx=0,vy=0,pinchStartDist=0,pinchStartZ=camera.position.z;
 
@@ -1385,12 +1539,10 @@ struct EarthGlobeView: UIViewRepresentable {
 
         canvas.addEventListener('touchstart',e=>{
           if(cameraLocked){
+            cameraLocked=false;
             lockedTapMoved=false;
-            if(e.touches.length===1){
-              px=e.touches[0].clientX;py=e.touches[0].clientY;
-            }
-            return;
           }
+          notifyUserInteraction();
           lockedTapMoved=false;
           tapMoved=false;
           if(e.touches.length===2){
@@ -1417,7 +1569,7 @@ struct EarthGlobeView: UIViewRepresentable {
           if(e.touches.length===2&&pinch){
             const d=touchDist(e.touches);
             if(pinchStartDist>0){
-              const scale=d/pinchStartDist;
+              const scale=Math.pow(d/pinchStartDist,1.18);
               camera.position.z=clampCamZ(pinchStartZ/scale);
             }
             e.preventDefault();
@@ -1447,20 +1599,22 @@ struct EarthGlobeView: UIViewRepresentable {
 
         canvas.addEventListener('wheel',e=>{
           if(cameraLocked)return;
+          notifyUserInteraction();
           e.preventDefault();
-          camera.position.z=clampCamZ(camera.position.z+e.deltaY*0.0045);
+          camera.position.z=clampCamZ(camera.position.z+e.deltaY*0.006);
         },{passive:false});
 
         let gestureStartZ=camera.position.z;
         canvas.addEventListener('gesturestart',e=>{
           if(cameraLocked)return;
+          notifyUserInteraction();
           e.preventDefault();
           gestureStartZ=camera.position.z;
         },{passive:false});
         canvas.addEventListener('gesturechange',e=>{
           if(cameraLocked)return;
           e.preventDefault();
-          camera.position.z=clampCamZ(gestureStartZ/e.scale);
+          camera.position.z=clampCamZ(gestureStartZ/Math.pow(e.scale,1.18));
         },{passive:false});
         canvas.addEventListener('gestureend',e=>{e.preventDefault();},{passive:false});
 

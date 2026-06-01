@@ -19,7 +19,7 @@ struct V2_16: View {
                     VStack(spacing: 10) {
                         infoCard(.filter, title: "Ton objectif",
                                  content: "Construire ", highlight: "ton budget", trailing: " de voyage",
-                                 highlightColor: .tMint, color: .tMint, bg: Color(hex: 0x8b5cf6, opacity: 0.18))
+                                 highlightColor: .tMint, color: .tMint, bg: Color(hex: 0x2a194f))
                         infoCard(.user, title: "Ton profil",
                                  content: "Profil voyageur à affiner",
                                  color: .tBlue, bg: Color.tBlue.opacity(0.18))
@@ -121,7 +121,10 @@ struct V2_17: View {
                     Text(t.title).font(.tText(14, weight: .bold))
                     Text(t.detail).font(.tText(13)).foregroundColor(.tTextMute).padding(.top, 4)
                 }
+                Spacer(minLength: 0)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(minHeight: 64, alignment: .top)
         }
     }
 }
@@ -129,75 +132,110 @@ struct V2_17: View {
 // MARK: - 18 · COMMUNAUTÉ ───────────────────────────────────────────────────
 
 struct V2_18: View {
+    private let setupItems: [String] = [
+        "Profil voyageur calibré",
+        "Budget initialisé",
+        "Style de voyage défini",
+        "Espace local sécurisé",
+    ]
+
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
-                OBHeader(step: 18, label: "La communauté")
-                VStack(spacing: 18) {
+                OBHeader(step: 18, label: "Ton espace")
+                VStack(spacing: 22) {
                     VStack(spacing: 8) {
-                        Text("UNE VRAIE COMMUNAUTÉ")
-                            .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
-                        Text("Ton espace voyage\nest presque prêt.")
+                        Text("TON ESPACE EST PRÊT")
+                            .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tMint)
+                        Text("Tout est calibré\npour toi.")
                             .font(.tDisplay(30)).tracking(-0.9)
                             .multilineTextAlignment(.center)
                     }
+                    .padding(.top, 4)
 
-                    Spacer()
+                    successBadge
 
-                    ZStack {
-                        RadialGradient(colors: [Color.tAccent.opacity(0.30), .clear],
-                                       center: .center, startRadius: 0, endRadius: 200)
-                        VStack(spacing: 4) {
-                            GradientNumber(text: "0", size: 80, colors: [.white, .tAccent2])
-                            Text("voyage importé pour l'instant")
-                                .font(.tText(13)).foregroundColor(.tTextMute)
-                        }
-                    }
-                    .padding(.vertical, 24)
-
-                    TCard(padding: 4) {
-                        VStack(spacing: 0) {
-                            row(glyph: .globe, label: "voyages créés",            value: "0", last: false)
-                            row(glyph: .spot,  label: "spots sauvegardés",        value: "0", last: false)
-                            row(glyph: .plane, label: "vols suivis",              value: "0", last: false)
-                            row(glyph: .heart, label: "exemples visibles",        value: "0", last: true)
+                    TCard(padding: 18) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            ForEach(setupItems, id: \.self) { item in
+                                HStack(spacing: 12) {
+                                    ZStack {
+                                        Circle().fill(Color.tMint.opacity(0.18))
+                                            .overlay(Circle().stroke(Color.tMint.opacity(0.3), lineWidth: 1))
+                                        TIcon(glyph: .check, size: 12, stroke: .tMint, strokeWidth: 3)
+                                    }
+                                    .frame(width: 22, height: 22)
+                                    Text(item).font(.tText(14, weight: .semibold))
+                                    Spacer()
+                                }
+                            }
                         }
                     }
 
                     HStack(spacing: 10) {
-                        Circle().fill(Color.tMint).frame(width: 8, height: 8).shadow(color: .tMint, radius: 4)
-                        (Text("Tes données").font(.tText(12, weight: .bold))
-                         + Text(" seront créées par toi, dans l'app.").font(.tText(12)))
+                        ZStack {
+                            Circle().fill(Color.tMint.opacity(0.18))
+                            TIcon(glyph: .check, size: 10, stroke: .tMint, strokeWidth: 3)
+                        }
+                        .frame(width: 20, height: 20)
+                        (Text("100 % local").font(.tText(12, weight: .bold)).foregroundColor(.tMint)
+                         + Text(" — tes données restent sur ton appareil.").font(.tText(12)).foregroundColor(.tTextMute))
+                        Spacer()
                     }
                     .padding(.horizontal, 14).padding(.vertical, 10)
                     .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color.tRose.opacity(0.06)))
+                        .fill(Color.tMint.opacity(0.06)))
                     .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(Color.tRose.opacity(0.18), lineWidth: 1))
+                        .stroke(Color.tMint.opacity(0.20), lineWidth: 1))
 
-                    CTA(label: "Je rejoins l'aventure →")
+                    CTA(label: "Préparer mon espace →")
                 }
-                .padding(.horizontal, 26).padding(.top, 24).padding(.bottom, 30)
+                .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 30)
             }
         }
     }
 
-    private func row(glyph: TIcon.Glyph, label: String, value: String, last: Bool) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 14) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .fill(Color(hex: 0x8b5cf6, opacity: 0.15))
-                    TIcon(glyph: glyph, size: 16, stroke: .tAccent2)
-                }
-                .frame(width: 36, height: 36)
-                Text(label).font(.tText(14, weight: .semibold))
-                Spacer()
-                Text(value).font(.tText(17, weight: .black)).tracking(-0.4).foregroundColor(.tAccent2)
+    private var successBadge: some View {
+        ZStack {
+            // Halo lumineux vert diffus
+            Circle()
+                .fill(RadialGradient(colors: [Color.tMint.opacity(0.16), .clear],
+                                     center: .center, startRadius: 30, endRadius: 120))
+                .frame(width: 240, height: 240)
+                .blur(radius: 18)
+
+            // Anneau extérieur fin et lumineux
+            Circle()
+                .stroke(Color.tMint.opacity(0.25), lineWidth: 1)
+                .frame(width: 150, height: 150)
+
+            // Disque principal — dégradé vertical pour le volume
+            ZStack {
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [Color(hex: 0x6ee7b7), Color(hex: 0x34d399), Color(hex: 0x10b981)],
+                        startPoint: .top, endPoint: .bottom))
+
+                // Reflet glossy en haut
+                Circle()
+                    .fill(RadialGradient(colors: [Color.white.opacity(0.45), .clear],
+                                         center: .init(x: 0.5, y: 0.22),
+                                         startRadius: 0, endRadius: 62))
+
+                // Liseré clair sur le bord
+                Circle().stroke(
+                    LinearGradient(colors: [Color.white.opacity(0.55), Color.white.opacity(0.05)],
+                                   startPoint: .top, endPoint: .bottom),
+                    lineWidth: 1.5)
+
+                TIcon(glyph: .check, size: 54, stroke: .white, strokeWidth: 4.5)
+                    .shadow(color: Color(hex: 0x065f46, opacity: 0.45), radius: 3, y: 2)
             }
-            .padding(.horizontal, 14).padding(.vertical, 12)
-            if !last { Rectangle().fill(Color.tBorder).frame(height: 1) }
+            .frame(width: 124, height: 124)
+            .shadow(color: Color.tMint.opacity(0.28), radius: 18, y: 6)
+            .shadow(color: Color(hex: 0x10b981, opacity: 0.16), radius: 36, y: 0)
         }
+        .frame(width: 240, height: 240)
     }
 }
 
@@ -242,7 +280,7 @@ struct V2_19: View {
         HStack(spacing: 14) {
             ZStack {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(s.done ? Color.tMint : s.busy ? Color(hex: 0x8b5cf6, opacity: 0.18) : Color.tSurface)
+                    .fill(s.done ? Color.tMint : s.busy ? Color(hex: 0x2a194f) : Color.tSurface)
                     .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .stroke(s.done ? Color.tMint : s.busy ? Color.tAccent2 : Color.tBorder, lineWidth: 1))
                 if s.done {
@@ -273,7 +311,6 @@ struct V2_20: View {
     @Environment(\.tripnestDefaultCTAAction) private var advance
     @State private var progress: Double = 12
     @State private var thirdLineDone = false
-    @State private var planeSpin = false
     @State private var loadingTask: Task<Void, Never>?
 
     var body: some View {
@@ -285,9 +322,6 @@ struct V2_20: View {
 
                 VStack(spacing: 22) {
                     ZStack {
-                        RadialGradient(colors: [Color.tAccent.opacity(0.30), .clear],
-                                       center: .center, startRadius: 0, endRadius: 130)
-                            .frame(width: 200, height: 200)
                         ProgressRing(value: progress, max: 100, size: 200, stroke: 6, color: .tAccent2) {
                             VStack(spacing: 0) {
                                 Text("ANALYSE").font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tTextMute)
@@ -295,15 +329,8 @@ struct V2_20: View {
                                     .contentTransition(.numericText())
                             }
                         }
-                        ForEach([0.0, 90.0, 180.0, 270.0], id: \.self) { deg in
-                            PaperPlaneSilhouette()
-                                .frame(width: 12, height: 12)
-                                .offset(y: -100)
-                                .rotationEffect(.degrees(deg + (planeSpin ? 360 : 0)))
-                        }
                     }
                     .frame(width: 200, height: 200)
-                    .animation(.linear(duration: 3).repeatForever(autoreverses: false), value: planeSpin)
 
                     VStack(spacing: 6) {
                         Text("Analyse de ton profil…").font(.tDisplay(24)).tracking(-0.7)
@@ -339,8 +366,6 @@ struct V2_20: View {
         loadingTask?.cancel()
         progress = 12
         thirdLineDone = false
-        planeSpin = false
-        planeSpin = true
 
         loadingTask = OBLoadingRunner.start(duration: 2.9, onProgress: { pct in
             progress = pct
@@ -351,7 +376,7 @@ struct V2_20: View {
     private func stepLine(_ label: String, done: Bool) -> some View {
         HStack(spacing: 10) {
             ZStack {
-                Circle().fill(done ? Color.tMint : Color(hex: 0xa78bfa, opacity: 0.15))
+                Circle().fill(done ? Color.tMint : Color(hex: 0x2b1d49))
                 if done {
                     TIcon(glyph: .check, size: 10, stroke: .tBg0, strokeWidth: 3)
                 } else {
@@ -443,16 +468,18 @@ struct V2_21: View {
     private var barsChart: some View {
         ZStack {
             RadialGradient(colors: [Color.tGold.opacity(0.18), .clear],
-                           center: .center, startRadius: 0, endRadius: 110)
-            HStack(alignment: .bottom, spacing: 12) {
+                           center: .center, startRadius: 0, endRadius: 92)
+            HStack(alignment: .bottom, spacing: 10) {
                 ForEach(Array(bars.enumerated()), id: \.offset) { _, b in
-                    VStack(spacing: 0) {
+                    VStack(spacing: 5) {
                         if b.isYou {
                             Text("TOI")
-                                .font(.tText(10, weight: .black)).foregroundColor(.tBg0)
-                                .padding(.horizontal, 8).padding(.vertical, 3)
+                                .font(.tText(9, weight: .black)).tracking(0.5)
+                                .foregroundColor(.tBg0)
+                                .fixedSize()
+                                .padding(.horizontal, 7).padding(.vertical, 2.5)
                                 .background(Capsule().fill(Color.tGold))
-                                .offset(y: 6)
+                                .shadow(color: Color.tGold.opacity(0.5), radius: 5, y: 1)
                                 .opacity(barReveal > 0.85 ? 1 : 0)
                         }
                         RoundedRectangle(cornerRadius: 4, style: .continuous)
@@ -460,16 +487,16 @@ struct V2_21: View {
                                   ? AnyShapeStyle(LinearGradient(colors: [.tGold, .tAccent2],
                                                                  startPoint: .top, endPoint: .bottom))
                                   : AnyShapeStyle(Color(hex: 0xa78bfa, opacity: 0.25)))
-                            .frame(width: 24, height: max(8, b.value * 1.5 * barReveal))
+                            .frame(width: 22, height: max(8, b.value * 1.5 * barReveal))
                             .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous)
                                 .stroke(b.isYou ? Color.tGold : Color.tBorder, lineWidth: 1))
                             .shadow(color: b.isYou ? Color.tGold.opacity(0.4) : .clear, radius: 8)
                     }
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 12)
         }
-        .frame(width: 220, height: 200)
+        .frame(width: 244, height: 200)
     }
 }
 
@@ -542,7 +569,7 @@ struct V2_22: View {
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color(hex: 0xa78bfa, opacity: 0.15)).frame(height: 4)
+                    Capsule().fill(Color(hex: 0x2b1d49)).frame(height: 4)
                     Capsule().fill(LinearGradient(colors: [.tAccent2, .tAccent],
                                                   startPoint: .leading, endPoint: .trailing))
                         .frame(width: geo.size.width * CGFloat(v) / 100, height: 4)
@@ -838,14 +865,14 @@ struct V2_25: View {
 
     private func toggle(on: Bool) -> some View {
         ZStack(alignment: on ? .trailing : .leading) {
-            Capsule().fill(on ? Color.tAccent : Color(hex: 0xa78bfa, opacity: 0.15))
+            Capsule().fill(on ? Color.tAccent : Color(hex: 0x2b1d49))
             Circle().fill(Color.white)
                 .frame(width: 20, height: 20)
                 .padding(2)
                 .shadow(color: .black.opacity(0.2), radius: 1, y: 1)
         }
         .frame(width: 42, height: 26)
-        .overlay(Capsule().stroke(on ? Color.tAccent : Color.tBorder, lineWidth: 1))
+        .overlay(Capsule().stroke(on ? Color.tAccent : Color.tAccent2.opacity(0.55), lineWidth: 1.2))
     }
 }
 
@@ -870,9 +897,11 @@ struct V2_26: View {
                             Text("Aucun compte requis pour commencer. Les données créées dans l'app restent locales pour l'instant.")
                                 .font(.tText(13))
                                 .foregroundColor(.tTextMute)
+                            Spacer(minLength: 0)
                         }
+                        .frame(maxWidth: .infinity, minHeight: 56, alignment: .center)
                     }
-                    .padding(.top, 18)
+                    .padding(.top, 12)
 
                     Spacer(minLength: 0)
                     CTA(label: "Continuer").padding(.top, 12)
@@ -889,8 +918,8 @@ struct V2_26: View {
     }
 
     private var summaryCard: some View {
-        TCard(padding: 14,
-              bg: AnyShapeStyle(Color(hex: 0x8b5cf6, opacity: 0.08)),
+        TCard(padding: 16,
+              bg: AnyShapeStyle(Color(hex: 0x1e113a)),
               border: Color(hex: 0x8b5cf6, opacity: 0.22)) {
             HStack {
                 HStack(spacing: 10) {
@@ -912,6 +941,7 @@ struct V2_26: View {
                     .padding(.horizontal, 8).padding(.vertical, 4)
                     .background(RoundedRectangle(cornerRadius: 7).fill(Color.tMint.opacity(0.12)))
             }
+            .frame(maxWidth: .infinity, minHeight: 56, alignment: .center)
         }
     }
 }
@@ -1087,8 +1117,8 @@ struct V2_28: View {
             .padding(14)
             .background(RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(LinearGradient(colors: [
-                    Color(hex: 0x8b5cf6, opacity: 0.20),
-                    Color(hex: 0x8b5cf6, opacity: 0.06),
+                    Color(hex: 0x2d1a53),
+                    Color(hex: 0x1c0f36),
                 ], startPoint: .topLeading, endPoint: .bottomTrailing)))
             .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(Color.tAccent, lineWidth: 2))
@@ -1168,31 +1198,8 @@ struct V2_28: View {
 struct V2_29: View {
     var body: some View {
         ScreenShell(motif: false) {
-            GeometryReader { geo in
-                ZStack {
-                    burst(in: geo.size)
-                    content
-                }
-            }
+            content
         }
-    }
-
-    private func burst(in size: CGSize) -> some View {
-        ZStack {
-            ForEach(0..<32, id: \.self) { i in
-                let angle = Double(i) / 32 * .pi * 2
-                let r = 130 + Double(i % 5) * 60
-                let x = 0.5 + cos(angle) * (r / 4) / 100
-                let y = 0.38 + sin(angle) * (r / 6) / 100
-                let colors: [Color] = [.tAccent2, .tRose, .tGold, .tMint, .tBlue]
-                PaperPlaneSilhouette(fill: colors[i % 5])
-                    .frame(width: 14, height: 14)
-                    .rotationEffect(.degrees(Double((i * 37) % 360)))
-                    .opacity(0.85)
-                    .position(x: size.width * x, y: size.height * y)
-            }
-        }
-        .allowsHitTesting(false)
     }
 
     private var content: some View {
@@ -1201,8 +1208,8 @@ struct V2_29: View {
             VStack(spacing: 18) {
                 ZStack {
                     RadialGradient(colors: [Color.tAccent.opacity(0.5), .clear],
-                                   center: .center, startRadius: 0, endRadius: 110)
-                        .frame(width: 200, height: 200)
+                                   center: .center, startRadius: 0, endRadius: 120)
+                        .frame(width: 260, height: 260)
                     TripnestLogo(size: 130)
                     Circle().fill(Color.tMint)
                         .frame(width: 44, height: 44)

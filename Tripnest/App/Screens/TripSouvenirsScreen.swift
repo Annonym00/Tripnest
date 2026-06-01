@@ -62,6 +62,14 @@ private struct SouvenirPhotoEntry: Identifiable {
     var memory: TripPhotoMemory
 }
 
+/// Recadrage en attente : nouvelle photo (replaceEntryId = nil) ou re-cadrage d'une
+/// photo existante (replaceEntryId = id de l'entrée à remplacer).
+private struct PendingSouvenirCrop: Identifiable {
+    let id = UUID()
+    let image: UIImage
+    let replaceEntryId: Int?
+}
+
 struct TripSouvenirsGallery: View {
     @EnvironmentObject private var store: TripStore
     let trip: Trip
@@ -69,11 +77,13 @@ struct TripSouvenirsGallery: View {
     @State private var entries: [SouvenirPhotoEntry] = []
     @State private var showGalleryPicker = false
     @State private var showCameraPicker = false
+    @State private var pendingCrop: PendingSouvenirCrop?
     @State private var editingEntryId: Int?
 
     @State private var editTitle = ""
     @State private var editCaption = ""
     @State private var editPhotoDate = Date()
+    @State private var photoToDeleteId: Int? = nil
 
     private let maxPhotos = 48
     private let columns = [
@@ -116,7 +126,7 @@ struct TripSouvenirsGallery: View {
             GalleryPhotoPicker(
                 onImage: { image in
                     showGalleryPicker = false
-                    appendPhoto(image)
+                    presentNewCrop(image)
                 },
                 onCancel: { showGalleryPicker = false }
             )
@@ -126,15 +136,50 @@ struct TripSouvenirsGallery: View {
             CameraImagePicker(
                 onImage: { image in
                     showCameraPicker = false
-                    appendPhoto(image)
+                    presentNewCrop(image)
                 },
                 onCancel: { showCameraPicker = false }
+            )
+        }
+        .fullScreenCover(item: $pendingCrop) { payload in
+            ImageCropSheet(
+                sourceImage: payload.image,
+                aspectRatio: 16.0 / 9.0,
+                isCircle: false,
+                title: "Recadrer la photo",
+                badge: "Format souvenir",
+                outputMaxPixel: 1600,
+                onConfirm: { cropped in
+                    if let replaceId = payload.replaceEntryId {
+                        replacePhotoImage(id: replaceId, with: cropped)
+                    } else {
+                        appendPhoto(cropped)
+                    }
+                    pendingCrop = nil
+                },
+                onCancel: { pendingCrop = nil }
             )
         }
         .sheet(isPresented: editSheetBinding) {
             photoEditSheet
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
+        }
+        .confirmationDialog(
+            "Supprimer cette photo ?",
+            isPresented: Binding(
+                get: { photoToDeleteId != nil },
+                set: { if !$0 { photoToDeleteId = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Supprimer", role: .destructive) {
+                if let id = photoToDeleteId { deletePhoto(id: id) }
+                photoToDeleteId = nil
+            }
+            Button("Annuler", role: .cancel) { photoToDeleteId = nil }
+        } message: {
+            Text("Cette photo sera définitivement supprimée.")
         }
     }
 
@@ -157,6 +202,25 @@ struct TripSouvenirsGallery: View {
                             .frame(maxWidth: .infinity)
                             .clipped()
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                        Button {
+                            let img = entry.image
+                            editingEntryId = nil
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                                pendingCrop = PendingSouvenirCrop(image: img, replaceEntryId: id)
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "crop")
+                                Text("Recadrer la photo")
+                            }
+                            .font(.tText(14, weight: .semibold))
+                            .foregroundColor(.tAccent2)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.tSurface))
+                            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.tBorder, lineWidth: 1))
+                        }
 
                         Text("Titre")
                             .font(.tText(11, weight: .semibold))
@@ -204,6 +268,7 @@ struct TripSouvenirsGallery: View {
                         .lineLimit(8...150)
                         .padding(12)
                         .background(fieldBg)
+                        .keyboardDoneBar()
                         .onChange(of: editCaption) { _, newValue in
                             if TripPhotoMemory.lineCount(for: newValue) > TripPhotoMemory.maxCaptionLines {
                                 editCaption = TripPhotoMemory.clampedCaption(newValue)
@@ -272,15 +337,16 @@ struct TripSouvenirsGallery: View {
                     .frame(maxWidth: .infinity)
                     .clipped()
                     .contentShape(Rectangle())
-                    .onTapGesture { openEditor(for: entry) }
 
                 Button {
-                    deletePhoto(id: entry.id)
+                    photoToDeleteId = entry.id
+                    Haptics.impact(.light)
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 22))
                         .foregroundStyle(.white, Color.black.opacity(0.45))
                 }
+                .buttonStyle(.plain)
                 .padding(8)
             }
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -354,11 +420,28 @@ struct TripSouvenirsGallery: View {
         }
     }
 
+    /// Présente le recadrage d'une NOUVELLE photo après fermeture du picker
+    /// (délai pour éviter le conflit de présentation SwiftUI).
+    private func presentNewCrop(_ image: UIImage) {
+        guard entries.count < maxPhotos else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            pendingCrop = PendingSouvenirCrop(image: image, replaceEntryId: nil)
+        }
+    }
+
     private func appendPhoto(_ image: UIImage) {
         guard entries.count < maxPhotos else { return }
         var memory = TripPhotoMemory()
         memory.photoDateKey = TripPlanCalendar.dayKey(for: Date())
         entries.append(SouvenirPhotoEntry(id: entries.count, image: image, memory: memory))
+        persistAll()
+        Haptics.success()
+    }
+
+    /// Remplace l'image d'une photo existante par sa version recadrée (garde titre/date).
+    private func replacePhotoImage(id: Int, with image: UIImage) {
+        guard let idx = entries.firstIndex(where: { $0.id == id }) else { return }
+        entries[idx].image = image
         persistAll()
         Haptics.success()
     }

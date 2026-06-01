@@ -219,13 +219,14 @@ struct AddExpenseScreen: View {
                     .frame(minHeight: 90, maxHeight: 140)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
+                    .keyboardDoneBar()
                     .onChange(of: notes) { _, newValue in
                         notes = clampDescriptionLines(newValue)
                     }
             }
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color(hex: 0x8b5cf6, opacity: 0.05))
+                    .fill(Color(hex: 0x1b0e34))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)

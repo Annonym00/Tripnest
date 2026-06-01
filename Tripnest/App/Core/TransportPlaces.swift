@@ -763,7 +763,7 @@ struct FormLocationField: View {
             .frame(height: 52)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color(hex: 0x8b5cf6, opacity: 0.05))
+                    .fill(Color(hex: 0x1b0e34))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -940,7 +940,7 @@ struct FormLocationField: View {
                 }
             }
         }
-        .background(Color(hex: 0x8b5cf6, opacity: 0.04))
+        .background(Color(hex: 0x1a0d32))
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
@@ -963,7 +963,7 @@ struct FormLocationField: View {
                 }
             }
         }
-        .background(Color(hex: 0x8b5cf6, opacity: 0.04))
+        .background(Color(hex: 0x1a0d32))
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 

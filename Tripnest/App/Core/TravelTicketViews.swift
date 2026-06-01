@@ -88,6 +88,7 @@ struct TravelTicketEditorSheet: View {
     var tripOrigin: String = ""
     var tripDestination: String = ""
     var tripDepartureDate: Date? = nil
+    var onScan: (() -> Void)? = nil
     var onDone: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -172,6 +173,15 @@ struct TravelTicketEditorSheet: View {
                     Button("Fermer") { dismiss() }
                         .foregroundColor(.tAccent2)
                 }
+                if let onScan {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(action: onScan) {
+                            Label("Scanner", systemImage: "doc.text.viewfinder")
+                        }
+                        .font(.tText(13, weight: .semibold))
+                        .foregroundColor(.tAccent2)
+                    }
+                }
             }
             .onAppear {
                 draft.prefillFromTrip(
@@ -188,7 +198,7 @@ struct TravelTicketEditorSheet: View {
             .onChange(of: durationMinutes) { _, _ in syncDraftSchedule() }
         }
         .interactiveDismissDisabled(true)
-        .preferredColorScheme(.dark)
+        .tripnestPreferredColorScheme()
     }
 
     private func validateAndClose() {
@@ -494,7 +504,7 @@ private struct TravelTicketScheduleFields: View {
                     .frame(height: 44)
                     .background(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Color(hex: 0x8b5cf6, opacity: 0.06))
+                            .fill(Color(hex: 0x1c0f36))
                     )
             }
             .buttonStyle(TripnestPressStyle())
@@ -527,7 +537,7 @@ private struct TravelTicketScheduleFields: View {
 private enum TicketFormChrome {
     static var fieldBackground: some View {
         RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(Color(hex: 0x8b5cf6, opacity: 0.05))
+            .fill(Color(hex: 0x1b0e34))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(Color.tBorderStrong, lineWidth: 1)
@@ -716,6 +726,34 @@ private struct TicketScanCameraPicker: UIViewControllerRepresentable {
 
 // MARK: - Carte accueil
 
+// Code-barres décoratif dessiné via Canvas — pattern fixe, zéro allocation par render.
+private struct TicketBarcode: View {
+    // Séquence (largeur_barre, largeur_espace) × 30 — visuellement réaliste.
+    private let pattern: [CGFloat] = [
+        2,1, 1,1, 1,2, 3,1, 1,1, 2,2, 1,1, 1,2, 2,1, 3,1,
+        1,2, 2,1, 1,1, 2,1, 1,3, 1,1, 2,2, 1,1, 3,1, 1,2,
+        2,1, 1,2, 1,1, 2,1, 3,1, 1,1, 1,2, 2,1, 1,1, 2,2,
+        1,3, 1,1, 2,1, 1,2, 3,1, 1,1, 2,1, 1,3, 2,1, 1,2,
+    ]
+    var body: some View {
+        Canvas { ctx, size in
+            let total = pattern.reduce(0, +)
+            let scale = size.width / total
+            var x: CGFloat = 0
+            for (i, w) in pattern.enumerated() {
+                if i % 2 == 0 {
+                    ctx.fill(
+                        Path(CGRect(x: x, y: 0, width: max(0.5, w * scale - 0.4), height: size.height)),
+                        with: .color(.tText.opacity(0.72))
+                    )
+                }
+                x += w * scale
+            }
+        }
+        .frame(height: 36)
+    }
+}
+
 struct HomeTravelTicketCard: View {
     let ticket: Flight
     let mode: TransportMode
@@ -723,36 +761,46 @@ struct HomeTravelTicketCard: View {
 
     var body: some View {
         Button(action: onTap) {
-            TCard(padding: 0) {
+            TicketBubbleCard(radius: 24) {
                 VStack(spacing: 0) {
-                    HStack {
+                    HStack(spacing: 10) {
                         Text(mode.ticketHomeHeading)
-                            .font(.tText(11, weight: .bold))
-                            .tracking(1.5)
+                            .font(.tText(12, weight: .bold))
+                            .tracking(2.2)
                             .foregroundColor(.tTextMute)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.74)
                         Spacer()
                         if !ticket.code.isEmpty {
                             Text(ticket.code)
-                                .font(.tText(11, weight: .bold))
+                                .font(.tText(13, weight: .heavy))
                                 .foregroundColor(.tGold)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(Color.tGold.opacity(0.12)))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .padding(.horizontal, 13)
+                                .padding(.vertical, 7)
+                                .background(Capsule().fill(Color.tGold.opacity(0.14)))
                         }
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.top, 14)
-                    .padding(.bottom, 12)
+                    .padding(.horizontal, 26)
+                    .padding(.top, 20)
+                    .padding(.bottom, 18)
+
                     DashedDivider()
-                    HStack(alignment: .top, spacing: 8) {
+
+                    HStack(alignment: .center, spacing: 10) {
                         ticketEndpoint(city: ticket.fromCity, code: ticket.from, detail: "\(ticket.date) · \(ticket.departure)", leading: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         Spacer()
-                        TransportModeGlyph(mode: mode, size: 16, stroke: .tAccent2)
+                        TicketRouteCenter(mode: mode, duration: ticket.duration)
+                            .frame(width: 118)
                         Spacer()
                         ticketEndpoint(city: ticket.toCity, code: ticket.to, detail: "\(ticket.date) · \(ticket.arrival)", leading: false)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 14)
+                    .padding(.horizontal, 26)
+                    .padding(.top, 26)
+                    .padding(.bottom, 24)
                 }
             }
         }
@@ -760,13 +808,194 @@ struct HomeTravelTicketCard: View {
     }
 
     private func ticketEndpoint(city: String, code: String, detail: String, leading: Bool) -> some View {
-        VStack(alignment: leading ? .leading : .trailing, spacing: 2) {
-            Text(city.isEmpty ? "Départ" : city).font(.tText(12)).foregroundColor(.tTextMute)
-            Text(code.isEmpty ? "---" : code).font(.tDisplay(28)).tracking(-0.5).lineLimit(1)
+        VStack(alignment: leading ? .leading : .trailing, spacing: 4) {
+            Text(city.isEmpty ? "Départ" : city)
+                .font(.tText(15))
+                .foregroundColor(.tTextMute)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+            Text(code.isEmpty ? "---" : code)
+                .font(.tDisplay(40))
+                .lineLimit(1)
+                .minimumScaleFactor(0.62)
             Text(detail.trimmingCharacters(in: .whitespaces).isEmpty ? "--" : detail)
+                .font(.tText(14))
+                .foregroundColor(.tTextMute)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+        }
+    }
+}
+
+private struct TicketBubbleCard<Content: View>: View {
+    var radius: CGFloat = 24
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        content()
+            .background(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(hex: 0x21113f), Color(hex: 0x140925)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .stroke(Color.tAccent2.opacity(0.28), lineWidth: 0.85)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: radius - 1, style: .continuous)
+                    .stroke(Color.white.opacity(0.03), lineWidth: 0.6)
+                    .padding(1)
+            )
+            .shadow(color: Color.tAccent2.opacity(0.08), radius: 8, x: 0, y: 0)
+            .shadow(color: Color(hex: 0x090315, opacity: 0.26), radius: 16, x: 0, y: 10)
+    }
+}
+
+private struct TicketRouteCenter: View {
+    let mode: TransportMode
+    let duration: String
+
+    var body: some View {
+        VStack(spacing: 9) {
+            Text(duration.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "--" : duration)
+                .font(.tText(16, weight: .bold))
+                .foregroundColor(.tTextMute)
+                .lineLimit(1)
+                .minimumScaleFactor(0.74)
+
+            HStack(spacing: 0) {
+                DashedDivider()
+                    .frame(maxWidth: .infinity)
+                Circle()
+                    .fill(Color.tAccent2)
+                    .frame(width: 7, height: 7)
+                    .padding(.leading, 3)
+            }
+
+            TransportModeGlyph(mode: mode, size: 27, stroke: .tAccent2)
+                .rotationEffect(mode == .plane ? .degrees(-8) : .zero)
+                .shadow(color: Color.tAccent2.opacity(0.26), radius: 8, x: 0, y: 0)
+        }
+    }
+}
+
+// MARK: - Placeholder décoratif (aucun billet saisi)
+// Affiche un billet fictif plausible (données fixes par mode) à 45 % d'opacité
+// avec un CTA "Saisir mon billet" superposé en bas.
+
+struct HomeTicketPlaceholder: View {
+    let mode: TransportMode
+    var onTap: () -> Void
+
+    private var fakeFrom: (city: String, code: String) {
+        switch mode {
+        case .plane: return ("Paris", "CDG")
+        case .train: return ("Paris", "PRS")
+        case .boat:  return ("Marseille", "MRS")
+        case .car:   return ("--", "---")
+        }
+    }
+    private var fakeTo: (city: String, code: String) {
+        switch mode {
+        case .plane: return ("Tokyo", "NRT")
+        case .train: return ("Nice", "NCE")
+        case .boat:  return ("Ajaccio", "AJA")
+        case .car:   return ("--", "---")
+        }
+    }
+    private var fakeDep: String {
+        switch mode { case .plane: return "09:35"; case .train: return "07:08"; default: return "08:00" }
+    }
+    private var fakeArr: String {
+        switch mode { case .plane: return "15:20 +1"; case .train: return "12:46"; default: return "14:30" }
+    }
+    private var fakeCode: String {
+        ""
+    }
+    private let fakeDate = "15 juin 2025"
+
+    var body: some View {
+        Button(action: onTap) {
+            ZStack(alignment: .center) {
+                TicketBubbleCard(radius: 22) {
+                    VStack(spacing: 0) {
+                        HStack(spacing: 8) {
+                            Text(mode.ticketHomeHeading)
+                                .font(.tText(11, weight: .bold))
+                                .tracking(1.8)
+                                .foregroundColor(.tTextMute)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.74)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
+                        .padding(.bottom, 10)
+
+                        DashedDivider()
+
+                        HStack(alignment: .center, spacing: 8) {
+                            fakeEndpoint(city: fakeFrom.city, code: fakeFrom.code,
+                                         detail: "\(fakeDate) · \(fakeDep)", leading: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Spacer()
+                            TicketRouteCenter(mode: mode, duration: "6h 15")
+                                .frame(width: 96)
+                            Spacer()
+                            fakeEndpoint(city: fakeTo.city, code: fakeTo.code,
+                                 detail: "\(fakeDate) · \(fakeArr)", leading: false)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 14)
+                        .padding(.bottom, 14)
+                        .opacity(0.42)
+                        .allowsHitTesting(false)
+                    }
+                }
+
+                HStack(spacing: 7) {
+                    Image(systemName: "ticket.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text("Ajoute ton billet pour l'afficher ici.")
+                        .font(.tText(10, weight: .semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+                }
+                .foregroundColor(Color.tAccent2.opacity(0.78))
+                .padding(.horizontal, 11)
+                .padding(.vertical, 7)
+                .background(Capsule().fill(Color(hex: 0x241342, opacity: 0.92)))
+                .overlay(Capsule().stroke(Color.tAccent2.opacity(0.14), lineWidth: 1))
+                .shadow(color: Color.black.opacity(0.16), radius: 8, x: 0, y: 3)
+                .allowsHitTesting(false)
+            }
+        }
+        .buttonStyle(TripnestPressStyle())
+    }
+
+    private func fakeEndpoint(city: String, code: String, detail: String, leading: Bool) -> some View {
+        VStack(alignment: leading ? .leading : .trailing, spacing: 3) {
+            Text(city)
+                .font(.tText(13))
+                .foregroundColor(.tTextMute)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+            Text(code)
+                .font(.tDisplay(34))
+                .lineLimit(1)
+                .minimumScaleFactor(0.62)
+            Text(detail)
                 .font(.tText(12))
                 .foregroundColor(.tTextMute)
                 .lineLimit(1)
+                .minimumScaleFactor(0.72)
         }
     }
 }

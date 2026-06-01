@@ -1,4 +1,26 @@
 import SwiftUI
+import UIKit
+
+extension View {
+    /// Ajoute une barre « OK » au-dessus du clavier pour le refermer facilement.
+    /// Indispensable sur les champs multilignes (notes / descriptions) où la touche
+    /// Entrée insère un retour à la ligne au lieu de fermer le clavier.
+    func keyboardDoneBar() -> some View {
+        toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("OK") {
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder),
+                        to: nil, from: nil, for: nil
+                    )
+                }
+                .font(.tText(15, weight: .bold))
+                .foregroundColor(.tAccent2)
+            }
+        }
+    }
+}
 
 // MARK: - Background gradient & motif ──────────────────────────────────────
 
@@ -19,148 +41,149 @@ struct ScreenBackground: View {
     }
 }
 
-// Flying paper-plane background — Canvas single pass, 30 fps cap, zero per-frame allocation.
+// Flying paper-plane background — port du composant RN PaperPlanesBackground.tsx
+// Rendu via SF Symbol "paperplane.fill" (équivalent iOS d'Ionicons "paper-plane"),
+// dessiné dans un Canvas pour les perfs (30 fps, allocations minimales).
+enum PaperPlaneVariant { case dark, light }
+
 private struct PlaneFlightConfig {
     let sx, sy, ex, ey: CGFloat
     let dur: Double
     let phase: Double
-    let baseSize: CGFloat
-    let sizeAmp: CGFloat
-    let sizeFreq: Double
+    let size: CGFloat
     let opacity: Double
     let w1Amp: CGFloat; let w1Freq: Double
     let w2Amp: CGFloat; let w2Freq: Double
+    let darkColor: Color
+    let lightColor: Color
 }
 
-// 8 planes spread across directions. Fewer planes = less work, still feels alive.
+// Tous les avions partagent la même couleur violette.
+private let planePurple      = Color(red: 138/255, green: 92/255, blue: 252/255) // 0x8A5CFC
+private let planePurpleLight = Color(red: 90/255,  green: 55/255, blue: 130/255).opacity(0.38)
+
+// Ombre discrète : l'opacité du RN (0.3) noyait la couleur sur des glyphes <24pt.
+private let planeShadowColor = Color.tAccent2.opacity(0.12)
+
 private let allPlaneConfigs: [PlaneFlightConfig] = [
-    .init(sx:-0.15,sy:0.12,ex:1.15,ey:0.08, dur:18,phase:0.00, baseSize:12,sizeAmp:5,sizeFreq:0.6, opacity:0.28, w1Amp:20,w1Freq:0.6, w2Amp:0, w2Freq:0),
-    .init(sx:-0.15,sy:0.55,ex:1.15,ey:0.53, dur:24,phase:0.30, baseSize:16,sizeAmp:6,sizeFreq:0.5, opacity:0.22, w1Amp:26,w1Freq:0.5, w2Amp:0, w2Freq:0),
-    .init(sx:-0.15,sy:0.30,ex:1.15,ey:0.28, dur:15,phase:0.62, baseSize:10,sizeAmp:4,sizeFreq:1.0, opacity:0.26, w1Amp:14,w1Freq:0.9, w2Amp:6, w2Freq:3.5),
-    .init(sx:1.15,sy:0.22,ex:-0.15,ey:0.18, dur:21,phase:0.15, baseSize:13,sizeAmp:5,sizeFreq:0.7, opacity:0.24, w1Amp:18,w1Freq:0.7, w2Amp:0, w2Freq:0),
-    .init(sx:1.15,sy:0.78,ex:-0.15,ey:0.74, dur:17,phase:0.55, baseSize:11,sizeAmp:4,sizeFreq:0.8, opacity:0.26, w1Amp:16,w1Freq:0.8, w2Amp:6, w2Freq:3.2),
-    .init(sx:0.25,sy:-0.15,ex:0.32,ey:1.15, dur:20,phase:0.08, baseSize:12,sizeAmp:5,sizeFreq:0.6, opacity:0.22, w1Amp:18,w1Freq:0.7, w2Amp:0, w2Freq:0),
-    .init(sx:0.72,sy:1.15,ex:0.65,ey:-0.15, dur:22,phase:0.38, baseSize:10,sizeAmp:4,sizeFreq:0.7, opacity:0.22, w1Amp:14,w1Freq:0.7, w2Amp:5, w2Freq:3.0),
-    .init(sx:-0.12,sy:0.08,ex:1.12,ey:0.62, dur:26,phase:0.20, baseSize:14,sizeAmp:5,sizeFreq:0.5, opacity:0.24, w1Amp:18,w1Freq:0.6, w2Amp:0, w2Freq:0),
+    .init(sx:-0.15,sy:0.12,ex:1.15,ey:0.08, dur:18,phase:0.00, size:10, opacity:0.78, w1Amp:20,w1Freq:0.6, w2Amp:0, w2Freq:0,  darkColor: planePurple, lightColor: planePurpleLight),
+    .init(sx:-0.15,sy:0.55,ex:1.15,ey:0.53, dur:24,phase:0.30, size:13, opacity:0.62, w1Amp:26,w1Freq:0.5, w2Amp:0, w2Freq:0,  darkColor: planePurple, lightColor: planePurpleLight),
+    .init(sx:-0.15,sy:0.30,ex:1.15,ey:0.28, dur:15,phase:0.62, size: 9, opacity:0.72, w1Amp:14,w1Freq:0.9, w2Amp:6, w2Freq:3.5,darkColor: planePurple, lightColor: planePurpleLight),
+    .init(sx:1.15,sy:0.22,ex:-0.15,ey:0.18, dur:21,phase:0.15, size:11, opacity:0.68, w1Amp:18,w1Freq:0.7, w2Amp:0, w2Freq:0,  darkColor: planePurple, lightColor: planePurpleLight),
+    .init(sx:1.15,sy:0.78,ex:-0.15,ey:0.74, dur:17,phase:0.55, size:10, opacity:0.74, w1Amp:16,w1Freq:0.8, w2Amp:6, w2Freq:3.2,darkColor: planePurple, lightColor: planePurpleLight),
+    .init(sx:0.25,sy:-0.15,ex:0.32,ey:1.15, dur:20,phase:0.08, size:11, opacity:0.66, w1Amp:18,w1Freq:0.7, w2Amp:0, w2Freq:0,  darkColor: planePurple, lightColor: planePurpleLight),
+    .init(sx:0.72,sy:1.15,ex:0.65,ey:-0.15, dur:22,phase:0.38, size: 9, opacity:0.70, w1Amp:14,w1Freq:0.7, w2Amp:5, w2Freq:3.0,darkColor: planePurple, lightColor: planePurpleLight),
+    .init(sx:-0.12,sy:0.08,ex:1.12,ey:0.62, dur:26,phase:0.20, size:12, opacity:0.66, w1Amp:18,w1Freq:0.6, w2Amp:0, w2Freq:0,  darkColor: planePurple, lightColor: planePurpleLight),
 ]
 
-// Unit-size paths — built once. We scale via Canvas transform stack (zero allocation per frame).
-private let unitPlaneOutline: Path = {
-    var p = Path()
-    p.move(to: CGPoint(x: 0.50, y: 0))
-    p.addLine(to: CGPoint(x: -0.50, y: -0.39))
-    p.addLine(to: CGPoint(x: -0.15, y: -0.04))
-    p.addLine(to: CGPoint(x: -0.50, y: 0.39))
-    p.addLine(to: CGPoint(x: -0.09, y: 0.08))
-    p.closeSubpath()
-    return p
-}()
-
-private let unitPlaneBody: Path = {
-    var p = Path()
-    p.move(to: CGPoint(x: 0.50, y: 0))
-    p.addLine(to: CGPoint(x: -0.50, y: -0.39))
-    p.addLine(to: CGPoint(x: -0.15, y: -0.04))
-    p.closeSubpath()
-    return p
-}()
-
-private let unitPlaneFold: Path = {
-    var p = Path()
-    p.move(to: CGPoint(x: 0.50, y: 0))
-    p.addLine(to: CGPoint(x: -0.15, y: -0.04))
-    p.addLine(to: CGPoint(x: -0.50, y: 0.39))
-    p.addLine(to: CGPoint(x: -0.09, y: 0.08))
-    p.closeSubpath()
-    return p
-}()
-
-// Pre-resolved colors to avoid Color(hex:) per frame
-private let planeHaloColor   = Color(hex: 0x8B5CF6)
-private let planeBodyColor   = Color(hex: 0xB9A3FF)
-private let planeFoldColor   = Color(hex: 0x6D28D9)
+// SF Symbol "paperplane.fill" pointe naturellement vers le coin haut-droit (~45°).
+// On compense pour que le nez s'aligne sur la tangente de trajectoire.
+private let planeIconOrientationOffset: CGFloat = .pi / 4
 
 struct FlyingPlanesLayer: View {
+    /// Si nil, la variante suit l'apparence courante (sombre/clair).
+    var variant: PaperPlaneVariant? = nil
+    var dimmed: Bool = false
+    var active: Bool = true
+
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.tripnestScreenActive) private var screenActive
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var effectiveVariant: PaperPlaneVariant {
+        variant ?? (colorScheme == .light ? .light : .dark)
+    }
 
     var body: some View {
-        // Cap at ~30 fps. Background motion: invisible diff vs 60/120, half the GPU/CPU cost.
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: scenePhase != .active)) { tl in
-            Canvas(opaque: false, colorMode: .nonLinear, rendersAsynchronously: true) { ctx, canvasSize in
-                let t = tl.date.timeIntervalSinceReferenceDate
-                let baseTransform = ctx.transform
+        if !active {
+            EmptyView()
+        } else {
+            // Pausé si : app en background, OU onglet invisible (tripnestScreenActive = false).
+            // Résultat : 1 seul Canvas actif à la fois au lieu de 4–6 en parallèle.
+            let paused = scenePhase != .active || !screenActive
+            // 30 fps suffit : les avions dérivent sur 15–26 s, donc le mouvement reste
+            // parfaitement lisse à l'œil tout en divisant par deux le coût de rendu.
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: paused)) { tl in
+                Canvas(opaque: false, colorMode: .nonLinear, rendersAsynchronously: false) { ctx, canvasSize in
+                    let t = tl.date.timeIntervalSinceReferenceDate
+                    let baseTransform = ctx.transform
 
-                for cfg in allPlaneConfigs {
-                    let phase = (t / cfg.dur + cfg.phase).truncatingRemainder(dividingBy: 1)
+                    for (index, cfg) in allPlaneConfigs.enumerated() {
+                        let phase = (t / cfg.dur + cfg.phase).truncatingRemainder(dividingBy: 1)
 
-                    let sx = canvasSize.width  * cfg.sx, sy = canvasSize.height * cfg.sy
-                    let ex = canvasSize.width  * cfg.ex, ey = canvasSize.height * cfg.ey
-                    let dx = ex - sx, dy = ey - sy
-                    let fwd = max(1, sqrt(dx * dx + dy * dy))
-                    let px = -dy / fwd, py = dx / fwd   // perpendicular unit vector
+                        let sx = canvasSize.width  * cfg.sx, sy = canvasSize.height * cfg.sy
+                        let ex = canvasSize.width  * cfg.ex, ey = canvasSize.height * cfg.ey
+                        let dx = ex - sx, dy = ey - sy
+                        let fwd = max(1, sqrt(dx * dx + dy * dy))
+                        let px = -dy / fwd, py = dx / fwd
 
-                    let w  = cfg.w1Amp * CGFloat(sin(phase * .pi * 2 * cfg.w1Freq))
-                           + cfg.w2Amp * CGFloat(sin(phase * .pi * 2 * cfg.w2Freq))
-                    let x  = sx + dx * CGFloat(phase) + px * w
-                    let y  = sy + dy * CGFloat(phase) + py * w
+                        let w = cfg.w1Amp * CGFloat(sin(phase * .pi * 2 * cfg.w1Freq))
+                              + cfg.w2Amp * CGFloat(sin(phase * .pi * 2 * cfg.w2Freq))
+                        let x = sx + dx * CGFloat(phase) + px * w
+                        let y = sy + dy * CGFloat(phase) + py * w
 
-                    // Tangent for rotation — sample 1.5% ahead
-                    let ph2 = (phase + 0.015).truncatingRemainder(dividingBy: 1)
-                    let w2  = cfg.w1Amp * CGFloat(sin(ph2 * .pi * 2 * cfg.w1Freq))
-                            + cfg.w2Amp * CGFloat(sin(ph2 * .pi * 2 * cfg.w2Freq))
-                    let nx  = sx + dx * CGFloat(ph2) + px * w2
-                    let ny  = sy + dy * CGFloat(ph2) + py * w2
-                    let angle = CGFloat(atan2(Double(ny - y), Double(nx - x)))
+                        let ph2 = (phase + 0.015).truncatingRemainder(dividingBy: 1)
+                        let w2  = cfg.w1Amp * CGFloat(sin(ph2 * .pi * 2 * cfg.w1Freq))
+                                + cfg.w2Amp * CGFloat(sin(ph2 * .pi * 2 * cfg.w2Freq))
+                        let nx  = sx + dx * CGFloat(ph2) + px * w2
+                        let ny  = sy + dy * CGFloat(ph2) + py * w2
+                        let angle = CGFloat(atan2(Double(ny - y), Double(nx - x))) + planeIconOrientationOffset
 
-                    // Size oscillation
-                    let sf = CGFloat(sin(phase * .pi * 2 * cfg.sizeFreq))
-                    let sz = max(5, cfg.baseSize + cfg.sizeAmp * sf)
-                    let op = max(0.08, cfg.opacity + 0.06 * Double(sf))
+                        guard let symbol = ctx.resolveSymbol(id: index) else { continue }
 
-                    // Outer halo via larger transparent outline (no blur — too expensive)
+                        ctx.transform = baseTransform
+                        ctx.translateBy(x: x, y: y)
+                        ctx.rotate(by: .radians(angle))
+                        ctx.opacity = cfg.opacity * (dimmed ? 0.22 : 1.0)
+                        ctx.draw(symbol, at: .zero, anchor: .center)
+                    }
+
                     ctx.transform = baseTransform
-                    ctx.translateBy(x: x, y: y)
-                    ctx.rotate(by: .radians(angle))
-
-                    // Halo: scale unit path by sz * 1.7 — single fill, no Path.applying allocation
-                    let t1 = ctx.transform
-                    ctx.scaleBy(x: sz * 1.7, y: sz * 1.7)
-                    ctx.fill(unitPlaneOutline, with: .color(planeHaloColor.opacity(op * 0.18)))
-                    ctx.transform = t1
-
-                    // Body + fold at base size
-                    ctx.scaleBy(x: sz, y: sz)
-                    ctx.fill(unitPlaneBody, with: .color(planeBodyColor.opacity(op)))
-                    ctx.fill(unitPlaneFold, with: .color(planeFoldColor.opacity(op * 0.85)))
+                    ctx.opacity = 1
+                } symbols: {
+                    ForEach(Array(allPlaneConfigs.enumerated()), id: \.offset) { index, cfg in
+                        PaperPlaneGlyph(
+                            size: cfg.size,
+                            color: effectiveVariant == .light ? cfg.lightColor : cfg.darkColor
+                        )
+                        .tag(index)
+                    }
                 }
-
-                ctx.transform = baseTransform
             }
+            .allowsHitTesting(false)
         }
-        .allowsHitTesting(false)
     }
 }
 
+private struct PaperPlaneGlyph: View {
+    let size: CGFloat
+    let color: Color
+    var body: some View {
+        Image(systemName: "paperplane.fill")
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .foregroundStyle(color)
+            // Effet lumineux baked une seule fois dans le bitmap du symbol (zéro coût par frame).
+            // Halo interne serré + bloom extérieur diffus → lueur violette néon.
+            .shadow(color: planePurple.opacity(0.95), radius: size * 0.55, x: 0, y: 0)
+            .shadow(color: planePurple.opacity(0.40), radius: size * 1.40, x: 0, y: 0)
+    }
+}
+
+/// Avion en papier statique — partage le même glyphe que la couche animée.
 struct PaperPlaneSilhouette: View {
     var fill: Color = .tAccent2
     var body: some View {
-        Canvas { ctx, rect in
-            let s = rect.width / 24
-            ctx.scaleBy(x: s, y: s)
-            // Nose(21,12)  Top-back(2,2)  Fold-junction(8,14)  Bottom-back(2,22)
-            var body = Path()
-            body.move(to: CGPoint(x: 21, y: 12))
-            body.addLine(to: CGPoint(x: 2, y: 2))
-            body.addLine(to: CGPoint(x: 8, y: 14))
-            body.closeSubpath()
-            ctx.fill(body, with: .color(fill))
-
-            var fold = Path()
-            fold.move(to: CGPoint(x: 21, y: 12))
-            fold.addLine(to: CGPoint(x: 8, y: 14))
-            fold.addLine(to: CGPoint(x: 2, y: 22))
-            fold.closeSubpath()
-            ctx.fill(fold, with: .color(fill.opacity(0.6)))
+        GeometryReader { geo in
+            let s = min(geo.size.width, geo.size.height)
+            Image(systemName: "paperplane.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(width: s, height: s)
+                .foregroundStyle(fill)
+                .shadow(color: planeShadowColor, radius: 3, x: 0, y: 1)
+                .position(x: geo.size.width / 2, y: geo.size.height / 2)
         }
     }
 }
@@ -403,6 +426,12 @@ private struct TripnestUsesExternalChromeKey: EnvironmentKey {
     static let defaultValue = false
 }
 
+// Signale aux FlyingPlanesLayer que l'écran courant est actif.
+// Les onglets inactifs mettent cette clé à false → leur TimelineView est pausé.
+private struct TripnestScreenActiveKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
 extension EnvironmentValues {
     var tripnestSkipShellMotion: Bool {
         get { self[TripnestSkipShellMotionKey.self] }
@@ -418,6 +447,11 @@ extension EnvironmentValues {
         get { self[TripnestUsesExternalChromeKey.self] }
         set { self[TripnestUsesExternalChromeKey.self] = newValue }
     }
+
+    var tripnestScreenActive: Bool {
+        get { self[TripnestScreenActiveKey.self] }
+        set { self[TripnestScreenActiveKey.self] = newValue }
+    }
 }
 
 // MARK: - Card ───────────────────────────────────────────────────────────────
@@ -426,14 +460,17 @@ struct TCard<Content: View>: View {
     var padding: CGFloat = 18
     var glow: Bool = false
     var radius: CGFloat = Tk.radius
+    // Gradient pré-composé opaque (équivalent visuel de 0x8b5cf6 @ 10%/4% sur tBg1) :
+    // bloque les avions d'arrière-plan tout en gardant le tint lavande des cartes.
     var bg: AnyShapeStyle = AnyShapeStyle(
         LinearGradient(colors: [
-            Color(hex: 0x8b5cf6, opacity: 0.10),
-            Color(hex: 0x8b5cf6, opacity: 0.04),
+            Color(hex: 0x21123e),
+            Color(hex: 0x1a0d32),
         ], startPoint: .top, endPoint: .bottom)
     )
-    var border: Color = .tBorder
+    var border: Color = .tBubbleBorder
     @ViewBuilder var content: () -> Content
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         content()
@@ -444,10 +481,45 @@ struct TCard<Content: View>: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .stroke(border, lineWidth: 1)
+                    .stroke(border, lineWidth: colorScheme.tBubbleLineWidth)
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: radius - 1, style: .continuous)
+                    .stroke(Color.white.opacity(colorScheme == .light ? 0 : 0.03), lineWidth: 0.6)
+                    .padding(1)
+            )
+            .shadow(color: Color.tAccent2.opacity(0.06), radius: 8, x: 0, y: 0)
             .shadow(color: glow ? Color(hex: 0x0f0523, opacity: 0.4) : .clear,
                     radius: glow ? 18 : 0, x: 0, y: glow ? 18 : 0)
+    }
+}
+
+private struct BubbleChromeModifier: ViewModifier {
+    let radius: CGFloat
+    let border: Color?
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        let strokeColor = border ?? .tBubbleBorder
+        return content
+            .overlay(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .stroke(strokeColor, lineWidth: colorScheme.tBubbleLineWidth)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: radius - 1, style: .continuous)
+                    .stroke(Color.white.opacity(colorScheme == .light ? 0 : 0.03), lineWidth: 0.6)
+                    .padding(1)
+            )
+            .shadow(color: Color.tAccent2.opacity(colorScheme == .light ? 0.10 : 0.06),
+                    radius: 8, x: 0, y: 0)
+    }
+}
+
+extension View {
+    /// `border == nil` ⇒ utilise `tBubbleBorder` (adaptatif, marqué en clair).
+    func tripnestBubbleChrome(radius: CGFloat, border: Color? = nil) -> some View {
+        modifier(BubbleChromeModifier(radius: radius, border: border))
     }
 }
 
@@ -455,6 +527,7 @@ struct IconBubble: View {
     let glyph: TIcon.Glyph
     var color: Color = .tAccent2
     var size: CGFloat = 44
+    var glyphScale: CGFloat = 0.46
 
     var body: some View {
         ZStack {
@@ -464,7 +537,7 @@ struct IconBubble: View {
                     RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
                         .stroke(color.opacity(0.28), lineWidth: 1)
                 )
-            TIcon(glyph: glyph, size: size * 0.46, stroke: color, strokeWidth: 2)
+            TIcon(glyph: glyph, size: size * glyphScale, stroke: color, strokeWidth: 2)
         }
         .frame(width: size, height: size)
     }
@@ -526,10 +599,10 @@ struct TPill: View {
                 .foregroundColor(isActive ? .white : .tText)
                 .padding(.horizontal, 14).padding(.vertical, 7)
                 .background(
-                    Capsule().fill(isActive ? color : Color(hex: 0xa78bfa, opacity: 0.10))
+                    Capsule().fill(isActive ? color : Color(hex: 0x24173f))
                 )
                 .overlay(
-                    Capsule().stroke(isActive ? color : .tBorder, lineWidth: 1)
+                    Capsule().stroke(isActive ? color : Color.tAccent2.opacity(0.55), lineWidth: 1.2)
                 )
                 .animation(.spring(response: 0.22, dampingFraction: 0.65), value: isActive)
         }
@@ -546,7 +619,7 @@ struct ProgressRing<Content: View>: View {
     var size: CGFloat = 130
     var stroke: CGFloat = 12
     var color: Color = .tAccent
-    var trackColor: Color = Color(hex: 0xa78bfa, opacity: 0.15)
+    var trackColor: Color = Color(hex: 0x2b1d49)
     @ViewBuilder var content: () -> Content
 
     var body: some View {
@@ -679,72 +752,18 @@ struct TripnestLogo: View {
     var size: CGFloat = 84
     var glow: Bool = true
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
-                .fill(LinearGradient(
-                    colors: [Color(hex: 0x1a0d33), Color(hex: 0x0a0418)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                ))
-                .overlay(
-                    RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
-                        .stroke(Color(hex: 0xa78bfa, opacity: 0.18), lineWidth: 1)
-                )
-                .shadow(color: glow ? Color(hex: 0x8b5cf6, opacity: 0.45) : .clear,
-                        radius: 18, x: 0, y: 18)
-
-            LogoPlane()
-                .frame(width: size * 0.62, height: size * 0.62)
-        }
-        .frame(width: size, height: size)
-    }
-}
-
-struct LogoPlane: View {
-    var body: some View {
-        Canvas { ctx, rect in
-            let scale = rect.width / 64
-            ctx.scaleBy(x: scale, y: scale)
-
-            var body = Path()
-            body.move(to: CGPoint(x: 8, y: 32))
-            body.addLine(to: CGPoint(x: 54, y: 10))
-            body.addLine(to: CGPoint(x: 46, y: 54))
-            body.addLine(to: CGPoint(x: 34, y: 40))
-            body.addLine(to: CGPoint(x: 26, y: 48))
-            body.addLine(to: CGPoint(x: 26, y: 38))
-            body.closeSubpath()
-
-            ctx.fill(body, with: .linearGradient(
-                Gradient(stops: [
-                    .init(color: Color(hex: 0xc4b5fd), location: 0),
-                    .init(color: Color(hex: 0x8b5cf6), location: 0.55),
-                    .init(color: Color(hex: 0x5b21b6), location: 1),
-                ]),
-                startPoint: CGPoint(x: 10, y: 10),
-                endPoint: CGPoint(x: 55, y: 55)
-            ))
-
-            var shade = Path()
-            shade.move(to: CGPoint(x: 54, y: 10))
-            shade.addLine(to: CGPoint(x: 34, y: 40))
-            shade.addLine(to: CGPoint(x: 26, y: 38))
-            shade.closeSubpath()
-            ctx.fill(shade, with: .linearGradient(
-                Gradient(stops: [
-                    .init(color: Color(hex: 0xddd6fe), location: 0),
-                    .init(color: Color(hex: 0x7c3aed), location: 1),
-                ]),
-                startPoint: CGPoint(x: 32, y: 14),
-                endPoint: CGPoint(x: 32, y: 50)
-            ))
-
-            var inner = Path()
-            inner.move(to: CGPoint(x: 26, y: 38))
-            inner.addLine(to: CGPoint(x: 34, y: 40))
-            inner.addLine(to: CGPoint(x: 26, y: 48))
-            inner.closeSubpath()
-            ctx.fill(inner, with: .color(Color(hex: 0x3b1d7a, opacity: 0.7)))
-        }
+        Image("AppLogo")
+            .resizable()
+            .interpolation(.high)
+            .scaledToFill()
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
+                    .stroke(Color(hex: 0xa78bfa, opacity: 0.18), lineWidth: 1)
+            )
+            .shadow(color: glow ? Color(hex: 0x8b5cf6, opacity: 0.45) : .clear,
+                    radius: 18, x: 0, y: 18)
     }
 }
 
@@ -795,7 +814,7 @@ struct ExpenseStatusCheckboxRow: View {
 // MARK: - Tab bar ────────────────────────────────────────────────────────────
 
 enum AppRoute: String, Hashable, CaseIterable {
-    case home, trips, completedTrips, add, newTrip, editTrip, budget, tripBudget, profile, trip, tripPlanning, tripSouvenirs, flights, spots, newSpot, memories
+    case home, trips, completedTrips, add, newTrip, editTrip, budget, tripBudget, profile, trip, tripPlanning, tripSouvenirs, flights, spots, newSpot, memories, tripNotes
 
     var tabIndex: Int? {
         switch self {
@@ -813,8 +832,10 @@ enum AppRoute: String, Hashable, CaseIterable {
         switch self {
         case .home, .trips, .budget, .profile, .add, .newTrip, .editTrip:
             return false
-        case .spots, .newSpot:
+        case .newSpot:
             return false
+        case .spots:
+            return true
         case .tripBudget:
             return true
         default:
@@ -901,66 +922,18 @@ extension View {
     }
 }
 
-private struct SpotPinIcon: View {
-    var size: CGFloat = 28
-    var color: Color = .white
-
-    var body: some View {
-        Canvas { ctx, rect in
-            let w = rect.width
-            let h = rect.height
-            let cx = w * 0.5
-            let headCenter = CGPoint(x: cx, y: h * 0.36)
-            let headR = w * 0.36
-            let tipY = h * 0.94
-
-            var path = Path()
-            path.move(to: CGPoint(x: cx, y: tipY))
-            path.addCurve(
-                to: CGPoint(x: cx - headR, y: headCenter.y),
-                control1: CGPoint(x: cx, y: h * 0.74),
-                control2: CGPoint(x: cx - headR * 1.15, y: headCenter.y + headR * 0.45)
-            )
-            path.addArc(
-                center: headCenter,
-                radius: headR,
-                startAngle: .degrees(180),
-                endAngle: .degrees(0),
-                clockwise: false
-            )
-            path.addCurve(
-                to: CGPoint(x: cx, y: tipY),
-                control1: CGPoint(x: cx + headR * 1.15, y: headCenter.y + headR * 0.45),
-                control2: CGPoint(x: cx, y: h * 0.74)
-            )
-            path.closeSubpath()
-
-            let holeR = headR * 0.38
-            path.addEllipse(in: CGRect(
-                x: headCenter.x - holeR,
-                y: headCenter.y - holeR,
-                width: holeR * 2,
-                height: holeR * 2
-            ))
-
-            ctx.fill(path, with: .color(color), style: FillStyle(eoFill: true))
-        }
-        .frame(width: size, height: size)
-    }
-}
-
 struct TabBar: View {
     let active: AppRoute
-    var centerRoute: AppRoute = .spots
-    var centerLabel: String = "Spots"
-    var centerAccessibilityLabel: String = "Spots"
+    var centerRoute: AppRoute = .newTrip
+    var centerLabel: String = ""
+    var centerAccessibilityLabel: String = "Nouveau voyage"
     var onChange: (AppRoute) -> Void = { _ in }
 
     private struct Tab { let id: AppRoute; let label: String; let glyph: TIcon.Glyph }
     private let tabs: [Tab] = [
         Tab(id: .home,    label: "Accueil",  glyph: .home),
         Tab(id: .trips,   label: "Voyages",  glyph: .globe),
-        Tab(id: .add,     label: "Spots",    glyph: .plus),
+        Tab(id: .add,     label: "",         glyph: .plus),
         Tab(id: .budget,  label: "Budget",   glyph: .wallet),
         Tab(id: .profile, label: "Profil",   glyph: .user),
     ]
@@ -970,7 +943,6 @@ struct TabBar: View {
             ForEach(tabs.indices, id: \.self) { i in
                 let t = tabs[i]
                 if t.id == .add {
-                    let isCenterActive = active == centerRoute
                     Button(action: { Haptics.impact(.medium); onChange(centerRoute) }) {
                         VStack(spacing: 4) {
                             ZStack {
@@ -997,7 +969,9 @@ struct TabBar: View {
                                         colors: [.tAccent2, .tAccentDeep],
                                         startPoint: .topLeading, endPoint: .bottomTrailing
                                     ))
-                                    SpotPinIcon(size: 30)
+                                    Image(systemName: "plus")
+                                        .font(.system(size: 26, weight: .bold))
+                                        .foregroundColor(.white)
                                 }
                                 .frame(width: 54, height: 54)
                                 .overlay(Circle().stroke(Color.tBg1, lineWidth: 3))
@@ -1006,11 +980,6 @@ struct TabBar: View {
                             }
                             .frame(width: 68, height: 56)
                             .offset(y: -6)
-
-                            Text(centerLabel)
-                                .font(.tText(10, weight: .semibold))
-                                .tracking(0.2)
-                                .foregroundColor(isCenterActive ? .tAccent2 : .tTextMute)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 4)
@@ -1024,7 +993,7 @@ struct TabBar: View {
                             TIcon(glyph: t.glyph, size: 23,
                                   stroke: isActive ? .tAccent2 : .tTextMute,
                                   strokeWidth: isActive ? 2 : 1.6)
-                            Text(t.label)
+                            Text(L(t.label))
                                 .font(.tText(10, weight: .semibold))
                                 .tracking(0.2)
                                 .foregroundColor(isActive ? .tAccent2 : .tTextMute)
@@ -1033,19 +1002,20 @@ struct TabBar: View {
                         .padding(.vertical, 4)
                     }
                     .buttonStyle(TripnestPressStyle())
-                    .accessibilityLabel(t.label)
+                    .accessibilityLabel(L(t.label))
                 }
             }
         }
         .padding(.horizontal, 12)
         .padding(.top, 10)
-        .padding(.bottom, 28)
+        .padding(.bottom, 0)
         .background(
             LinearGradient(stops: [
                 .init(color: Color.tBg0.opacity(0), location: 0),
                 .init(color: Color.tBg0.opacity(0.85), location: 0.4),
                 .init(color: Color.tBg0.opacity(0.98), location: 1),
             ], startPoint: .top, endPoint: .bottom)
+            .ignoresSafeArea()
         )
     }
 }
@@ -1075,7 +1045,8 @@ struct TripInfoSummaryCard: View {
                         hue: trip.hue,
                         radius: 12,
                         coverKind: trip.coverKind,
-                        tripId: trip.id
+                        tripId: trip.id,
+                        solidColor: trip.resolvedCoverColor
                     )
                     .frame(width: 72, height: 72)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -1224,17 +1195,26 @@ struct IconBtn: View {
 struct Avatar: View {
     var initials: String = "?"
     var size: CGFloat = 40
+    var image: UIImage? = nil
+
     var body: some View {
         ZStack {
-            Circle().fill(LinearGradient(
-                colors: [.tAccent2, .tRose],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            ))
-            Text(initials)
-                .font(.tText(14, weight: .bold))
-                .foregroundColor(.white)
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Circle().fill(LinearGradient(
+                    colors: [.tAccent2, .tRose],
+                    startPoint: .topLeading, endPoint: .bottomTrailing
+                ))
+                Text(initials)
+                    .font(.tText(14, weight: .bold))
+                    .foregroundColor(.white)
+            }
         }
         .frame(width: size, height: size)
+        .clipShape(Circle())
         .overlay(Circle().stroke(Color.tBorderStrong, lineWidth: 2))
     }
 }
@@ -1261,7 +1241,7 @@ struct TField: View {
             .frame(height: 52)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color(hex: 0x8b5cf6, opacity: 0.05))
+                    .fill(Color(hex: 0x1b0e34))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -1298,7 +1278,7 @@ struct CTA: View {
                 Text(label)
                     .font(.tText(fontSize, weight: .bold))
                     .tracking(-0.2)
-                    .foregroundColor(.white)
+                    .foregroundColor(secondary ? .tText : .white)
                     .frame(maxWidth: .infinity)
                     .frame(height: height)
                     .background(

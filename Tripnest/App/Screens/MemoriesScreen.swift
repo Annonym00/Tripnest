@@ -106,7 +106,8 @@ struct MemoriesScreen: View {
                     radius: 0,
                     showBorder: false,
                     coverKind: p.coverKind,
-                    tripId: p.id
+                    tripId: p.id,
+                    solidColor: p.resolvedCoverColor
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .frame(height: 160)

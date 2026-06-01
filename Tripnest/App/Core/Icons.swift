@@ -91,14 +91,14 @@ struct TIcon: View {
             p.addEllipse(in: CGRect(x: 7, y: 16, width: 3, height: 3))
             p.addEllipse(in: CGRect(x: 14, y: 16, width: 3, height: 3))
         case .spot:
-            // Épingle carte classique (tête ronde + pointe + trou central)
+            // Épingle carte calibrée pour le même poids visuel que .wallet / .plane.
             let headCenter = CGPoint(x: 12, y: 8.5)
-            let headRadius: CGFloat = 5.75
+            let headRadius: CGFloat = 5.6
             p.move(to: CGPoint(x: 12, y: 21))
             p.addCurve(
                 to: CGPoint(x: headCenter.x - headRadius, y: headCenter.y),
                 control1: CGPoint(x: 12, y: 16.5),
-                control2: CGPoint(x: 5.5, y: 12)
+                control2: CGPoint(x: 5.6, y: 12)
             )
             p.addArc(
                 center: headCenter,
@@ -109,10 +109,10 @@ struct TIcon: View {
             )
             p.addCurve(
                 to: CGPoint(x: 12, y: 21),
-                control1: CGPoint(x: 18.5, y: 12),
+                control1: CGPoint(x: 18.4, y: 12),
                 control2: CGPoint(x: 12, y: 16.5)
             )
-            p.addEllipse(in: CGRect(x: 9.6, y: 6.1, width: 4.8, height: 4.8))
+            p.addEllipse(in: CGRect(x: 9.7, y: 6.2, width: 4.6, height: 4.6))
         case .wallet:
             p.move(to: CGPoint(x: 4, y: 7))
             p.addQuadCurve(to: CGPoint(x: 6, y: 5), control: CGPoint(x: 4, y: 5))

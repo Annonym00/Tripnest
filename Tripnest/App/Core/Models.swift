@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import CoreLocation
 
 enum Haptics {
     static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .medium) {
@@ -35,6 +36,8 @@ struct Trip: Identifiable, Hashable, Codable {
     var coverKind: TripCoverKind
     var rating: Double
     var photoCount: Int
+    var notes: String
+    var favorite: Bool
 
     var isOneWay: Bool { !hasReturn }
 
@@ -290,9 +293,11 @@ struct Trip: Identifiable, Hashable, Codable {
         return name
     }
 
+    var coverColor: String
+
     enum CodingKeys: String, CodingKey {
         case id, origin, dest, country, flag, dates, departureDate, returnLocation, returnDate, transportMode
-        case days, hue, status, budget, spent, emergencyFund, emergencyFundEnabled, cover, tripTitle, coverKind, rating, photoCount
+        case days, hue, status, budget, spent, emergencyFund, emergencyFundEnabled, cover, tripTitle, coverKind, coverColor, rating, photoCount, notes, favorite
     }
 
     init(
@@ -316,8 +321,11 @@ struct Trip: Identifiable, Hashable, Codable {
         cover: String,
         tripTitle: String = "",
         coverKind: TripCoverKind = .none,
+        coverColor: String = "",
         rating: Double = 0,
-        photoCount: Int = 0
+        photoCount: Int = 0,
+        notes: String = "",
+        favorite: Bool = false
     ) {
         self.id = id
         self.origin = origin
@@ -339,8 +347,11 @@ struct Trip: Identifiable, Hashable, Codable {
         self.cover = cover
         self.tripTitle = tripTitle
         self.coverKind = coverKind
+        self.coverColor = coverColor
         self.rating = rating
         self.photoCount = photoCount
+        self.notes = notes
+        self.favorite = favorite
     }
 
     init(from decoder: Decoder) throws {
@@ -369,8 +380,11 @@ struct Trip: Identifiable, Hashable, Codable {
         cover = try c.decodeIfPresent(String.self, forKey: .cover) ?? dest
         tripTitle = try c.decodeIfPresent(String.self, forKey: .tripTitle) ?? dest
         coverKind = try c.decodeIfPresent(TripCoverKind.self, forKey: .coverKind) ?? .none
+        coverColor = try c.decodeIfPresent(String.self, forKey: .coverColor) ?? ""
         rating = try c.decodeIfPresent(Double.self, forKey: .rating) ?? 0
         photoCount = try c.decodeIfPresent(Int.self, forKey: .photoCount) ?? 0
+        notes = try c.decodeIfPresent(String.self, forKey: .notes) ?? ""
+        favorite = try c.decodeIfPresent(Bool.self, forKey: .favorite) ?? false
     }
 }
 
@@ -625,6 +639,95 @@ extension Trip {
         guard let departureDate else { return nil }
         return Calendar.current.date(byAdding: .day, value: dayIndex, to: departureDate)
     }
+
+    /// Drapeau du pays détecté à partir de la destination (ou du champ `flag` s'il est rempli).
+    var resolvedFlag: String {
+        TripRouteFlagResolver.flag(
+            for: dest,
+            mode: transportMode,
+            fallbackCountry: country,
+            fallbackFlag: flag
+        )
+    }
+
+    /// Couleur de fond du voyage. Si l'utilisateur n'en a pas choisi, on en pioche une
+    /// dans la palette de façon déterministe (basée sur l'id) pour la stabilité.
+    var resolvedCoverColor: Color {
+        if let custom = TripCoverPalette.color(fromHex: coverColor) { return custom }
+        return TripCoverPalette.deterministic(forKey: id.isEmpty ? dest : id)
+    }
+}
+
+/// Palette curatée de couleurs vibrantes adaptées au thème sombre de l'app.
+enum TripCoverPalette {
+    /// Codes hex (sans `#`). Saturés mais pas fluo pour rester lisibles sur le thème violet sombre.
+    static let hexCodes: [String] = [
+        "8B5CF6", // violet (accent app)
+        "A855F7", // pourpre
+        "6366F1", // indigo
+        "3B82F6", // bleu
+        "06B6D4", // cyan
+        "14B8A6", // teal
+        "10B981", // vert émeraude
+        "84CC16", // lime
+        "EAB308", // jaune ambré
+        "F59E0B", // ambre
+        "F97316", // orange
+        "EF4444", // rouge
+        "EC4899", // rose
+        "F43F5E", // rose rouge
+        "BE185D", // magenta profond
+        "64748B", // ardoise
+        "FFFFFF", // blanc
+        "000000", // noir
+    ]
+
+    static var colors: [Color] { hexCodes.map { Color(hex: hexValue(from: $0)) } }
+
+    static func color(fromHex raw: String) -> Color? {
+        let cleaned = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "#", with: "")
+        guard cleaned.count == 6, UInt32(cleaned, radix: 16) != nil else { return nil }
+        return Color(hex: hexValue(from: cleaned))
+    }
+
+    static func deterministic(forKey key: String) -> Color {
+        Color(hex: hexValue(from: deterministicHex(forKey: key)))
+    }
+
+    static func deterministicHex(forKey key: String) -> String {
+        let idx = Int(stableHash(key) % UInt64(hexCodes.count))
+        return hexCodes[idx]
+    }
+
+    /// Hash FNV-1a — stable entre les lancements, contrairement à `String.hashValue`
+    /// dont le seed est randomisé par processus (la couleur changeait à chaque redémarrage).
+    private static func stableHash(_ string: String) -> UInt64 {
+        var hash: UInt64 = 0xcbf29ce484222325
+        for byte in string.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 0x100000001b3
+        }
+        return hash
+    }
+
+    static func defaultHex() -> String { hexCodes[0] }
+
+    /// Vrai pour les couleurs très claires (ex. blanc) qui nécessitent
+    /// un contraste sombre pour la coche / la bordure de sélection.
+    static func isLight(hex raw: String) -> Bool {
+        let cleaned = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "#", with: "")
+        guard cleaned.count == 6, let v = UInt32(cleaned, radix: 16) else { return false }
+        let r = Double((v >> 16) & 0xFF) / 255
+        let g = Double((v >> 8) & 0xFF) / 255
+        let b = Double(v & 0xFF) / 255
+        return (0.299 * r + 0.587 * g + 0.114 * b) > 0.8
+    }
+
+    private static func hexValue(from hex: String) -> UInt32 {
+        UInt32(hex, radix: 16) ?? 0x8B5CF6
+    }
 }
 
 struct Spot: Identifiable, Hashable, Codable {
@@ -635,6 +738,7 @@ struct Spot: Identifiable, Hashable, Codable {
     var area: String
     var address: String
     var spotDescription: String
+    var budget: String
     var rating: Double
     var saved: Bool
     var toRedo: Bool
@@ -642,22 +746,37 @@ struct Spot: Identifiable, Hashable, Codable {
     var hue: Double
     var x: Double
     var y: Double
+    /// Coordonnées géocodées une fois à l'enregistrement (évite de re-géocoder).
+    var latitude: Double?
+    var longitude: Double?
+    /// `true` une fois le lieu visité (distingue planification vs souvenir).
+    var visited: Bool
+
+    /// Coordonnée prête à l'emploi si le spot a été géocodé.
+    var coordinate: CLLocationCoordinate2D? {
+        guard let latitude, let longitude else { return nil }
+        return CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
 
     enum CodingKeys: String, CodingKey {
-        case id, tripId, name, category, area, address, spotDescription, rating, saved, toRedo, photoCount, hue, x, y
+        case id, tripId, name, category, area, address, spotDescription, budget, rating, saved, toRedo, photoCount, hue, x, y, latitude, longitude, visited
     }
 
     init(
         id: String, tripId: String, name: String, category: String,
         area: String = "", address: String = "", spotDescription: String = "",
+        budget: String = "",
         rating: Double, saved: Bool, toRedo: Bool = false, photoCount: Int = 0,
-        hue: Double, x: Double, y: Double
+        hue: Double, x: Double, y: Double,
+        latitude: Double? = nil, longitude: Double? = nil, visited: Bool = false
     ) {
         self.id = id; self.tripId = tripId; self.name = name
         self.category = category; self.area = area; self.address = address
         self.spotDescription = spotDescription
+        self.budget = budget
         self.rating = rating; self.saved = saved; self.toRedo = toRedo
         self.photoCount = photoCount; self.hue = hue; self.x = x; self.y = y
+        self.latitude = latitude; self.longitude = longitude; self.visited = visited
     }
 
     init(from decoder: Decoder) throws {
@@ -669,6 +788,7 @@ struct Spot: Identifiable, Hashable, Codable {
         area = try c.decodeIfPresent(String.self, forKey: .area) ?? ""
         address = try c.decodeIfPresent(String.self, forKey: .address) ?? ""
         spotDescription = try c.decodeIfPresent(String.self, forKey: .spotDescription) ?? ""
+        budget = try c.decodeIfPresent(String.self, forKey: .budget) ?? ""
         rating = try c.decodeIfPresent(Double.self, forKey: .rating) ?? 4.5
         saved = try c.decodeIfPresent(Bool.self, forKey: .saved) ?? true
         toRedo = try c.decodeIfPresent(Bool.self, forKey: .toRedo) ?? false
@@ -676,7 +796,79 @@ struct Spot: Identifiable, Hashable, Codable {
         hue = try c.decodeIfPresent(Double.self, forKey: .hue) ?? 180
         x = try c.decodeIfPresent(Double.self, forKey: .x) ?? 50
         y = try c.decodeIfPresent(Double.self, forKey: .y) ?? 50
+        latitude = try c.decodeIfPresent(Double.self, forKey: .latitude)
+        longitude = try c.decodeIfPresent(Double.self, forKey: .longitude)
+        visited = try c.decodeIfPresent(Bool.self, forKey: .visited) ?? false
     }
+}
+
+/// État d'une invitation d'ami.
+/// `pending` : invitation envoyée, en attente que l'ami valide.
+/// `accepted` : l'ami a accepté, l'amitié est active.
+enum FriendStatus: String, Codable {
+    case pending
+    case accepted
+}
+
+enum TripFriendPermission: String, Codable, Equatable {
+    case viewOnly
+    case canEdit
+
+    var title: String {
+        switch self {
+        case .viewOnly: return "Regarder seulement"
+        case .canEdit: return "Peut modifier"
+        }
+    }
+}
+
+/// Un ami ajouté localement (par son nom). Le partage de voyage/budget en direct
+/// viendra avec le backend ; pour l'instant on garde la liste d'amis en local.
+struct Friend: Identifiable, Codable, Equatable {
+    var id: String = UUID().uuidString
+    var name: String
+    var status: FriendStatus = .accepted
+    var sharedTripIds: [String] = []
+    var sharedTripPermissions: [String: TripFriendPermission] = [:]
+    var dateAdded: Date = Date()
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, status, sharedTripIds, sharedTripPermissions, dateAdded
+    }
+
+    init(
+        id: String = UUID().uuidString,
+        name: String,
+        status: FriendStatus = .accepted,
+        sharedTripIds: [String] = [],
+        sharedTripPermissions: [String: TripFriendPermission] = [:],
+        dateAdded: Date = Date()
+    ) {
+        self.id = id
+        self.name = name
+        self.status = status
+        self.sharedTripIds = sharedTripIds
+        self.sharedTripPermissions = sharedTripPermissions
+        self.dateAdded = dateAdded
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(String.self, forKey: .id) ?? UUID().uuidString
+        name = try c.decode(String.self, forKey: .name)
+        status = try c.decodeIfPresent(FriendStatus.self, forKey: .status) ?? .accepted
+        sharedTripIds = try c.decodeIfPresent([String].self, forKey: .sharedTripIds) ?? []
+        sharedTripPermissions = try c.decodeIfPresent([String: TripFriendPermission].self, forKey: .sharedTripPermissions) ?? [:]
+        dateAdded = try c.decodeIfPresent(Date.self, forKey: .dateAdded) ?? Date()
+    }
+}
+
+/// Résultat d'une tentative d'ajout d'ami.
+enum AddFriendResult: Equatable {
+    case invited        // utilisateur trouvé, invitation envoyée
+    case notFound       // aucun utilisateur ne porte ce nom
+    case alreadyAdded   // déjà dans la liste
+    case empty          // nom vide
 }
 
 final class TripStore: ObservableObject {
@@ -687,7 +879,80 @@ final class TripStore: ObservableObject {
     @Published var spots: [Spot] { didSet { save() } }
     @Published var planItems: [TripPlanItem] { didSet { save() } }
     @Published var extraPlanDayKeys: [String: [String]] { didSet { save() } }
+    @Published var friends: [Friend] { didSet { save() } }
     @Published var selectedTripId: String? { didSet { defaults.set(selectedTripId, forKey: selectedTripKey) } }
+
+    /// Nom de l'ami qui vient d'accepter l'invitation → déclenche le popup
+    /// « Untel t'a ajouté ». Remis à nil une fois le popup affiché.
+    @Published var friendAcceptedNotice: String?
+
+    /// Annuaire simulé d'utilisateurs « inscrits ». En attendant le backend,
+    /// on ne peut ajouter qu'un nom présent dans cet annuaire.
+    static let userDirectory: [String] = [
+        "Lucas Martin", "Emma Bernard", "Léa Dubois", "Hugo Petit",
+        "Chloé Moreau", "Nathan Laurent", "Camille Roux", "Jade Fontaine",
+    ]
+
+    /// Nombre d'amis acceptés (les invitations en attente ne comptent pas).
+    var friendsCount: Int { friends.filter { $0.status == .accepted }.count }
+
+    /// Envoie une invitation à un utilisateur de l'annuaire.
+    /// L'invitation reste « en attente » puis est acceptée automatiquement
+    /// (simulation du backend) après quelques secondes.
+    @discardableResult
+    func addFriend(name: String) -> AddFriendResult {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return .empty }
+
+        // L'utilisateur doit exister dans l'annuaire (insensible à la casse).
+        guard let canonical = Self.userDirectory.first(where: {
+            $0.caseInsensitiveCompare(trimmed) == .orderedSame
+        }) else {
+            return .notFound
+        }
+
+        // Pas de doublon.
+        guard !friends.contains(where: {
+            $0.name.caseInsensitiveCompare(canonical) == .orderedSame
+        }) else {
+            return .alreadyAdded
+        }
+
+        let friend = Friend(name: canonical, status: .pending)
+        friends.append(friend)
+        scheduleAcceptance(for: friend.id)
+        return .invited
+    }
+
+    /// Simulation : l'ami valide l'invitation après un court délai.
+    private func scheduleAcceptance(for id: String) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
+            guard let self else { return }
+            guard let idx = self.friends.firstIndex(where: { $0.id == id }),
+                  self.friends[idx].status == .pending else { return }
+            self.friends[idx].status = .accepted
+            self.friendAcceptedNotice = self.friends[idx].name
+        }
+    }
+
+    func removeFriend(id: String) {
+        friends.removeAll { $0.id == id }
+    }
+
+    func setTripCompanions(tripId: String, friendIds: Set<String>, canEdit: Bool = false) {
+        let permission: TripFriendPermission = canEdit ? .canEdit : .viewOnly
+        for index in friends.indices {
+            if friendIds.contains(friends[index].id) {
+                if !friends[index].sharedTripIds.contains(tripId) {
+                    friends[index].sharedTripIds.append(tripId)
+                }
+                friends[index].sharedTripPermissions[tripId] = permission
+            } else {
+                friends[index].sharedTripIds.removeAll { $0 == tripId }
+                friends[index].sharedTripPermissions.removeValue(forKey: tripId)
+            }
+        }
+    }
 
     private let defaults: UserDefaults
     private let tripsKey = "tripnest.trips"
@@ -697,6 +962,7 @@ final class TripStore: ObservableObject {
     private let spotsKey = "tripnest.spots"
     private let planItemsKey = "tripnest.planItems"
     private let extraPlanDaysKey = "tripnest.extraPlanDays"
+    private let friendsKey = "tripnest.friends"
     private let selectedTripKey = "tripnest.selectedTripId"
 
     init(defaults: UserDefaults = .standard) {
@@ -708,6 +974,7 @@ final class TripStore: ObservableObject {
         self.spots = Self.load([Spot].self, key: spotsKey, defaults: defaults) ?? []
         self.planItems = Self.load([TripPlanItem].self, key: planItemsKey, defaults: defaults) ?? []
         self.extraPlanDayKeys = Self.load([String: [String]].self, key: extraPlanDaysKey, defaults: defaults) ?? [:]
+        self.friends = Self.load([Friend].self, key: friendsKey, defaults: defaults) ?? []
         self.selectedTripId = defaults.string(forKey: selectedTripKey)
         migratePlanItemsIfNeeded()
         migrateEmergencyEntriesIfNeeded()
@@ -917,6 +1184,7 @@ final class TripStore: ObservableObject {
         transportMode: TransportMode = .car,
         tripTitle: String = "",
         coverKind: TripCoverKind = .none,
+        coverColor: String = "",
         id: String = UUID().uuidString
     ) -> String {
         let cleanedOrigin = origin.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -945,6 +1213,7 @@ final class TripStore: ObservableObject {
             cover: placeTitle,
             tripTitle: storedTitle,
             coverKind: coverKind,
+            coverColor: coverColor,
             rating: 0
         )
         trips.insert(trip, at: 0)
@@ -995,42 +1264,56 @@ final class TripStore: ObservableObject {
         )
     }
 
+    @discardableResult
     func addSpot(
         name: String,
         category: String,
         area: String = "",
         address: String = "",
         spotDescription: String = "",
+        budget: String = "",
         toRedo: Bool = false,
         photoCount: Int = 0,
         rating: Double = 4.5,
-        tripId: String? = nil
-    ) {
+        tripId: String? = nil,
+        visited: Bool = false
+    ) -> String? {
         let resolvedTripId = tripId ?? activeTrip?.id
-        guard let resolvedTripId, let trip = trips.first(where: { $0.id == resolvedTripId }) ?? activeTrip else { return }
+        guard let resolvedTripId, let trip = trips.first(where: { $0.id == resolvedTripId }) ?? activeTrip else { return nil }
         let label = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !label.isEmpty else { return }
+        guard !label.isEmpty else { return nil }
         let hue = Double(abs(label.hashValue % 300) + 20)
         let resolvedArea = area.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? trip.dest : area
+        let spotId = UUID().uuidString
         spots.insert(
             Spot(
-                id: UUID().uuidString,
+                id: spotId,
                 tripId: resolvedTripId,
                 name: label,
                 category: category,
                 area: resolvedArea,
                 address: address.trimmingCharacters(in: .whitespacesAndNewlines),
                 spotDescription: spotDescription.trimmingCharacters(in: .whitespacesAndNewlines),
+                budget: budget.trimmingCharacters(in: .whitespacesAndNewlines),
                 rating: rating,
-                saved: true,
+                saved: false,
                 toRedo: toRedo,
                 photoCount: photoCount,
                 hue: hue,
                 x: Double.random(in: 18...82),
-                y: Double.random(in: 22...78)
+                y: Double.random(in: 22...78),
+                visited: visited
             ),
             at: 0
         )
+        return spotId
+    }
+
+    /// Met à jour les coordonnées géocodées d'un spot (après géocodage asynchrone).
+    func setSpotCoordinate(id: String, latitude: Double, longitude: Double) {
+        guard let index = spots.firstIndex(where: { $0.id == id }) else { return }
+        spots[index].latitude = latitude
+        spots[index].longitude = longitude
     }
 
     func updateSpotPhotoCount(id: String, count: Int) {
@@ -1044,28 +1327,43 @@ final class TripStore: ObservableObject {
         category: String,
         address: String,
         spotDescription: String,
+        budget: String,
         toRedo: Bool,
         photoCount: Int,
         rating: Double,
-        tripId: String
+        tripId: String,
+        visited: Bool? = nil
     ) {
         guard let index = spots.firstIndex(where: { $0.id == id }) else { return }
+        let newAddress = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Si l'adresse change, on invalide les coordonnées (re-géocodage requis).
+        if newAddress != spots[index].address {
+            spots[index].latitude = nil
+            spots[index].longitude = nil
+        }
         spots[index].name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         spots[index].category = category
-        spots[index].address = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        spots[index].address = newAddress
         spots[index].spotDescription = spotDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        spots[index].budget = budget.trimmingCharacters(in: .whitespacesAndNewlines)
         spots[index].toRedo = toRedo
         spots[index].photoCount = photoCount
         spots[index].rating = rating
         spots[index].tripId = tripId
+        if let visited { spots[index].visited = visited }
+    }
+
+    /// Bascule l'état visité d'un spot.
+    func toggleSpotVisited(id: String) {
+        guard let index = spots.firstIndex(where: { $0.id == id }) else { return }
+        spots[index].visited.toggle()
     }
 
     func toggleSpotSaved(id: String) {
         guard let index = spots.firstIndex(where: { $0.id == id }) else { return }
         spots[index].saved.toggle()
-        if !spots[index].saved {
-            spots[index].toRedo = false
-        }
+        // Sauver un spot le marque automatiquement « à refaire ».
+        spots[index].toRedo = spots[index].saved
     }
 
     func updateBudget(tripId: String, budget: Int) {
@@ -1148,7 +1446,8 @@ final class TripStore: ObservableObject {
         returnDate: Date? = nil,
         transportMode: TransportMode? = nil,
         tripTitle: String? = nil,
-        coverKind: TripCoverKind? = nil
+        coverKind: TripCoverKind? = nil,
+        coverColor: String? = nil
     ) {
         guard let index = trips.firstIndex(where: { $0.id == id }) else { return }
         let cleanedOrigin = origin.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1174,6 +1473,7 @@ final class TripStore: ObservableObject {
             trips[index].tripTitle = tripTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         if let coverKind { trips[index].coverKind = coverKind }
+        if let coverColor { trips[index].coverColor = coverColor }
     }
 
     private static func tripDatesLabel(departure: Date?, returnDate: Date?) -> String {
@@ -1209,8 +1509,62 @@ final class TripStore: ObservableObject {
         trips[index].photoCount = max(0, count)
     }
 
+    func setTripFavorite(id: String, favorite: Bool) {
+        guard let index = trips.firstIndex(where: { $0.id == id }) else { return }
+        trips[index].favorite = favorite
+    }
+
+    func setTripNotes(id: String, notes: String) {
+        guard let index = trips.firstIndex(where: { $0.id == id }) else { return }
+        trips[index].notes = notes
+    }
+
+    /// Géocode la destination pour déduire pays + drapeau, puis persiste.
+    /// Cache géré par CLGeocoder; appeler une fois par voyage suffit.
+    @MainActor
+    func resolveCountryIfNeeded(for tripId: String) async {
+        guard let trip = trips.first(where: { $0.id == tripId }) else { return }
+        let dest = trip.dest.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard dest.count >= 2 else { return }
+
+        // 1. Catalogue de lieux curaté d'abord : pour les aéroports/gares/ports,
+        //    le pays est connu de façon fiable, contrairement au géocodage qui
+        //    peut confondre un nom ambigu (« ... Air Base ») avec un autre pays.
+        //    On l'applique même si un pays/drapeau est déjà stocké, afin de
+        //    corriger d'éventuelles données erronées (ex. géocodage US à tort).
+        if let catalogCountry = TripRouteFlagResolver.country(forPlace: dest, mode: trip.transportMode),
+           let catalogFlag = TripRouteFlagResolver.flag(forCountry: catalogCountry) {
+            guard let index = trips.firstIndex(where: { $0.id == tripId }) else { return }
+            // N'écrit que si la valeur change (évite des notifications inutiles).
+            if trips[index].country != catalogCountry { trips[index].country = catalogCountry }
+            if trips[index].flag != catalogFlag { trips[index].flag = catalogFlag }
+            return
+        }
+
+        // 2. Sinon, géocodage CLGeocoder (fiable pour les villes/adresses),
+        //    uniquement si le pays n'est pas encore connu (évite le rate-limit).
+        guard trip.flag.isEmpty || trip.country.isEmpty else { return }
+        let geocoder = CLGeocoder()
+        do {
+            let placemarks = try await geocoder.geocodeAddressString(dest)
+            guard let placemark = placemarks.first else { return }
+            let code = placemark.isoCountryCode ?? ""
+            let country = placemark.country ?? ""
+            let flag = TripRouteFlagResolver.flag(forISOCode: code) ?? ""
+            guard let index = trips.firstIndex(where: { $0.id == tripId }) else { return }
+            if trips[index].country.isEmpty, !country.isEmpty { trips[index].country = country }
+            // Le drapeau est toujours réaligné sur le pays géocodé (code ISO) :
+            // source de vérité valable pour tous les pays, ce qui corrige aussi
+            // un éventuel ancien drapeau deviné/incohérent.
+            if !flag.isEmpty { trips[index].flag = flag }
+        } catch {
+            // CLGeocoder rate-limits silently — pas grave, on retentera plus tard.
+        }
+    }
+
     func deleteTrip(id: String) {
         TripCoverImageStore.delete(tripId: id)
+        TripCoverImagePalette.invalidate(tripId: id)
         let photoCount = trips.first(where: { $0.id == id })?.photoCount ?? 0
         TripPhotoStore.deleteAll(tripId: id, count: max(photoCount, 1))
         trips.removeAll { $0.id == id }
@@ -1353,9 +1707,10 @@ final class TripStore: ObservableObject {
         let emergencyEntries = self.emergencyFundEntries
         let flights = self.flights, spots = self.spots
         let planItems = self.planItems, extraKeys = self.extraPlanDayKeys
+        let friends = self.friends
         let defaults = self.defaults
         let keys = (trips: tripsKey, expenses: expensesKey, emergency: emergencyFundKey, flights: flightsKey,
-                    spots: spotsKey, plan: planItemsKey, extra: extraPlanDaysKey)
+                    spots: spotsKey, plan: planItemsKey, extra: extraPlanDaysKey, friends: friendsKey)
 
         let work = DispatchWorkItem {
             Self.save(trips,     key: keys.trips,    defaults: defaults)
@@ -1365,6 +1720,7 @@ final class TripStore: ObservableObject {
             Self.save(spots,     key: keys.spots,    defaults: defaults)
             Self.save(planItems, key: keys.plan,     defaults: defaults)
             Self.save(extraKeys, key: keys.extra,    defaults: defaults)
+            Self.save(friends,   key: keys.friends,  defaults: defaults)
         }
         saveWorkItem = work
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.4, execute: work)

@@ -40,13 +40,14 @@ struct TripsScreen: View {
                 }
                 .tripnestScrollBounceWhenNeeded()
             }
-            .safeAreaInset(edge: .bottom) {
+            .overlay(alignment: .bottom) {
                 TabBar(active: .trips, onChange: onNav)
+                    .ignoresSafeArea(edges: .bottom)
             }
         }
         .onAppear { syncSelectedTrip() }
         .onChange(of: store.trips.count) { _, _ in syncSelectedTrip() }
-        .onChange(of: store.trips.lazy.filter { $0.status != .done }.count) { _, _ in syncSelectedTrip() }
+        .onChange(of: ongoingTrips.count) { _, _ in syncSelectedTrip() }
         .animation(.easeOut(duration: 0.2), value: selectedTripId)
         .alert("Archiver ce voyage ?", isPresented: $showCompleteTripAlert) {
             Button("Annuler", role: .cancel) { tripPendingCompletion = nil }
@@ -80,7 +81,7 @@ struct TripsScreen: View {
                         TIcon(glyph: .plane, size: 28, stroke: .tAccent2)
                         Text("Aucun voyage actif")
                             .font(.tText(16, weight: .bold))
-                        Text("Pour créer un voyage, utilise l’onglet Accueil.")
+                        Text("Pour créer un voyage, utilise l'onglet Accueil.")
                             .font(.tText(13))
                             .foregroundColor(.tTextMute)
                             .multilineTextAlignment(.center)
@@ -88,22 +89,15 @@ struct TripsScreen: View {
                     .frame(maxWidth: .infinity)
                 }
             } else {
-                Text("Appuie sur un voyage pour le sélectionner et voir les actions.")
+                Text("Appuie sur un voyage pour voir tous ses détails.")
                     .font(.tText(11))
                     .foregroundColor(.tTextMute)
 
                 ForEach(ongoingTrips) { trip in
                     TripRow(
                         t: trip,
-                        isSelected: trip.id == selectedTripId,
-                        onTap: { toggleTripSelection(trip) },
-                        onClose: { selectedTripId = nil },
-                        onModify: { onEditTrip(trip.id) },
-                        onPlan: { openPlanning(for: trip) },
-                        onBudget: { openBudget(for: trip) },
-                        onSouvenirs: { openSouvenirs(for: trip) },
-                        onSpots: { openSpots(for: trip) },
-                        onDelete: { onDeleteTrip(trip.id) },
+                        isSelected: false,
+                        onTap: { openTripDetail(trip) },
                         onSetCompleted: { requestTripCompletionChange(for: trip, completed: $0) },
                         primaryTicket: store.primaryTicket(for: trip)
                     )
@@ -148,43 +142,17 @@ struct TripsScreen: View {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .fill(Color.tSurface)
                 )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.tGold.opacity(0.25), lineWidth: 1)
-                )
+                .tripnestBubbleChrome(radius: 18)
             }
             .buttonStyle(TripnestPressStyle())
         }
     }
 
-    private func toggleTripSelection(_ trip: Trip) {
-        if selectedTripId == trip.id {
-            selectedTripId = nil
-        } else {
-            selectedTripId = trip.id
-            store.selectTrip(id: trip.id)
-        }
+    private func openTripDetail(_ trip: Trip) {
+        store.selectTrip(id: trip.id)
+        selectedTripId = trip.id
         Haptics.selection()
-    }
-
-    private func openPlanning(for trip: Trip) {
-        store.selectTrip(id: trip.id)
-        onNav(.tripPlanning)
-    }
-
-    private func openBudget(for trip: Trip) {
-        store.selectTrip(id: trip.id)
-        onNav(.tripBudget)
-    }
-
-    private func openSouvenirs(for trip: Trip) {
-        store.selectTrip(id: trip.id)
-        onNav(.tripSouvenirs)
-    }
-
-    private func openSpots(for trip: Trip) {
-        store.selectTrip(id: trip.id)
-        onNav(.spots)
+        onNav(.trip)
     }
 
     private func syncSelectedTrip() {
@@ -234,11 +202,11 @@ struct TripRow: View {
     var onEdit: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
     var onSetCompleted: ((Bool) -> Void)? = nil
+    var onRestore: (() -> Void)? = nil
     var onGoToDestination: (() -> Void)? = nil
     /// Pass the trip's primary ticket so TripRow doesn't need a store subscription.
     var primaryTicket: Flight? = nil
-    @State private var outboundTravelDuration: String?
-    @State private var returnTravelDuration: String?
+    @EnvironmentObject private var store: TripStore
     @AppStorage("tripnest.currency") private var defaultCurrency: String = "EUR"
 
     private var hasMenu: Bool { onEdit != nil || onDelete != nil }
@@ -319,22 +287,35 @@ struct TripRow: View {
                         .padding(.bottom, 8)
                     }
 
-                    rowFooter
-
                     if showsTripActions {
                         tripActionChips
                     }
                 }
                 .frame(maxWidth: .infinity)
-                .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color.tSurface))
-                .overlay(
+                .background(
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color.tBorder, lineWidth: 1)
+                        .fill(LinearGradient(
+                            colors: [Color.tSurface, Color.tSurfaceStrong],
+                            startPoint: .top, endPoint: .bottom))
                 )
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .tripnestBubbleChrome(radius: 20)
                 .overlay(alignment: .topLeading) {
                     if isSelected {
                         TripSelectedBadge()
                             .padding(10)
+                    }
+                }
+                .overlay(alignment: .topTrailing) {
+                    if let onSetCompleted, t.status != .done {
+                        HStack(alignment: .top, spacing: 6) {
+                            tripViewerCounter
+                            completionCheckbox(onSetCompleted)
+                        }
+                        .padding(8)
+                    } else if let onRestore, t.status == .done {
+                        restoreButton(onRestore)
+                            .padding(8)
                     }
                 }
                 .accessibilityLabel(isSelected ? "\(t.homeDestinationTitle), sélectionné" : t.homeDestinationTitle)
@@ -356,9 +337,10 @@ struct TripRow: View {
             }
         }
         .animation(.easeOut(duration: 0.2), value: isSelected)
-        .task(id: t.routeMapLoadKey) {
-            outboundTravelDuration = await TripTravelDuration.outboundLeg(trip: t, ticket: primaryTicket)
-            returnTravelDuration = await TripTravelDuration.returnLeg(trip: t)
+        .task(id: "\(t.id)|\(t.dest)") {
+            // Toujours appelé : le catalogue peut corriger un pays/drapeau déjà
+            // stocké mais erroné (ex. géocodage US à tort), sans re-géocoder.
+            await store.resolveCountryIfNeeded(for: t.id)
         }
     }
 
@@ -402,111 +384,229 @@ struct TripRow: View {
                 .frame(width: 36, height: 36)
                 .background(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color(hex: 0x8b5cf6, opacity: 0.06))
+                        .fill(Color(hex: 0x1c0f36))
                 )
         }
         .buttonStyle(.plain)
     }
 
     private var rowHeader: some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(alignment: .top, spacing: 11) {
             TripPhoto(
                 destination: t.dest,
                 country: t.country,
                 hue: t.hue,
                 radius: 14,
                 coverKind: t.coverKind,
-                tripId: t.id
+                tripId: t.id,
+                solidColor: t.resolvedCoverColor
             )
-            .aspectRatio(TripCoverLayout.aspectRatio, contentMode: .fill)
-            .frame(width: 72, height: 72)
+            .aspectRatio(1, contentMode: .fill)
+            .frame(width: 62, height: 62)
             .clipped()
+            .background {
+                TripRowAmbilight(trip: t)
+                    .frame(width: 80, height: 80)
+                    .allowsHitTesting(false)
+            }
 
-            VStack(alignment: .leading, spacing: 5) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(t.homeDestinationTitle)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(t.displayTitle)
                         .font(.tText(17, weight: .bold))
                         .tracking(-0.3)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
-                    if t.photoCount > 0 {
-                        Label("\(t.photoCount)", systemImage: "photo")
-                            .font(.tText(10, weight: .semibold))
-                            .foregroundColor(.tAccent2)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    let flag = t.resolvedFlag
+                    if !flag.isEmpty {
+                        Text(flag)
+                            .font(.system(size: 15))
+                    }
+                    Spacer(minLength: 4)
+                }
+                .padding(.trailing, t.status == .done ? 88 : 112)
+
+                HStack(spacing: 8) {
+                    statusPill
+                    if t.favorite {
+                        favoriteTag
+                    }
+                    if let range = compactDateRange {
+                        Text("\(range) · \(t.days)j")
+                            .font(.tText(12))
+                            .foregroundColor(.tTextMute)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    } else {
+                        Text("\(t.days)j")
+                            .font(.tText(12))
+                            .foregroundColor(.tTextMute)
                     }
                 }
 
-                Text(t.tripsListRouteLine)
-                    .font(.tText(12))
-                    .foregroundColor(.tTextMute)
-                    .fixedSize(horizontal: false, vertical: true)
+                progressBar
 
-                Text(departureScheduleLine)
-                    .font(.tText(11, weight: .semibold))
-                    .foregroundColor(.tTextMute)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if let returnLine = returnScheduleLine {
-                    Text(returnLine)
-                        .font(.tText(11, weight: .semibold))
+                HStack(spacing: 10) {
+                    Text("\(t.spent)\(defaultCurrency.currencySymbol) / \(t.budget)\(defaultCurrency.currencySymbol)")
+                        .font(.tText(12))
                         .foregroundColor(.tTextMute)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer()
+                    Text("\(pct)%")
+                        .font(.tText(14, weight: .bold))
+                        .foregroundColor(pct > 100 ? .tRose : .tAccent)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(14)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
-    private var departureScheduleLine: String {
-        var line = t.tripsListDepartureLabel
-        if let duration = outboundTravelDuration {
-            line += " · \(duration) d'aller"
-        }
-        return line
-    }
-
-    private var returnScheduleLine: String? {
-        guard var line = t.tripsListReturnLabel else { return nil }
-        if let duration = returnTravelDuration {
-            line += " · \(duration) de retour"
-        }
-        return line
-    }
-
-    private var rowFooter: some View {
-        VStack(spacing: 0) {
-            Divider().background(Color.tBorder).padding(.horizontal, 14)
-
-            HStack(spacing: 10) {
-                if let onSetCompleted {
-                    TripDoneStatusControl(isDone: t.status == .done, style: .card, onChange: onSetCompleted)
-                }
-
-                Spacer()
-
-                Text("\(t.spent)\(defaultCurrency.currencySymbol) / \(t.budget)\(defaultCurrency.currencySymbol)")
-                    .font(.tText(11))
-                    .foregroundColor(.tTextMute)
-
-                Text("\(pct)%")
-                    .font(.tText(11, weight: .bold))
-                    .foregroundColor(pct > 100 ? .tRose : .tAccent2)
+    private var progressBar: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color(hex: 0x24173f)).frame(height: 6)
+                Capsule()
+                    .fill(pct > 100 ? Color.tRose : (t.status == .done ? Color.tTextMute : Color.tAccent))
+                    .frame(width: min(geo.size.width, geo.size.width * CGFloat(min(100, pct)) / 100), height: 6)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color(hex: 0xa78bfa, opacity: 0.10)).frame(height: 3)
-                    Capsule()
-                        .fill(pct > 100 ? Color.tRose : (t.status == .done ? .tTextMute : .tAccent2))
-                        .frame(width: min(geo.size.width, geo.size.width * CGFloat(min(100, pct)) / 100), height: 3)
-                }
-            }
-            .frame(height: 3)
-            .padding(.horizontal, 14)
-            .padding(.bottom, 12)
         }
+        .frame(height: 6)
+    }
+
+    /// Compteur de vues du voyage partagé.
+    private var tripViewerCounter: some View {
+        VStack(spacing: 1) {
+            Image(systemName: "person.2.fill")
+                .font(.system(size: 9, weight: .semibold))
+            Text("0")
+                .font(.tText(8, weight: .bold))
+        }
+        .foregroundColor(.tTextMute)
+        .frame(width: 24, height: 24)
+        .background(Circle().fill(Color.tSurface.opacity(0.95)))
+        .overlay(Circle().stroke(Color.tBorder, lineWidth: 1))
+        .accessibilityLabel("0 personne regarde ce voyage")
+    }
+
+
+    /// Bouton « Archiver » : envoie le voyage dans « Voyages passés ».
+    private func completionCheckbox(_ action: @escaping (Bool) -> Void) -> some View {
+        Button {
+            action(true)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "archivebox")
+                    .font(.system(size: 9, weight: .bold))
+                Text("Archiver")
+                    .font(.tText(10, weight: .bold))
+            }
+            .foregroundColor(.white.opacity(0.92))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(Color.tAccent.opacity(0.7)))
+            .overlay(Capsule().stroke(Color.tAccent2.opacity(0.5), lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Archiver dans les voyages passés")
+    }
+
+    /// Bouton « Revenir » : renvoie le voyage dans les voyages en cours.
+    private func restoreButton(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: "arrow.uturn.backward")
+                    .font(.system(size: 11, weight: .bold))
+                Text("Revenir")
+                    .font(.tText(12, weight: .bold))
+            }
+            .foregroundColor(.tAccent2)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Capsule().fill(Color.tAccent2.opacity(0.14)))
+            .overlay(Capsule().stroke(Color.tAccent2.opacity(0.4), lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Remettre dans les voyages en cours")
+    }
+
+    private var favoriteTag: some View {
+        HStack(spacing: 4) {
+            Text("❤️").font(.system(size: 9))
+            Text("Coup de cœur")
+                .font(.tText(11, weight: .bold))
+                .foregroundColor(.tRose)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4)
+        .background(Capsule().fill(Color.tRose.opacity(0.12)))
+        .overlay(Capsule().stroke(Color.tRose.opacity(0.3), lineWidth: 1))
+    }
+
+    private var statusPill: some View {
+        let status = rowStatus
+        return HStack(spacing: 5) {
+            Circle().fill(status.color).frame(width: 6, height: 6)
+            Text(status.text)
+                .font(.tText(11, weight: .bold))
+                .foregroundColor(status.color)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4)
+        .background(Capsule().fill(status.color.opacity(0.12)))
+        .overlay(Capsule().stroke(status.color.opacity(0.3), lineWidth: 1))
+    }
+
+    /// Petit mot de statut : « En cours », « Terminé » ou « Dans X jours ».
+    private var rowStatus: (text: String, color: Color) {
+        let active = Color(hex: 0x4CD964)
+        if t.status == .done { return ("Terminé", .tTextMute) }
+
+        let total = max(1, t.planDayCount)
+        guard let dep = t.departureDate else { return ("En préparation", .tGold) }
+
+        let cal = Calendar.current
+        let now = cal.startOfDay(for: Date())
+        let start = cal.startOfDay(for: dep)
+        let end: Date = {
+            if let ret = t.returnDate { return cal.startOfDay(for: ret) }
+            return cal.date(byAdding: .day, value: total - 1, to: start) ?? start
+        }()
+
+        if now < start {
+            let days = cal.dateComponents([.day], from: now, to: start).day ?? 0
+            if days <= 0 { return ("Départ aujourd'hui", active) }
+            if days == 1 { return ("Dans 1 jour", .tGold) }
+            return ("Dans \(days) jours", .tGold)
+        }
+        if now > end { return ("Terminé", .tTextMute) }
+        let elapsed = (cal.dateComponents([.day], from: start, to: now).day ?? 0) + 1
+        let dayN = min(max(1, elapsed), total)
+        return ("En cours · Jour \(dayN)/\(total)", active)
+    }
+
+    private var compactDateRange: String? {
+        let locale = Locale(identifier: "fr_FR")
+        guard let start = t.departureDate else { return nil }
+        let cal = Calendar.current
+        let monthFmt = Date.FormatStyle.dateTime.month(.abbreviated).locale(locale)
+        if let end = t.returnDate {
+            let startDay = cal.component(.day, from: start)
+            let endDay = cal.component(.day, from: end)
+            let sameMonth = cal.isDate(start, equalTo: end, toGranularity: .month)
+                && cal.isDate(start, equalTo: end, toGranularity: .year)
+            if sameMonth {
+                let month = start.formatted(monthFmt)
+                return "\(startDay) — \(endDay) \(month)"
+            }
+            let s = start.formatted(.dateTime.day().month(.abbreviated).locale(locale))
+            let e = end.formatted(.dateTime.day().month(.abbreviated).locale(locale))
+            return "\(s) — \(e)"
+        }
+        return start.formatted(.dateTime.day().month(.abbreviated).locale(locale))
     }
 }
 
@@ -552,5 +652,57 @@ private struct TripRowActionChip: View {
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(TripnestPressStyle())
+    }
+}
+
+/// Halo coloré derrière la photo d'un voyage dans la liste — variante compacte
+/// de l'effet ambilight de l'Accueil. Teinte issue de la couleur de fond du voyage.
+struct TripRowAmbilight: View {
+    let trip: Trip
+
+    @State private var sampledImageColor: Color?
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var haloColor: Color {
+        if trip.coverKind == .custom, let sampledImageColor { return sampledImageColor }
+        return trip.resolvedCoverColor
+    }
+
+    // `plusLighter` n'a aucun effet sur un fond blanc : en clair on repasse en
+    // fusion normale avec des opacités plus fortes pour que la teinte ressorte.
+    private var isLight: Bool { colorScheme == .light }
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(haloColor.opacity(isLight ? 0.42 : 0.18))
+                .blur(radius: 22)
+                .offset(x: -4, y: -1)
+
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(haloColor.opacity(isLight ? 0.28 : 0.12))
+                .blur(radius: 26)
+                .offset(x: 4, y: 1)
+        }
+        .blendMode(isLight ? .normal : .plusLighter)
+        .task(id: imageSampleKey) {
+            await refreshImageColor()
+        }
+    }
+
+    private var imageSampleKey: String {
+        let coverToken = trip.coverKind == .custom ? TripCoverImageStore.modificationToken(tripId: trip.id) : "none"
+        return "\(trip.id)|\(trip.coverKind.rawValue)|\(coverToken)"
+    }
+
+    @MainActor
+    private func refreshImageColor() async {
+        guard trip.coverKind == .custom, !trip.id.isEmpty else {
+            sampledImageColor = nil
+            return
+        }
+        let tripId = trip.id
+        let color = await TripCoverImagePalette.dominantColor(forTripId: tripId)
+        if tripId == trip.id { sampledImageColor = color }
     }
 }
