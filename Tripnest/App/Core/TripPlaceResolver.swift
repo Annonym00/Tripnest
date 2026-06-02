@@ -157,7 +157,10 @@ enum TripPlaceResolver {
     ) async -> [MKMapItem]? {
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = query
-        if let anchor {
+        // Region bias only for short-distance modes. For plane/boat the
+        // destination is often on the other side of the planet — a 2 500 km
+        // window around the origin would silently force the wrong match.
+        if let anchor, mode == .car || mode == .train {
             request.region = MKCoordinateRegion(
                 center: anchor,
                 latitudinalMeters: 2_500_000,
@@ -203,6 +206,19 @@ enum TripPlaceResolver {
             if parts.count >= 3, parts[2].count == 3, name.contains(parts[2]) || title.contains(parts[2]) {
                 score += 40
             }
+            // Hard country gate: when the catalog tells us the destination
+            // country, drop any MKLocalSearch hit landing in a different
+            // country. Otherwise a generic "Aéroport X" in Italy outscores
+            // the real airport in Japan because both match "aéroport".
+            if parts.count >= 2 {
+                let expected = parts[1]
+                let actual = normalizeKey(item.placemark.country ?? "")
+                let actualCode = normalizeKey(item.placemark.isoCountryCode ?? "")
+                if !expected.isEmpty, !actual.isEmpty,
+                   !countryMatches(expected: expected, actual: actual, actualCode: actualCode) {
+                    score -= 250
+                }
+            }
         }
 
         if name.contains(q) || title.contains(q) { score += 50 }
@@ -221,7 +237,11 @@ enum TripPlaceResolver {
             if item.placemark.thoroughfare != nil { score += 20 }
         }
 
-        if let anchor {
+        if let anchor, mode == .car || mode == .train {
+            // Proximity bias only makes sense for short-distance modes. For a
+            // flight from Lyon to Atsugi (Japan ~9 700 km) the destination is
+            // *expected* to be far from the origin — penalising distance there
+            // forced the search onto random nearby look-alikes.
             let result = CLLocation(
                 latitude: item.placemark.coordinate.latitude,
                 longitude: item.placemark.coordinate.longitude
@@ -240,6 +260,53 @@ enum TripPlaceResolver {
         guard abs(coordinate.latitude) <= 90, abs(coordinate.longitude) <= 180 else { return false }
         guard abs(coordinate.latitude) > 0.0001 || abs(coordinate.longitude) > 0.0001 else { return false }
         return true
+    }
+
+    private static let countryAliases: [String: Set<String>] = [
+        "japan":         ["japon", "nippon", "jp"],
+        "united states": ["usa", "us", "united states of america", "etats unis", "états unis"],
+        "united kingdom":["uk", "great britain", "britain", "gb", "england", "angleterre", "royaume uni"],
+        "france":        ["fr"],
+        "germany":       ["allemagne", "deutschland", "de"],
+        "spain":         ["espagne", "espana", "españa", "es"],
+        "italy":         ["italie", "italia", "it"],
+        "portugal":      ["pt"],
+        "netherlands":   ["pays bas", "holland", "nl"],
+        "switzerland":   ["suisse", "ch"],
+        "belgium":       ["belgique", "be"],
+        "china":         ["chine", "cn"],
+        "south korea":   ["coree du sud", "corée du sud", "korea", "kr"],
+        "morocco":       ["maroc", "ma"],
+        "indonesia":     ["indonesie", "indonésie", "id"],
+        "thailand":      ["thailande", "thaïlande", "th"],
+        "vietnam":       ["viet nam", "vn"],
+        "iceland":       ["islande", "is"],
+        "ireland":       ["irlande", "ie"],
+        "greece":        ["grece", "grèce", "gr"],
+        "turkey":        ["turquie", "tr"],
+        "mexico":        ["mexique", "mx"],
+        "canada":        ["ca"],
+        "brazil":        ["bresil", "brésil", "br"],
+        "argentina":     ["argentine", "ar"],
+        "australia":     ["australie", "au"],
+        "new zealand":   ["nouvelle zelande", "nouvelle zélande", "nz"],
+        "egypt":         ["egypte", "égypte", "eg"],
+    ]
+
+    private static func countryMatches(expected: String, actual: String, actualCode: String) -> Bool {
+        if expected == actual { return true }
+        if !actualCode.isEmpty, expected == actualCode { return true }
+        if let aliases = countryAliases[expected],
+           aliases.contains(actual) || aliases.contains(actualCode) {
+            return true
+        }
+        for (canonical, aliases) in countryAliases {
+            if (aliases.contains(expected) || canonical == expected),
+               canonical == actual || aliases.contains(actual) || aliases.contains(actualCode) {
+                return true
+            }
+        }
+        return false
     }
 
     private static func normalizeKey(_ text: String) -> String {
