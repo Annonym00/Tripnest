@@ -316,3 +316,173 @@ enum TripPlaceResolver {
             .replacingOccurrences(of: "'", with: " ")
     }
 }
+
+// MARK: - TripRouteFlagResolver (réintégré depuis HomeScreen lors de la fusion du 2026-06-02)
+
+enum TripRouteFlagResolver {
+    private static let aliases: [String: String] = [
+        "usa": "US",
+        "us": "US",
+        "united states": "US",
+        "etats unis": "US",
+        "etats-unis": "US",
+        "royaume uni": "GB",
+        "royaume-uni": "GB",
+        "uk": "GB",
+        "united kingdom": "GB",
+        "angleterre": "GB",
+        "emirats arabes unis": "AE",
+        "emirats-arabes-unis": "AE",
+        "united arab emirates": "AE",
+        "coree du sud": "KR",
+        "corée du sud": "KR",
+        "south korea": "KR",
+        "pays bas": "NL",
+        "pays-bas": "NL",
+        "netherlands": "NL"
+    ]
+
+    static func flag(
+        for place: String,
+        mode: TransportMode,
+        fallbackCountry: String = "",
+        fallbackFlag: String = ""
+    ) -> String {
+        // Ordre de fiabilité (valable pour tous les pays) :
+        // 1. Catalogue de lieux curaté (aéroports/gares/ports) : pays connu de
+        //    façon sûre, contrairement au géocodage qui peut confondre un nom
+        //    ambigu (« ... Air Base ») avec un autre pays.
+        // 2. Pays explicite du voyage.
+        // 3. Texte libre de la destination.
+        let trimmedFallback = fallbackCountry.trimmingCharacters(in: .whitespacesAndNewlines)
+        let candidates = [
+            countryFromCatalog(place: place, mode: mode),
+            trimmedFallback.isEmpty || trimmedFallback == "À définir" ? nil : trimmedFallback,
+            countryFromText(place)
+        ]
+
+        for candidate in candidates {
+            if let candidate, let flag = flag(forCountryOrCode: candidate) {
+                return flag
+            }
+        }
+        return fallbackFlag
+    }
+
+    private static func countryFromCatalog(place: String, mode: TransportMode) -> String? {
+        let trimmed = place.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count >= 2 else { return nil }
+
+        var modes: [TransportMode] = mode == .car ? [] : [mode]
+        for fallbackMode in [TransportMode.plane, .train, .boat] where !modes.contains(fallbackMode) {
+            modes.append(fallbackMode)
+        }
+
+        for mode in modes {
+            if let match = TransportPlaceCatalog.bestMatch(mode: mode, query: trimmed),
+               let country = countryFromSubtitle(match.subtitle) {
+                return country
+            }
+        }
+        return nil
+    }
+
+    private static func countryFromSubtitle(_ subtitle: String) -> String? {
+        let parts = subtitle
+            .split(separator: "·")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        guard parts.count >= 2 else { return nil }
+
+        if let last = parts.last {
+            let upper = last.uppercased()
+            if upper.count == 2, upper.allSatisfy(\.isLetter) {
+                return upper
+            }
+            if upper.count == 3, upper.allSatisfy(\.isLetter), parts.count >= 3 {
+                return parts[parts.count - 2]
+            }
+            return last
+        }
+        return nil
+    }
+
+    private static func countryFromText(_ text: String) -> String? {
+        let separators = CharacterSet(charactersIn: ",;|/()[]{}")
+        let pieces = text
+            .components(separatedBy: separators)
+            .flatMap { $0.components(separatedBy: "·") }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        for piece in pieces.reversed() {
+            if flag(forCountryOrCode: piece) != nil {
+                return piece
+            }
+        }
+        return nil
+    }
+
+    private static func flag(forCountryOrCode value: String) -> String? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let upper = trimmed.uppercased()
+        if upper.count == 2, upper.allSatisfy(\.isLetter) {
+            return emojiFlag(forRegionCode: upper)
+        }
+
+        let normalized = normalizeCountry(trimmed)
+        if let aliasCode = aliases[normalized] {
+            return emojiFlag(forRegionCode: aliasCode)
+        }
+
+        for region in Locale.Region.isoRegions {
+            let code = region.identifier
+            guard code.count == 2 else { continue }
+            let fr = Locale(identifier: "fr_FR").localizedString(forRegionCode: code).map(normalizeCountry)
+            let en = Locale(identifier: "en_US").localizedString(forRegionCode: code).map(normalizeCountry)
+            let current = Locale.current.localizedString(forRegionCode: code).map(normalizeCountry)
+            if [fr, en, current].contains(where: { $0 == normalized }) {
+                return emojiFlag(forRegionCode: code)
+            }
+        }
+        return nil
+    }
+
+    static func flag(forISOCode code: String) -> String? {
+        emojiFlag(forRegionCode: code)
+    }
+
+    /// Pays (nom ou code ISO) déduit du catalogue de lieux curaté (aéroports,
+    /// gares, ports). Source plus fiable que le géocodage pour les noms ambigus
+    /// (ex. « ... Air Base » que le géocodeur confond avec une base US).
+    static func country(forPlace place: String, mode: TransportMode) -> String? {
+        countryFromCatalog(place: place, mode: mode) ?? countryFromText(place)
+    }
+
+    /// Drapeau emoji pour un nom de pays ou un code ISO (accès public).
+    static func flag(forCountry value: String) -> String? {
+        flag(forCountryOrCode: value)
+    }
+
+    private static func emojiFlag(forRegionCode code: String) -> String? {
+        let upper = code.uppercased()
+        guard upper.count == 2, upper.allSatisfy(\.isLetter) else { return nil }
+        let scalars = upper.unicodeScalars.compactMap { UnicodeScalar(127397 + $0.value) }
+        guard scalars.count == 2 else { return nil }
+        return String(String.UnicodeScalarView(scalars))
+    }
+
+    private static func normalizeCountry(_ text: String) -> String {
+        text
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .lowercased()
+            .replacingOccurrences(of: "-", with: " ")
+            .replacingOccurrences(of: "'", with: " ")
+            .replacingOccurrences(of: "’", with: " ")
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+    }
+}

@@ -84,7 +84,7 @@ struct CompletedTripsScreen: View {
                         t: trip,
                         isSelected: false,
                         onTap: { openTripDetail(trip) },
-                        onRestore: { restoreTrip(trip) },
+                        onSetCompleted: { completed in if !completed { restoreTrip(trip) } },
                         primaryTicket: store.primaryTicket(for: trip)
                     )
                 }

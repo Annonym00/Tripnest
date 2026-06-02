@@ -2069,3 +2069,55 @@ func currencyFlagEmoji(_ code: String) -> String {
     let base: UInt32 = 127397
     return String(cc.unicodeScalars.compactMap { Unicode.Scalar(base + $0.value) }.map { Character($0) })
 }
+
+// MARK: - TripRowAmbilight (réintégré depuis TripsScreen lors de la fusion)
+
+struct TripRowAmbilight: View {
+    let trip: Trip
+
+    @State private var sampledImageColor: Color?
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var haloColor: Color {
+        if trip.coverKind == .custom, let sampledImageColor { return sampledImageColor }
+        return trip.resolvedCoverColor
+    }
+
+    // `plusLighter` n'a aucun effet sur un fond blanc : en clair on repasse en
+    // fusion normale avec des opacités plus fortes pour que la teinte ressorte.
+    private var isLight: Bool { colorScheme == .light }
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(haloColor.opacity(isLight ? 0.42 : 0.18))
+                .blur(radius: 22)
+                .offset(x: -4, y: -1)
+
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(haloColor.opacity(isLight ? 0.28 : 0.12))
+                .blur(radius: 26)
+                .offset(x: 4, y: 1)
+        }
+        .blendMode(isLight ? .normal : .plusLighter)
+        .task(id: imageSampleKey) {
+            await refreshImageColor()
+        }
+    }
+
+    private var imageSampleKey: String {
+        let coverToken = trip.coverKind == .custom ? TripCoverImageStore.modificationToken(tripId: trip.id) : "none"
+        return "\(trip.id)|\(trip.coverKind.rawValue)|\(coverToken)"
+    }
+
+    @MainActor
+    private func refreshImageColor() async {
+        guard trip.coverKind == .custom, !trip.id.isEmpty else {
+            sampledImageColor = nil
+            return
+        }
+        let tripId = trip.id
+        let color = await TripCoverImagePalette.dominantColor(forTripId: tripId)
+        if tripId == trip.id { sampledImageColor = color }
+    }
+}
