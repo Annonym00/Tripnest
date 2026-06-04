@@ -66,9 +66,21 @@ struct OnboardingFlow: View {
         .environment(\.tripnestDefaultCTAAction, advance)
         .environment(\.tripnestBackAction, goBack)
         .environment(\.tripnestOnboardingStep, navigator.step)
+        .environment(\.tripnestCanAdvance, canAdvance)
+    }
+
+    /// Une réponse est obligatoire sur les étapes-questions ; partout ailleurs on avance librement.
+    private var canAdvance: Bool {
+        switch navigator.step {
+        case 2, 3, 5, 6, 7, 11: return onboarding.single[navigator.step] != nil
+        case 9, 10:             return !(onboarding.multiple[navigator.step]?.isEmpty ?? true)
+        case 13:                return (onboarding.multiple[13]?.count ?? 0) >= 3
+        default:                return true
+        }
     }
 
     private func advance() {
+        guard canAdvance else { return }
         if navigator.step >= OB_TOTAL {
             createTripFromOnboardingIfNeeded()
             onFinish()
