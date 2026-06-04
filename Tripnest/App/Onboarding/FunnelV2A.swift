@@ -75,7 +75,7 @@ struct V2_02: View {
         ) {
             VStack(spacing: 10) {
                 OptCard(emoji: "wallet", label: "Économiser sur mes voyages",
-                        detail: "J'ai déjà dépassé mon budget une fois de trop")
+                        detail: "J'ai déjà dépassé mon budget une fois de trop", active: true)
                 OptCard(emoji: "map", label: "Mieux m'organiser",
                         detail: "Mes voyages sont chaotiques", color: .tRose)
                 OptCard(emoji: "globe", label: "Voir plus du monde",
@@ -100,7 +100,7 @@ struct V2_03: View {
         ) {
             VStack(spacing: 10) {
                 OptCard(emoji: "wallet", label: "Dépasser mon budget",
-                        detail: "Je perds le contrôle vite", color: .tGold)
+                        detail: "Je perds le contrôle vite", active: true, color: .tGold)
                 OptCard(emoji: "list", label: "Oublier les détails",
                         detail: "Réservations, horaires, documents", color: .tRose)
                 OptCard(emoji: "mind", label: "Tout planifier en amont",
@@ -187,7 +187,7 @@ struct V2_05: View {
     @EnvironmentObject private var onboarding: OnboardingState
     private struct Opt { let glyph: TIcon.Glyph; let label, detail: String; let active: Bool; let color: Color }
     private let opts: [Opt] = [
-        .init(glyph: .user, label: "Solo",        detail: "Indépendant·e", active: false, color: .tAccent2),
+        .init(glyph: .user, label: "Solo",        detail: "Indépendant·e", active: true,  color: .tAccent2),
         .init(glyph: .heart, label: "En couple",   detail: "Voyage à deux", active: false, color: .tRose),
         .init(glyph: .home, label: "En famille",  detail: "Avec enfants",  active: false, color: .tGold),
         .init(glyph: .trips, label: "Entre amis",  detail: "Groupe",        active: false, color: .tMint),
@@ -250,7 +250,7 @@ struct V2_06: View {
             title: AnyView(Text("À quelle fréquence\npars-tu en voyage ?"))
         ) {
             VStack(spacing: 8) {
-                OptCard(emoji: "plane", label: "Plusieurs fois par an", detail: "4+ voyages")
+                OptCard(emoji: "plane", label: "Plusieurs fois par an", detail: "4+ voyages", active: true)
                 OptCard(emoji: "weather", label: "Une à deux fois par an", detail: "1–2 voyages")
                 OptCard(emoji: "globe", label: "Un grand voyage par an", detail: "Long séjour")
                 OptCard(emoji: "star", label: "Plus rarement, mais je rêve", detail: "")
@@ -272,7 +272,7 @@ struct V2_07: View {
             VStack(spacing: 10) {
                 Color.clear.frame(height: 10)
                 OptCard(emoji: "wallet", label: "Oui, plusieurs fois",
-                        detail: "C'est même devenu une habitude", color: .tGold)
+                        detail: "C'est même devenu une habitude", active: true, color: .tGold)
                 OptCard(emoji: "user", label: "Oui, une fois ou deux",
                         detail: "Et c'est pour ça que je suis ici")
                 OptCard(emoji: "unknown", label: "Je ne sais pas",
@@ -291,10 +291,6 @@ struct V2_08: View {
     @Environment(\.tripnestOnboardingStep) private var step
     private var pct: Double { onboarding.slider(step: step, fallback: 23) }
     private var val: Int { Int(50 + pct / 100 * (1500 - 50)) }
-    private var insights: OnboardingInsights { OnboardingInsights(state: onboarding) }
-    private var trips: Int { insights.tripsPerYear }
-    private var annualLoss: Int { val * trips }
-    private func fr(_ v: Int) -> String { v.formatted(.number.locale(Locale(identifier: "fr_FR"))) }
 
     var body: some View {
         OBQuestion(
@@ -321,8 +317,8 @@ struct V2_08: View {
                 }
                 .padding(.horizontal, 6)
                 TCard(padding: 12) {
-                    (Text("Sur \(trips) voyage\(trips > 1 ? "s" : "") par an, ça fait ").font(.tText(12))
-                     + Text("\(fr(annualLoss))€ par an").font(.tText(12, weight: .bold)).foregroundColor(.tRose)
+                    (Text("Sur 4 voyages par an, ça fait ").font(.tText(12))
+                     + Text("1 520€ par an").font(.tText(12, weight: .bold)).foregroundColor(.tRose)
                      + Text(" de perte.").font(.tText(12)))
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
@@ -344,9 +340,9 @@ struct V2_09: View {
         ) {
             VStack(spacing: 8) {
                 MultiCard(emoji: "sheet", label: "Une feuille Excel / Google Sheets",
-                          detail: "Toujours obsolète, jamais à jour")
+                          detail: "Toujours obsolète, jamais à jour", active: true)
                 MultiCard(emoji: "notes", label: "L'app Notes",
-                          detail: "Tout est en vrac", color: .tRose)
+                          detail: "Tout est en vrac", active: true, color: .tRose)
                 MultiCard(emoji: "wallet", label: "L'app de ma banque",
                           detail: "Catégories pas adaptées au voyage")
                 MultiCard(emoji: "unknown", label: "Rien de précis",
@@ -370,13 +366,13 @@ struct V2_10: View {
         ) {
             VStack(spacing: 8) {
                 MultiCard(emoji: "time", label: "Trop de temps à saisir",
-                          detail: "Je finis par ne plus le faire")
+                          detail: "Je finis par ne plus le faire", active: true)
                 MultiCard(emoji: "wallet", label: "Les conversions de devises",
-                          detail: "Je ne sais jamais où j'en suis", color: .tGold)
+                          detail: "Je ne sais jamais où j'en suis", active: true, color: .tGold)
                 MultiCard(emoji: "bell", label: "Pas de mode hors-ligne",
                           detail: "Inutile en plein voyage")
                 MultiCard(emoji: "globe", label: "Aucune vision d'ensemble",
-                          detail: "Je découvre les dégâts au retour", color: .tRose)
+                          detail: "Je découvre les dégâts au retour", active: true, color: .tRose)
                 MultiCard(emoji: "spot", label: "Je perds les lieux découverts",
                           detail: "Adresses oubliées, restos perdus", color: .tBlue)
             }
@@ -395,7 +391,7 @@ struct V2_11: View {
         ) {
             VStack(spacing: 10) {
                 OptCard(emoji: "wallet", label: "Économiser 500€+ sur mes voyages",
-                        detail: "Plus de marge, moins de stress", color: .tGold)
+                        detail: "Plus de marge, moins de stress", active: true, color: .tGold)
                 OptCard(emoji: "map", label: "Visiter 3 nouvelles destinations",
                         detail: "Sortir de ma zone", color: .tRose)
                 OptCard(emoji: "calendar", label: "Mieux planifier mes vacances",
@@ -412,7 +408,7 @@ struct V2_11: View {
 struct V2_12: View {
     @EnvironmentObject private var onboarding: OnboardingState
     @Environment(\.tripnestOnboardingStep) private var step
-    @State private var style = ""
+    @State private var style = "Confort"
     private var pct: Double { onboarding.slider(step: step, fallback: 25) }
     private var v: Int { Int(500 + pct / 100 * (6000 - 500)) }
 
@@ -459,15 +455,15 @@ struct V2_13: View {
     @EnvironmentObject private var onboarding: OnboardingState
     private struct Dest { let glyph: TIcon.Glyph; let name: String; let hue: Double; let on: Bool }
     private let dests: [Dest] = [
-        .init(glyph: .globe, name: "Japon",    hue: 340, on: false),
-        .init(glyph: .globe, name: "Maroc",    hue: 50,  on: false),
+        .init(glyph: .globe, name: "Japon",    hue: 340, on: true),
+        .init(glyph: .globe, name: "Maroc",    hue: 50,  on: true),
         .init(glyph: .globe, name: "Mexique",  hue: 20,  on: false),
-        .init(glyph: .search, name: "À définir", hue: 160, on: false),
+        .init(glyph: .search, name: "À définir", hue: 160, on: true),
         .init(glyph: .globe, name: "Islande",  hue: 220, on: false),
         .init(glyph: .globe, name: "Portugal", hue: 25,  on: false),
         .init(glyph: .globe, name: "Vietnam",  hue: 130, on: false),
         .init(glyph: .globe, name: "Italie",   hue: 15,  on: false),
-        .init(glyph: .globe, name: "Pérou",    hue: 90,  on: false),
+        .init(glyph: .globe, name: "Pérou",    hue: 90,  on: true),
     ]
 
     var body: some View {

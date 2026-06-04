@@ -1255,7 +1255,6 @@ struct TField: View {
 
 struct CTA: View {
     @Environment(\.tripnestDefaultCTAAction) private var defaultAction
-    @Environment(\.tripnestCanAdvance) private var canAdvance
 
     let label: String
     var ghost: Bool = false
@@ -1263,10 +1262,6 @@ struct CTA: View {
     var height: CGFloat = 56
     var fontSize: CGFloat = 16
     var action: (() -> Void)? = nil
-
-    /// Une étape-question sans réponse bloque uniquement le bouton "avancer"
-    /// (celui qui n'a pas d'action explicite).
-    private var gated: Bool { action == nil && !canAdvance }
 
     var body: some View {
         if ghost {
@@ -1278,19 +1273,17 @@ struct CTA: View {
                     .padding(.vertical, 14)
             }
             .buttonStyle(TripnestPressStyle())
-            .opacity(gated ? 0.4 : 1)
-            .disabled(gated)
         } else {
             Button(action: { (action ?? defaultAction)() }) {
                 Text(label)
                     .font(.tText(fontSize, weight: .bold))
                     .tracking(-0.2)
-                    .foregroundColor(gated ? .tTextDim : (secondary ? .tText : .white))
+                    .foregroundColor(secondary ? .tText : .white)
                     .frame(maxWidth: .infinity)
                     .frame(height: height)
                     .background(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(gated || secondary
+                            .fill(secondary
                                 ? AnyShapeStyle(Color.tSurface)
                                 : AnyShapeStyle(LinearGradient(
                                     colors: [.tAccent2, .tAccentDeep],
@@ -1298,14 +1291,13 @@ struct CTA: View {
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(gated || secondary ? Color.tBorderStrong : Color(hex: 0xa78bfa, opacity: 0.4),
+                            .stroke(secondary ? Color.tBorderStrong : Color(hex: 0xa78bfa, opacity: 0.4),
                                     lineWidth: 1)
                     )
-                    .shadow(color: (gated || secondary) ? .clear : Color.tAccent.opacity(0.35),
+                    .shadow(color: secondary ? .clear : Color.tAccent.opacity(0.35),
                             radius: 12, x: 0, y: 12)
             }
             .buttonStyle(TripnestPressStyle())
-            .disabled(gated)
         }
     }
 }
@@ -1322,10 +1314,6 @@ private struct TripnestOnboardingStepKey: EnvironmentKey {
     static let defaultValue: Int = 0
 }
 
-private struct TripnestCanAdvanceKey: EnvironmentKey {
-    static let defaultValue: Bool = true
-}
-
 extension EnvironmentValues {
     var tripnestDefaultCTAAction: () -> Void {
         get { self[TripnestDefaultCTAActionKey.self] }
@@ -1340,13 +1328,6 @@ extension EnvironmentValues {
     var tripnestOnboardingStep: Int {
         get { self[TripnestOnboardingStepKey.self] }
         set { self[TripnestOnboardingStepKey.self] = newValue }
-    }
-
-    /// Faux uniquement sur une étape-question dont la réponse obligatoire manque.
-    /// Vrai partout ailleurs (écrans informatifs, sliders, actions explicites).
-    var tripnestCanAdvance: Bool {
-        get { self[TripnestCanAdvanceKey.self] }
-        set { self[TripnestCanAdvanceKey.self] = newValue }
     }
 }
 

@@ -503,9 +503,6 @@ struct V2_21: View {
 // MARK: - 22 · IDENTITÉ ─────────────────────────────────────────────────────
 
 struct V2_22: View {
-    @EnvironmentObject private var onboarding: OnboardingState
-    private var insights: OnboardingInsights { OnboardingInsights(state: onboarding) }
-
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
@@ -513,11 +510,11 @@ struct V2_22: View {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("ANALYSE TERMINÉE")
                         .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
-                    (Text("Tu es un\n").font(.tDisplay(30)).tracking(-0.9)
-                     + Text(insights.profileType).font(.tDisplay(30)).foregroundColor(.tAccent2)
+                    (Text("Tu es une\n").font(.tDisplay(30)).tracking(-0.9)
+                     + Text("Voyageur organisé").font(.tDisplay(30)).foregroundColor(.tAccent2)
                      + Text(".").font(.tDisplay(30)))
                         .padding(.top, 8)
-                    Text("Profil construit à partir de tes 15 réponses.")
+                    Text("Ce profil évoluera avec tes vrais voyages.")
                         .font(.tText(13)).foregroundColor(.tTextMute).padding(.top, 8)
 
                     identityCard.padding(.top, 18)
@@ -545,46 +542,47 @@ struct V2_22: View {
                 }
                 Text("TYPE").font(.tText(12, weight: .bold)).tracking(1.5)
                     .foregroundColor(.tTextMute).padding(.top, 14)
-                Text(insights.profileType).font(.tDisplay(22)).tracking(-0.5).padding(.top, 2)
-                Text(insights.profileTagline)
+                Text("Voyageur organisé").font(.tDisplay(22)).tracking(-0.5).padding(.top, 2)
+                Text("Tu aimes voyager en autonomie, mais tu veux du contrôle. Tu optimises sans sacrifier le plaisir.")
                     .font(.tText(13)).foregroundColor(.tTextMute)
                     .multilineTextAlignment(.center)
                     .padding(.top, 6).padding(.horizontal, 10)
 
-                HStack(spacing: 10) {
-                    statChip("BUDGET MOYEN", insights.euros(insights.avgBudget), .tAccent2)
-                    statChip("OBJECTIF", "−\(insights.euros(insights.savingsGoal))", .tMint)
+                VStack(spacing: 10) {
+                    trait("Budget", 0)
+                    trait("Spots", 0)
+                    trait("Vols", 0)
+                    trait("Organisation", 0)
                 }
                 .padding(.top, 18)
-                if insights.dreamCount > 0 {
-                    statChip("DESTINATIONS RÊVÉES", "\(insights.dreamCount) en tête", .tRose)
-                        .padding(.top, 10)
-                }
             }
             .frame(maxWidth: .infinity)
         }
     }
 
-    private func statChip(_ label: String, _ value: String, _ color: Color) -> some View {
-        VStack(spacing: 3) {
-            Text(label).font(.tText(10, weight: .bold)).tracking(0.5).foregroundColor(.tTextMute)
-            Text(value).font(.tText(17, weight: .black)).tracking(-0.3).foregroundColor(color)
+    private func trait(_ label: String, _ v: Int) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(label).font(.tText(12)).foregroundColor(.tTextMute)
+                Spacer()
+                Text("\(v)%").font(.tText(12, weight: .bold))
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color(hex: 0x2b1d49)).frame(height: 4)
+                    Capsule().fill(LinearGradient(colors: [.tAccent2, .tAccent],
+                                                  startPoint: .leading, endPoint: .trailing))
+                        .frame(width: geo.size.width * CGFloat(v) / 100, height: 4)
+                }
+            }
+            .frame(height: 4)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(color.opacity(0.10)))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(color.opacity(0.25), lineWidth: 1))
     }
 }
 
 // MARK: - 23 · REVEAL PLAN ──────────────────────────────────────────────────
 
 struct V2_23: View {
-    @EnvironmentObject private var onboarding: OnboardingState
-    @AppStorage("tripnest.onboarding.startDate") private var startDate = ""
-    @AppStorage("tripnest.onboarding.endDate") private var endDate = ""
-    private var insights: OnboardingInsights { OnboardingInsights(state: onboarding) }
-
     private let included: [(String, String)] = [
         ("Itinéraire",                       "À compléter avec tes étapes"),
         ("Spots sauvegardés",                "Tes vrais lieux à retrouver"),
@@ -592,28 +590,6 @@ struct V2_23: View {
         ("Alertes budget intelligentes",     "On t'avertit avant 100%"),
         ("Souvenirs",                        "Tes voyages terminés"),
     ]
-
-    private var planTitle: Text {
-        if insights.hasRealDestination {
-            return Text("Ton voyage à\n").font(.tDisplay(28)).tracking(-0.8)
-                + Text(insights.destination).font(.tDisplay(28)).tracking(-0.8).foregroundColor(.tAccent2)
-                + Text(",\ndéjà esquissé pour toi.").font(.tDisplay(28)).tracking(-0.8)
-        } else {
-            return Text("Ton prochain voyage\n").font(.tDisplay(28)).tracking(-0.8)
-                + Text("déjà esquissé").font(.tDisplay(28)).tracking(-0.8).foregroundColor(.tAccent2)
-                + Text(" pour toi.").font(.tDisplay(28)).tracking(-0.8)
-        }
-    }
-
-    private var datesLabel: String {
-        let s = startDate.trimmingCharacters(in: .whitespaces)
-        let e = endDate.trimmingCharacters(in: .whitespaces)
-        switch (s.isEmpty, e.isEmpty) {
-        case (false, false): return "\(s) → \(e)"
-        case (false, true):  return "À partir du \(s)"
-        default:             return "Dates à définir"
-        }
-    }
 
     var body: some View {
         ScreenShell {
@@ -623,7 +599,9 @@ struct V2_23: View {
                     VStack(alignment: .leading, spacing: 0) {
                         Text("TON PLAN PERSONNALISÉ")
                             .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
-                        planTitle.padding(.top, 8)
+                        Text("Ton prochain voyage\ndéjà esquissé pour toi.")
+                            .font(.tDisplay(28)).tracking(-0.8)
+                            .padding(.top, 8)
 
                         coverBlock.padding(.top, 18)
                         statsCard.padding(.top, 12)
@@ -648,7 +626,7 @@ struct V2_23: View {
 
     private var coverBlock: some View {
         ZStack(alignment: .topLeading) {
-            DestPhoto(label: insights.destination, hue: 340, radius: 0)
+            DestPhoto(label: "Destination à définir", hue: 340, radius: 0)
                 .frame(height: 170)
             LinearGradient(stops: [
                 .init(color: Color.tBg0.opacity(0.1), location: 0),
@@ -664,8 +642,8 @@ struct V2_23: View {
             VStack {
                 Spacer()
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(insights.destination).font(.tDisplay(26)).tracking(-0.8).foregroundColor(.white)
-                    Text(datesLabel)
+                    Text("Ton voyage").font(.tDisplay(26)).tracking(-0.8).foregroundColor(.white)
+                    Text("Dates à définir · durée à définir")
                         .font(.tText(12)).foregroundColor(.white.opacity(0.8))
                 }
                 .padding(14)
@@ -679,11 +657,11 @@ struct V2_23: View {
     private var statsCard: some View {
         TCard(padding: 14) {
             HStack {
-                statBlock("BUDGET", insights.euros(insights.avgBudget), .tAccent2)
+                statBlock("BUDGET", "À définir", .tAccent2)
                 Spacer()
-                statBlock("OBJECTIF", "−\(insights.euros(insights.savingsGoal))", .tMint)
+                statBlock("ÉCONOMIE", "À définir", .tMint)
                 Spacer()
-                statBlock("RÊVÉES", "\(insights.dreamCount)", .tRose)
+                statBlock("SPOTS", "0", .tRose)
             }
         }
     }
@@ -1029,395 +1007,157 @@ struct V2_27: View {
     }
 }
 
-// MARK: - 28 · PAYWALL (conversion) ──────────────────────────────────────────
-
-enum PaywallPlan { case annual, monthly }
+// MARK: - 28 · HARD PAYWALL ─────────────────────────────────────────────────
 
 struct V2_28: View {
     @Environment(\.tripnestDefaultCTAAction) private var defaultAction
-    @EnvironmentObject private var onboarding: OnboardingState
-
-    @State private var plan: PaywallPlan = .annual
-    @State private var showClose = false
-    @State private var showLastChance = false
-
-    // Prix d'affichage — à brancher sur StoreKit/RevenueCat plus tard.
-    private let annualPrice = "29,99 €"
-    private let annualPerMonth = "2,50 €"
-    private let monthlyPrice = "4,99 €"
-    private let annualPriceDiscount = "14,99 €" // offre de la dernière chance (−50 %)
-
-    // Réponses du funnel renvoyées sur l'écran de paiement.
-    private var insights: OnboardingInsights { OnboardingInsights(state: onboarding) }
-
-    private let perks: [(TIcon.Glyph, String, Color)] = [
-        (.wallet, "Budget & suivi des dépenses illimités",   .tGold),
-        (.globe,  "Conversion multi-devises en temps réel",  .tBlue),
-        (.spot,   "Spots & lieux favoris sans limite",        .tRose),
-        (.plane,  "Suivi de vols et alertes de départ",       .tAccent2),
-        (.bell,   "Alertes budget intelligentes",             .tMint),
-        (.cam,    "Souvenirs & albums de voyage",             .tAccent2),
-    ]
 
     var body: some View {
         ScreenShell {
-            ZStack {
-                VStack(spacing: 0) {
-                    topBar
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: 0) {
-                            hero.padding(.top, 6)
-                            ratingStrip.padding(.top, 14)
-                            savingsCard.padding(.top, 16)
-                            valueStack.padding(.top, 16)
-                            testimonialCard.padding(.top, 14)
-                            planSelector.padding(.top, 18)
-                            if plan == .annual { trialTimeline.padding(.top, 14) }
-                            ctaBlock.padding(.top, 16)
-                            footerLinks.padding(.top, 14)
-                        }
-                        .padding(.horizontal, 24).padding(.bottom, 26)
-                    }
-                }
-
-                if showLastChance {
-                    lastChanceOverlay
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
-                        .zIndex(1)
-                }
-            }
-        }
-        .onAppear {
-            // Le bouton fermer apparaît avec un léger délai (réduit l'abandon réflexe).
-            Task {
-                try? await Task.sleep(nanoseconds: 2_500_000_000)
-                await MainActor.run { withAnimation(.easeIn(duration: 0.3)) { showClose = true } }
-            }
-        }
-    }
-
-    // MARK: Top bar
-
-    private var topBar: some View {
-        HStack {
-            Spacer()
-            Button(action: { withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) { showLastChance = true } }) {
-                TIcon(glyph: .close, size: 12, stroke: .tTextMute)
-                    .frame(width: 24, height: 24)
-                    .opacity(0.4)
-            }
-            .buttonStyle(.plain)
-            .opacity(showClose ? 1 : 0)
-            .disabled(!showClose)
-        }
-        .padding(.horizontal, 22).padding(.top, 8)
-    }
-
-    // MARK: Offre de la dernière chance (downsell au tap sur ✕)
-
-    private var lastChanceOverlay: some View {
-        ZStack {
-            Color.tBg0.ignoresSafeArea()
-            RadialGradient(colors: [Color.tGold.opacity(0.22), .clear],
-                           center: .top, startRadius: 0, endRadius: 360)
-                .ignoresSafeArea()
-
             VStack(spacing: 0) {
-                Spacer(minLength: 0)
-
-                VStack(spacing: 18) {
-                    HStack(spacing: 8) {
-                        TIcon(glyph: .gift, size: 12, stroke: .tGold)
-                        Text("OFFRE UNIQUE · MAINTENANT")
-                            .font(.tText(11, weight: .black)).tracking(1).foregroundColor(.tGold)
-                    }
-                    .padding(.horizontal, 14).padding(.vertical, 6)
-                    .background(Capsule().fill(Color.tGold.opacity(0.12)))
-                    .overlay(Capsule().stroke(Color.tGold.opacity(0.35), lineWidth: 1))
-
-                    VStack(spacing: 10) {
-                        (Text("Attends — ").font(.tDisplay(32)).tracking(-1)
-                         + Text("−50 %").font(.tDisplay(32)).tracking(-1)
-                            .foregroundStyle(LinearGradient(colors: [.tGold, .tAccent2],
-                                                            startPoint: .leading, endPoint: .trailing))
-                         + Text("\npour toi.").font(.tDisplay(32)).tracking(-1))
-                            .multilineTextAlignment(.center)
-                        Text(lastChanceSubtitle)
-                            .font(.tText(14)).foregroundColor(.tTextMute)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 12)
-                    }
-
-                    offerCard
-                }
-                .padding(.horizontal, 28)
-
-                Spacer(minLength: 0)
-
-                VStack(spacing: 10) {
-                    CTA(label: "Activer −50 % et démarrer l'essai", height: 60, fontSize: 16, action: defaultAction)
+                HStack {
+                    Spacer()
                     Button(action: defaultAction) {
-                        Text("Non merci, je laisse passer cette offre")
-                            .font(.tText(13, weight: .semibold)).foregroundColor(.tTextDim)
-                            .frame(maxWidth: .infinity).padding(.vertical, 8)
+                        TIcon(glyph: .close, size: 12, stroke: .tTextMute)
+                            .frame(width: 24, height: 24)
+                            .opacity(0.35)
                     }
                     .buttonStyle(.plain)
-                    Text("Essai 7 jours, puis \(annualPriceDiscount) la 1ʳᵉ année (puis \(annualPrice)/an). Annule quand tu veux.")
-                        .font(.tText(10)).foregroundColor(.tTextDim)
-                        .multilineTextAlignment(.center)
                 }
-                .padding(.horizontal, 28).padding(.bottom, 30)
-            }
-        }
-    }
+                .padding(.horizontal, 22).padding(.top, 8)
 
-    private var lastChanceSubtitle: String {
-        insights.hasRealDestination
-            ? "Tu étais à un pas de préparer ton voyage à \(insights.destination). On te facilite le départ."
-            : "Tu étais à un pas de viser ton objectif de −\(insights.euros(insights.savingsGoal)). On te facilite le départ."
-    }
-
-    private var offerCard: some View {
-        TCard(padding: 18, bg: AnyShapeStyle(Color.tMint.opacity(0.06)), border: Color.tGold.opacity(0.35)) {
-            VStack(spacing: 12) {
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(annualPrice)
-                        .font(.tText(18, weight: .bold)).foregroundColor(.tTextMute)
-                        .strikethrough(true, color: .tTextMute)
-                    Text(annualPriceDiscount)
-                        .font(.tDisplay(34)).tracking(-1)
-                        .foregroundStyle(LinearGradient(colors: [.tGold, .tAccent2],
-                                                        startPoint: .top, endPoint: .bottom))
-                    Text("/ 1ʳᵉ année")
-                        .font(.tText(12)).foregroundColor(.tTextMute)
-                }
-                Rectangle().fill(Color.tBorder).frame(height: 1)
-                HStack(spacing: 10) {
-                    TIcon(glyph: .check, size: 14, stroke: .tMint, strokeWidth: 3)
-                    Text("Tout Premium + essai 7 jours offert")
-                        .font(.tText(13, weight: .semibold))
-                    Spacer()
-                    Text("−50 %")
-                        .font(.tText(11, weight: .black)).foregroundColor(.tBg0)
-                        .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(RoundedRectangle(cornerRadius: 7).fill(Color.tGold))
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        titleBlock.padding(.top, 14)
+                        valueCard.padding(.top, 16)
+                        trialTimeline.padding(.top, 14)
+                        CTA(label: "Entrer dans Tripnest", height: 60, fontSize: 17)
+                            .padding(.top, 12)
+                        Text("Aucun paiement configuré dans cette version.")
+                            .font(.tText(10)).foregroundColor(.tTextDim)
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 8)
+                    }
+                    .padding(.horizontal, 24).padding(.bottom, 26)
                 }
             }
         }
     }
 
-    // MARK: Hero
+    private var urgencyBanner: some View {
+        HStack(spacing: 8) {
+            Circle().fill(Color.tGold).frame(width: 6, height: 6)
+                .shadow(color: .tGold, radius: 5)
+            Text("TON ESPACE EST PRÊT")
+                .font(.tText(11, weight: .black)).tracking(1).foregroundColor(.tGold)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 6)
+        .background(Capsule().fill(Color.tGold.opacity(0.12)))
+        .overlay(Capsule().stroke(Color.tGold.opacity(0.35), lineWidth: 1))
+    }
 
-    private var hero: some View {
-        VStack(spacing: 10) {
-            TripnestLogo(size: 64)
-            Text("ESSAI 7 JOURS · OFFERT")
-                .font(.tText(11, weight: .black)).tracking(1.5).foregroundColor(.tGold)
-                .padding(.horizontal, 12).padding(.vertical, 5)
-                .background(Capsule().fill(Color.tGold.opacity(0.12)))
-                .overlay(Capsule().stroke(Color.tGold.opacity(0.35), lineWidth: 1))
-            heroTitle.multilineTextAlignment(.center)
-            Text("Tout Tripnest pour viser ton objectif de −\(insights.euros(insights.savingsGoal)).")
-                .font(.tText(13)).foregroundColor(.tTextMute)
+    private var titleBlock: some View {
+        VStack(spacing: 8) {
+            Text("DERNIÈRE ÉTAPE")
+                .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
+            (Text("Lance ton espace\n").font(.tDisplay(30)).tracking(-1)
+             + Text("Tripnest.").font(.tDisplay(30))
+                .foregroundStyle(LinearGradient(colors: [.tGold, .tAccent2],
+                                                startPoint: .topLeading, endPoint: .bottomTrailing)))
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 10)
         }
         .frame(maxWidth: .infinity)
     }
 
-    private var heroTitle: Text {
-        let grad = LinearGradient(colors: [.tGold, .tAccent2],
-                                  startPoint: .topLeading, endPoint: .bottomTrailing)
-        if insights.hasRealDestination {
-            return Text("Cap sur\n").font(.tDisplay(28)).tracking(-1)
-                + Text(insights.destination).font(.tDisplay(28)).tracking(-1).foregroundStyle(grad)
-                + Text(".").font(.tDisplay(28)).tracking(-1)
-        } else {
-            return Text("Prépare ton\n").font(.tDisplay(28)).tracking(-1)
-                + Text("prochain voyage").font(.tDisplay(28)).tracking(-1).foregroundStyle(grad)
-                + Text(".").font(.tDisplay(28)).tracking(-1)
+    private var valueCard: some View {
+        TCard(padding: 14, bg: AnyShapeStyle(Color.tMint.opacity(0.06)), border: Color.tMint.opacity(0.25)) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("DÉPART")
+                        .font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tMint)
+                    Text("0€")
+                        .font(.tDisplay(28)).tracking(-0.8).foregroundColor(.tMint)
+                    Text("dépense enregistrée")
+                        .font(.tText(10)).foregroundColor(.tTextMute)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Données").font(.tText(11)).foregroundColor(.tTextMute)
+                    Text("Locales").font(.tText(18, weight: .black))
+                    Text("stockées sur l'appareil").font(.tText(10)).foregroundColor(.tTextMute)
+                }
+            }
         }
     }
 
-    // MARK: Preuve sociale
+    private var plansBlock: some View {
+        VStack(spacing: 10) {
+            annualPlan
+            monthlyPlan
+        }
+    }
 
-    private var ratingStrip: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: -8) {
-                ForEach(Array([Color.tRose, .tGold, .tMint, .tBlue].enumerated()), id: \.offset) { _, c in
-                    Circle().fill(LinearGradient(colors: [c, .tAccentDeep],
-                                                 startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 24, height: 24)
-                        .overlay(Circle().stroke(Color.tBg1, lineWidth: 1.5))
+    private var annualPlan: some View {
+        ZStack(alignment: .topTrailing) {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle().fill(Color.tAccent)
+                    Circle().fill(Color.white).frame(width: 8, height: 8)
                 }
+                .frame(width: 22, height: 22)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Annuel · 7 jours offerts").font(.tText(16, weight: .black))
+                    Text("Tarif non configuré").font(.tText(12)).foregroundColor(.tTextMute)
+                    Text("OPTION À BRANCHER PLUS TARD")
+                        .font(.tText(10, weight: .bold)).tracking(0.5).foregroundColor(.tGold)
+                        .padding(.top, 2)
+                }
+                Spacer()
             }
-            VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 2) {
-                    ForEach(0..<5, id: \.self) { _ in
-                        TIcon(glyph: .star, size: 11, stroke: .tGold, strokeWidth: 2)
-                    }
-                    Text("4,9").font(.tText(11, weight: .black)).foregroundColor(.tGold).padding(.leading, 2)
-                }
-                Text("Adoré par les voyageurs organisés")
-                    .font(.tText(10)).foregroundColor(.tTextMute)
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(LinearGradient(colors: [
+                    Color(hex: 0x2d1a53),
+                    Color(hex: 0x1c0f36),
+                ], startPoint: .topLeading, endPoint: .bottomTrailing)))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.tAccent, lineWidth: 2))
+            .shadow(color: Color.tAccent.opacity(0.3), radius: 18, x: 0, y: 18)
+
+            Text("OPTIONNEL")
+                .font(.tText(10, weight: .black)).tracking(0.5).foregroundColor(.tBg0)
+                .padding(.horizontal, 10).padding(.vertical, 3)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color.tGold))
+                .offset(x: -14, y: -10)
+        }
+    }
+
+    private var monthlyPlan: some View {
+        HStack(spacing: 14) {
+            Circle().stroke(Color.tBorder, lineWidth: 1.5).frame(width: 22, height: 22)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Mensuel").font(.tText(15, weight: .bold))
+                Text("Tarif non configuré").font(.tText(12)).foregroundColor(.tTextMute)
             }
             Spacer()
         }
-        .padding(.horizontal, 14).padding(.vertical, 10)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.tSurface))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.tBorder, lineWidth: 1))
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.tSurface))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.tBorder, lineWidth: 1))
+        .opacity(0.85)
     }
-
-    // MARK: Hook personnalisé
-
-    private var savingsCard: some View {
-        TCard(padding: 16, bg: AnyShapeStyle(Color.tMint.opacity(0.06)), border: Color.tMint.opacity(0.22)) {
-            HStack(spacing: 14) {
-                IconBubble(glyph: .filter, color: .tMint, size: 48)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("TON OBJECTIF").font(.tText(10, weight: .bold)).tracking(1).foregroundColor(.tMint)
-                    (Text("Économiser ").font(.tText(15, weight: .bold))
-                     + Text("−\(insights.euros(insights.savingsGoal))").font(.tText(15, weight: .black)).foregroundColor(.tMint)
-                     + Text(" sur ton prochain voyage").font(.tText(15, weight: .bold)))
-                    Text(insights.overspentBefore == "Non, jamais"
-                         ? "Tu gardes déjà le contrôle. Premium t'aide à viser encore plus haut."
-                         : "Sans suivi, tu dépassais d'environ \(insights.euros(insights.overspend)) par voyage. On t'aide à inverser ça.")
-                        .font(.tText(11)).foregroundColor(.tTextMute).padding(.top, 1)
-                }
-                Spacer(minLength: 0)
-            }
-        }
-    }
-
-    // MARK: Value stack
-
-    private var valueStack: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("TOUT CE QUE TU DÉBLOQUES")
-                .font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tTextMute)
-                .padding(.bottom, 10)
-            VStack(spacing: 8) {
-                ForEach(Array(perks.enumerated()), id: \.offset) { _, p in
-                    HStack(spacing: 12) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous).fill(p.2.opacity(0.13))
-                            TIcon(glyph: p.0, size: 16, stroke: p.2)
-                        }
-                        .frame(width: 34, height: 34)
-                        Text(p.1).font(.tText(13, weight: .semibold))
-                        Spacer()
-                        TIcon(glyph: .check, size: 14, stroke: .tMint, strokeWidth: 3)
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: Témoignage (À REMPLACER par de vrais avis — marketing véridique requis)
-
-    private var testimonialCard: some View {
-        TCard(padding: 16) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 2) {
-                    ForEach(0..<5, id: \.self) { _ in
-                        TIcon(glyph: .star, size: 12, stroke: .tGold, strokeWidth: 2)
-                    }
-                }
-                Text("« J'ai tenu mon budget pour la première fois — et il me restait même de la marge au retour. »")
-                    .font(.tText(14, weight: .semibold)).italic()
-                HStack(spacing: 10) {
-                    Circle().fill(LinearGradient(colors: [.tRose, .tAccentDeep],
-                                                 startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 28, height: 28)
-                        .overlay(Circle().stroke(Color.tBorder, lineWidth: 1))
-                    Text("Léa · voyageuse Tripnest")
-                        .font(.tText(11, weight: .bold)).foregroundColor(.tTextMute)
-                }
-            }
-        }
-    }
-
-    // MARK: Sélecteur de plan
-
-    private var planSelector: some View {
-        VStack(spacing: 10) {
-            planRow(
-                plan: .annual,
-                title: "Annuel",
-                price: "\(annualPrice) / an",
-                sub: "soit \(annualPerMonth) / mois · essai 7 jours offert",
-                badge: "ÉCONOMISE 50 %",
-                highlight: true
-            )
-            planRow(
-                plan: .monthly,
-                title: "Mensuel",
-                price: "\(monthlyPrice) / mois",
-                sub: "sans engagement, annule quand tu veux",
-                badge: nil,
-                highlight: false
-            )
-        }
-    }
-
-    private func planRow(plan target: PaywallPlan, title: String, price: String,
-                         sub: String, badge: String?, highlight: Bool) -> some View {
-        let selected = plan == target
-        return Button(action: { withAnimation(.easeOut(duration: 0.18)) { plan = target } }) {
-            ZStack(alignment: .topTrailing) {
-                HStack(spacing: 14) {
-                    ZStack {
-                        Circle()
-                            .fill(selected ? Color.tAccent : Color.clear)
-                            .overlay(Circle().stroke(selected ? Color.tAccent : Color.tBorder, lineWidth: 2))
-                        if selected { Circle().fill(Color.white).frame(width: 8, height: 8) }
-                    }
-                    .frame(width: 24, height: 24)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(title).font(.tText(16, weight: .black))
-                        Text(price).font(.tText(13, weight: .bold)).foregroundColor(.tAccent2)
-                        Text(sub).font(.tText(11)).foregroundColor(.tTextMute)
-                    }
-                    Spacer(minLength: 0)
-                }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(selected
-                          ? AnyShapeStyle(LinearGradient(colors: [
-                                Color(hex: 0x8b5cf6, opacity: 0.20),
-                                Color(hex: 0x8b5cf6, opacity: 0.06),
-                            ], startPoint: .topLeading, endPoint: .bottomTrailing))
-                          : AnyShapeStyle(Color.tSurface)))
-                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(selected ? Color.tAccent : Color.tBorder, lineWidth: selected ? 2 : 1))
-                .shadow(color: selected ? Color.tAccent.opacity(0.28) : .clear, radius: 16, x: 0, y: 14)
-
-                if let badge {
-                    Text(badge)
-                        .font(.tText(10, weight: .black)).tracking(0.5).foregroundColor(.tBg0)
-                        .padding(.horizontal, 10).padding(.vertical, 3)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(Color.tGold))
-                        .offset(x: -14, y: -9)
-                }
-            }
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: Frise d'essai
 
     private var trialTimeline: some View {
-        TCard(padding: 14) {
+        TCard(padding: 12) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("COMMENT FONCTIONNE TON ESSAI")
+                Text("PROCHAINES ÉTAPES")
                     .font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tTextMute)
                 HStack(spacing: 8) {
-                    timelineStep("Aujourd'hui", "Accès complet débloqué", .tMint, isLast: false)
-                    timelineStep("Jour 5", "Rappel avant la fin", .tGold, isLast: false)
-                    timelineStep("Jour 7", "L'abonnement commence", .tAccent2, isLast: true)
+                    timelineStep("1", "Créer voyage", .tMint, isLast: false)
+                    timelineStep("2", "Ajouter budget", .tGold, isLast: false)
+                    timelineStep("3", "Suivre dépenses", .tAccent2, isLast: true)
                 }
-                .padding(.top, 12)
+                .padding(.top, 10)
             }
         }
     }
@@ -1438,55 +1178,18 @@ struct V2_28: View {
             }
             Text(date).font(.tText(10, weight: .bold))
             Text(label).font(.tText(9)).foregroundColor(.tTextMute)
-                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: CTA + réassurance
-
-    private var ctaBlock: some View {
-        VStack(spacing: 10) {
-            CTA(label: ctaLabel, height: 60, fontSize: 17)
-            HStack(spacing: 6) {
-                TIcon(glyph: .check, size: 11, stroke: .tMint)
-                Text(plan == .annual ? "Annule à tout moment avant le jour 7 · aucun frais"
-                                     : "Sans engagement · annule quand tu veux")
-                    .font(.tText(11)).foregroundColor(.tTextMute)
-            }
-            Text(priceRecap)
-                .font(.tText(10)).foregroundColor(.tTextDim)
-                .multilineTextAlignment(.center)
+    private var trustStrip: some View {
+        HStack(spacing: 14) {
+            TIcon(glyph: .check, size: 12, stroke: .tMint)
+            Text("Local"); Text("·")
+            Text("0 exemple"); Text("·")
+            Text("Prêt")
         }
-    }
-
-    private var ctaLabel: String {
-        plan == .annual ? "Commencer mon essai gratuit" : "S'abonner · \(monthlyPrice)/mois"
-    }
-
-    private var priceRecap: String {
-        plan == .annual
-            ? "Essai gratuit de 7 jours, puis \(annualPrice)/an. Sans engagement."
-            : "Facturé \(monthlyPrice)/mois. Sans engagement."
-    }
-
-    private var footerLinks: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 16) {
-                Button("Restaurer", action: defaultAction)
-                Text("·").foregroundColor(.tTextDim)
-                Button("Conditions", action: {})
-                Text("·").foregroundColor(.tTextDim)
-                Button("Confidentialité", action: {})
-            }
-            .font(.tText(11, weight: .semibold))
-            .foregroundColor(.tTextMute)
-            .buttonStyle(.plain)
-
-            Text("Paiement non actif dans cette version.")
-                .font(.tText(9)).foregroundColor(.tTextDim)
-        }
-        .frame(maxWidth: .infinity)
+        .font(.tText(10)).foregroundColor(.tTextDim)
     }
 }
 
