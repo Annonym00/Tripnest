@@ -597,50 +597,18 @@ struct TripHomeHeroCard: View {
     private var heroReadabilityScrim: some View {
         LinearGradient(
             stops: [
-                .init(color: .black.opacity(0.55), location: 0),
-                .init(color: .black.opacity(0.10), location: 0.32),
-                .init(color: .black.opacity(0.30), location: 0.58),
-                .init(color: .black.opacity(0.78), location: 0.86),
-                .init(color: .black.opacity(0.92), location: 1),
+                .init(color: .black.opacity(0.58), location: 0),
+                .init(color: .black.opacity(0.14), location: 0.38),
+                .init(color: .black.opacity(0.48), location: 0.72),
+                .init(color: .black.opacity(0.86), location: 1),
             ],
             startPoint: .top,
             endPoint: .bottom
         )
     }
 
-    private var statusBadgeColor: Color {
-        switch trip.status {
-        case .active:  return .tMint
-        case .planned: return .tBlue
-        case .done:    return .tGold
-        }
-    }
-
-    private var statusBadgeLabel: String {
-        switch trip.status {
-        case .active:  return "EN COURS"
-        case .planned: return "PLANIFIÉ"
-        case .done:    return "TERMINÉ"
-        }
-    }
-
     private var heroTopChrome: some View {
         HStack(alignment: .center) {
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(statusBadgeColor)
-                    .frame(width: 7, height: 7)
-                    .shadow(color: statusBadgeColor.opacity(0.8), radius: 4)
-                Text("\(statusBadgeLabel) · \(trip.days) JOUR\(trip.days > 1 ? "S" : "")")
-                    .font(.tText(10, weight: .heavy))
-                    .tracking(1.5)
-                    .foregroundColor(statusBadgeColor)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Capsule().fill(Color.black.opacity(0.38)))
-            .overlay(Capsule().stroke(statusBadgeColor.opacity(0.32), lineWidth: 1))
-
             Spacer(minLength: 8)
 
             TransportModeGlyph(mode: trip.transportMode, size: 22, stroke: .white)
@@ -654,69 +622,45 @@ struct TripHomeHeroCard: View {
         .zIndex(2)
     }
 
-    private var bottomEyebrow: String {
-        switch trip.status {
-        case .active:  return "PROCHAINE ESCALE"
-        case .planned: return "PROCHAIN VOYAGE"
-        case .done:    return "SOUVENIR"
-        }
-    }
-
     /// Bloc infos calqué sur `tripChip` : titre + aller + retour + dates.
     private var heroBottomChrome: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(bottomEyebrow)
-                .font(.tText(10, weight: .heavy))
-                .tracking(1.4)
-                .foregroundColor(.white.opacity(0.72))
-
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(trip.homeDestinationTitle)
-                    .font(.tDisplay(28))
-                    .tracking(-0.9)
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                Spacer(minLength: 0)
-            }
+        VStack(alignment: .leading, spacing: 3) {
+            Text(trip.homeDestinationTitle)
+                .font(.tDisplay(22))
+                .tracking(-0.4)
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
 
             Text(trip.homeOutboundLine)
-                .font(.tText(12, weight: .semibold))
-                .foregroundColor(.white.opacity(0.86))
+                .font(.tText(13, weight: .semibold))
+                .foregroundColor(.white.opacity(0.94))
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .minimumScaleFactor(0.72)
 
             if let returnLine = trip.homeReturnLine {
                 Text(returnLine)
-                    .font(.tText(11, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.78))
+                    .font(.tText(12, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.88))
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .minimumScaleFactor(0.72)
             }
 
-            HStack(spacing: 6) {
+            HStack(spacing: 5) {
                 Image(systemName: "calendar")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 11, weight: .semibold))
                 Text(trip.homeDateLine)
                     .font(.tText(11, weight: .semibold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
-                Spacer(minLength: 8)
-                HStack(spacing: 4) {
-                    Text("Détails")
-                        .font(.tText(12, weight: .bold))
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 11, weight: .heavy))
-                }
-                .foregroundColor(.white)
             }
-            .foregroundColor(.white.opacity(0.82))
+            .foregroundColor(.white.opacity(0.88))
         }
         .frame(maxWidth: .infinity)
         .frame(
-            height: trip.hasReturn ? TripHeroLayout.bottomBandHeightWithReturn + 16 : TripHeroLayout.bottomBandHeight + 14,
+            height: trip.hasReturn ? TripHeroLayout.bottomBandHeightWithReturn : TripHeroLayout.bottomBandHeight,
             alignment: .bottomLeading
         )
         .clipped()

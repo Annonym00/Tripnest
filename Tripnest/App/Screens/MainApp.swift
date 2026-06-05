@@ -126,7 +126,7 @@ struct MainApp: View {
     private var pushedScreen: some View {
         switch baseRoute {
         case .trip:
-            TripDetailScreen(onNav: navigate, onBack: goBack)
+            TripDetailScreen(onNav: navigate, onBack: goBack, onDelete: { pendingDeleteId = $0 })
         case .completedTrips:
             CompletedTripsScreen(onNav: navigate, onEditTrip: openEditTrip, onDeleteTrip: { pendingDeleteId = $0 })
         case .flights:

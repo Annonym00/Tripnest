@@ -337,7 +337,6 @@ struct BudgetScreen: View {
                                     .padding(.top, 6)
                                     .padding(.bottom, 14)
                                 budgetActions(t).padding(.bottom, 14)
-                                categoryBreakdownCard(t).padding(.bottom, 14)
                                 emergencyFundCard(t).padding(.bottom, 14)
                                 txHeader.padding(.bottom, 10)
                                 expensesSections(tripId: t.id)
@@ -1216,89 +1215,6 @@ struct BudgetScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - Par catégorie (breakdown)
-
-    private struct CategorySlice {
-        let label: String
-        let glyph: TIcon.Glyph
-        let color: Color
-        let spent: Int
-    }
-
-    private func categorySlices(for tripId: String) -> [CategorySlice] {
-        let completed = store.expenses.filter { $0.tripId == tripId && $0.status == .completed }
-        let totalsByLabel = Dictionary(grouping: completed, by: \.category)
-            .mapValues { $0.reduce(0) { $0 + $1.amount } }
-        let template: [(String, TIcon.Glyph, Color)] = [
-            ("Hôtel", .hotel, .tRose),
-            ("Repas", .food, .tGold),
-            ("Transport", .bus, .tBlue),
-            ("Activité", .ticket, .tMint),
-            ("Souvenir", .gift, .tAccent2),
-            ("Autre", .more, .tTextMute),
-        ]
-        return template.compactMap { (label, glyph, color) in
-            let spent = totalsByLabel[label] ?? 0
-            guard spent > 0 else { return nil }
-            return CategorySlice(label: label, glyph: glyph, color: color, spent: spent)
-        }
-    }
-
-    @ViewBuilder
-    private func categoryBreakdownCard(_ t: Trip) -> some View {
-        let slices = categorySlices(for: t.id)
-        if !slices.isEmpty {
-            let total = max(1, slices.reduce(0) { $0 + $1.spent })
-            VStack(alignment: .leading, spacing: 10) {
-                Text("PAR CATÉGORIE")
-                    .font(.tText(12, weight: .heavy))
-                    .tracking(0.8)
-                    .foregroundColor(.tTextMute)
-                TCard(padding: 4) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(slices.enumerated()), id: \.element.label) { idx, slice in
-                            categoryRow(slice: slice, total: total)
-                            if idx < slices.count - 1 {
-                                Rectangle().fill(Color.tBorder).frame(height: 1).padding(.horizontal, 14)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func categoryRow(slice: CategorySlice, total: Int) -> some View {
-        let pct = min(1.0, Double(slice.spent) / Double(max(1, total)))
-        return HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(slice.color.opacity(0.14))
-                TIcon(glyph: slice.glyph, size: 16, stroke: slice.color)
-            }
-            .frame(width: 36, height: 36)
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(slice.label)
-                        .font(.tText(14, weight: .semibold))
-                    Spacer(minLength: 8)
-                    Text("\(slice.spent)\(sym)")
-                        .font(.tText(13, weight: .bold))
-                }
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color.tAccent2.opacity(0.10)).frame(height: 4)
-                        Capsule().fill(slice.color.opacity(0.85)).frame(width: geo.size.width * pct, height: 4)
-                    }
-                }
-                .frame(height: 4)
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-    }
-
     // MARK: - Expense sections
 
     @ViewBuilder
@@ -2068,56 +1984,4 @@ func currencyFlagEmoji(_ code: String) -> String {
     guard let cc = map[code], cc.count == 2 else { return "🌐" }
     let base: UInt32 = 127397
     return String(cc.unicodeScalars.compactMap { Unicode.Scalar(base + $0.value) }.map { Character($0) })
-}
-
-// MARK: - TripRowAmbilight (réintégré depuis TripsScreen lors de la fusion)
-
-struct TripRowAmbilight: View {
-    let trip: Trip
-
-    @State private var sampledImageColor: Color?
-    @Environment(\.colorScheme) private var colorScheme
-
-    private var haloColor: Color {
-        if trip.coverKind == .custom, let sampledImageColor { return sampledImageColor }
-        return trip.resolvedCoverColor
-    }
-
-    // `plusLighter` n'a aucun effet sur un fond blanc : en clair on repasse en
-    // fusion normale avec des opacités plus fortes pour que la teinte ressorte.
-    private var isLight: Bool { colorScheme == .light }
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(haloColor.opacity(isLight ? 0.42 : 0.18))
-                .blur(radius: 22)
-                .offset(x: -4, y: -1)
-
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(haloColor.opacity(isLight ? 0.28 : 0.12))
-                .blur(radius: 26)
-                .offset(x: 4, y: 1)
-        }
-        .blendMode(isLight ? .normal : .plusLighter)
-        .task(id: imageSampleKey) {
-            await refreshImageColor()
-        }
-    }
-
-    private var imageSampleKey: String {
-        let coverToken = trip.coverKind == .custom ? TripCoverImageStore.modificationToken(tripId: trip.id) : "none"
-        return "\(trip.id)|\(trip.coverKind.rawValue)|\(coverToken)"
-    }
-
-    @MainActor
-    private func refreshImageColor() async {
-        guard trip.coverKind == .custom, !trip.id.isEmpty else {
-            sampledImageColor = nil
-            return
-        }
-        let tripId = trip.id
-        let color = await TripCoverImagePalette.dominantColor(forTripId: tripId)
-        if tripId == trip.id { sampledImageColor = color }
-    }
 }
