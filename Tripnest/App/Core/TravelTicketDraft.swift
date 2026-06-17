@@ -41,7 +41,7 @@ struct TravelTicketDraft: Equatable {
     var summaryLine: String {
         let dep = fromCity.isEmpty ? from : fromCity
         let arr = toCity.isEmpty ? to : toCity
-        if dep.isEmpty && arr.isEmpty { return "Billet à compléter" }
+        if dep.isEmpty && arr.isEmpty { return L("Billet à compléter") }
         return "\(dep) → \(arr)"
     }
 

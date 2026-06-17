@@ -22,7 +22,7 @@ struct TripDetailScreen: View {
 
         var label: String {
             switch self {
-            case .itinerary: return "Itinéraire"
+            case .itinerary: return L("Itinéraire")
             case .info: return "Infos"
             case .budget: return "Budget"
             case .spots: return "Spots"
@@ -71,12 +71,12 @@ struct TripDetailScreen: View {
                 emptyState
             }
         }
-        .alert("Archiver ce voyage ?", isPresented: $showCompleteTripAlert) {
-            Button("Annuler", role: .cancel) {}
-            Button("Oui, archiver") { confirmTripCompletion() }
+        .alert(L("Archiver ce voyage ?"), isPresented: $showCompleteTripAlert) {
+            Button(L("Annuler"), role: .cancel) {}
+            Button(L("Oui, archiver")) { confirmTripCompletion() }
         } message: {
             if let t = store.activeTrip {
-                Text("« \(t.homeDestinationTitle) » sera enregistré dans Voyages passés.")
+                Text(L("« %@ » sera enregistré dans Voyages passés.", t.homeDestinationTitle))
             }
         }
         .sheet(isPresented: $showShareOptions) {
@@ -121,7 +121,7 @@ struct TripDetailScreen: View {
                         }
                     }
                     .buttonStyle(TripnestPressStyle())
-                    .accessibilityLabel("\(tripFriendCount) ami sur ce voyage")
+                    .accessibilityLabel(L("%d ami sur ce voyage", tripFriendCount))
 
                     Button(action: {
                         shareCanEdit = false
@@ -131,19 +131,19 @@ struct TripDetailScreen: View {
                         SystemIconBtn(systemImage: "square.and.arrow.up", stroke: .white)
                     }
                     .buttonStyle(TripnestPressStyle())
-                    .accessibilityLabel("Partager ce voyage")
+                    .accessibilityLabel(L("Partager ce voyage"))
 
                     Button(action: { toggleFavorite(t) }) {
                         IconBtn(glyph: .heart, stroke: t.favorite ? .tRose : .tText)
                     }
                     .buttonStyle(TripnestPressStyle())
-                    .accessibilityLabel(t.favorite ? "Retirer des coups de cœur" : "Ajouter aux coups de cœur")
+                    .accessibilityLabel(t.favorite ? L("Retirer des coups de cœur") : L("Ajouter aux coups de cœur"))
 
                     Button(action: { onDelete(t.id) }) {
                         IconBtn(glyph: .close, stroke: .tRose)
                     }
                     .buttonStyle(TripnestPressStyle())
-                    .accessibilityLabel("Supprimer ce voyage")
+                    .accessibilityLabel(L("Supprimer ce voyage"))
                 }
             }
         }
@@ -165,11 +165,11 @@ struct TripDetailScreen: View {
 
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Amis du voyage")
+                        Text(L("Amis du voyage"))
                             .font(.tDisplay(24))
                             .tracking(-0.5)
                             .foregroundColor(.tText)
-                        Text("\(tripFriendCount) personne\(tripFriendCount > 1 ? "s" : "") peut accéder à ce voyage.")
+                        Text(tripFriendCount > 1 ? L("%d personnes peuvent accéder à ce voyage.", tripFriendCount) : L("%d personne peut accéder à ce voyage.", tripFriendCount))
                             .font(.tText(13))
                             .foregroundColor(.tTextMute)
                     }
@@ -181,10 +181,10 @@ struct TripDetailScreen: View {
                                 Image(systemName: "person.2.fill")
                                     .font(.system(size: 22, weight: .semibold))
                                     .foregroundColor(.tAccent2)
-                                Text("Aucun ami invité")
+                                Text(L("Aucun ami invité"))
                                     .font(.tText(15, weight: .bold))
                                     .foregroundColor(.tText)
-                                Text("Invite un ami depuis la création ou le partage du voyage.")
+                                Text(L("Invite un ami depuis la création ou le partage du voyage."))
                                     .font(.tText(12))
                                     .foregroundColor(.tTextMute)
                                     .multilineTextAlignment(.center)
@@ -219,7 +219,7 @@ struct TripDetailScreen: View {
                             .overlay(Circle().stroke(Color.tBorder, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Fermer")
+                    .accessibilityLabel(L("Fermer"))
                 }
             }
         }
@@ -234,12 +234,12 @@ struct TripDetailScreen: View {
                 Text(friend.name)
                     .font(.tText(15, weight: .bold))
                     .foregroundColor(.tText)
-                Text(friend.status == .accepted ? "Ami Tripnest" : "Invitation en attente")
+                Text(friend.status == .accepted ? L("Ami Tripnest") : "Invitation en attente")
                     .font(.tText(12))
                     .foregroundColor(.tTextMute)
             }
             Spacer(minLength: 0)
-            Text(permission.title)
+            Text(L(permission.title))
                 .font(.tText(11, weight: .bold))
                 .foregroundColor(permission == .canEdit ? .tMint : .tBlue)
                 .padding(.horizontal, 9)
@@ -264,11 +264,11 @@ struct TripDetailScreen: View {
 
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Partager le voyage")
+                        Text(L("Partager le voyage"))
                             .font(.tDisplay(24))
                             .tracking(-0.5)
                             .foregroundColor(.tText)
-                        Text("Choisis ce que ton ami pourra faire avant d'envoyer l'invitation.")
+                        Text(L("Choisis ce que ton ami pourra faire avant d'envoyer l'invitation."))
                             .font(.tText(13))
                             .foregroundColor(.tTextMute)
                             .fixedSize(horizontal: false, vertical: true)
@@ -278,15 +278,15 @@ struct TripDetailScreen: View {
                     TCard(padding: 4) {
                         VStack(spacing: 0) {
                             sharePermissionRow(
-                                title: "Peut modifier",
-                                subtitle: "Ton ami pourra ajouter ou changer le voyage.",
+                                title: L("Peut modifier"),
+                                subtitle: L("Ton ami pourra ajouter ou changer le voyage."),
                                 isSelected: shareCanEdit,
                                 action: { shareCanEdit = true }
                             )
                             Rectangle().fill(Color.tBorder).frame(height: 1)
                             sharePermissionRow(
                                 title: "Regarder seulement",
-                                subtitle: "Ton ami verra le voyage en direct sans modifier.",
+                                subtitle: L("Ton ami verra le voyage en direct sans modifier."),
                                 isSelected: !shareCanEdit,
                                 action: { shareCanEdit = false }
                             )
@@ -308,7 +308,7 @@ struct TripDetailScreen: View {
                             .overlay(Circle().stroke(Color.tBorder, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Fermer")
+                    .accessibilityLabel(L("Fermer"))
                 }
             }
         }
@@ -348,11 +348,11 @@ struct TripDetailScreen: View {
     }
 
     private var tripShareMessage: String {
-        guard let t = store.activeTrip else { return "Rejoins mon voyage sur Tripnest." }
+        guard let t = store.activeTrip else { return L("Rejoins mon voyage sur Tripnest.") }
         let permission = shareCanEdit
-            ? "Tu pourras modifier le voyage avec moi."
-            : "Tu pourras regarder le voyage en direct, sans le modifier."
-        return "Je te partage mon voyage « \(t.homeDestinationTitle) » sur Tripnest. \(permission)"
+            ? L("Tu pourras modifier le voyage avec moi.")
+            : L("Tu pourras regarder le voyage en direct, sans le modifier.")
+        return L("Je te partage mon voyage « %@ » sur Tripnest. %@", t.homeDestinationTitle, permission)
     }
 
     private func startTripShare() {
@@ -445,9 +445,9 @@ struct TripDetailScreen: View {
     private func heroStatusBadge(_ t: Trip) -> some View {
         let (label, color): (String, Color) = {
             switch t.status {
-            case .done: return ("VOYAGE TERMINÉ", .tTextMute)
-            case .planned: return ("VOYAGE PLANIFIÉ", .tGold)
-            case .active: return ("VOYAGE EN COURS", Color(hex: 0x4CD964))
+            case .done: return (L("VOYAGE TERMINÉ"), .tTextMute)
+            case .planned: return (L("VOYAGE PLANIFIÉ"), .tGold)
+            case .active: return (L("VOYAGE EN COURS"), Color(hex: 0x4CD964))
             }
         }()
         HStack(spacing: 8) {
@@ -467,7 +467,7 @@ struct TripDetailScreen: View {
         if let datesPart = formattedDateRange(for: t) {
             parts.append(datesPart)
         }
-        parts.append("\(t.days) jour\(t.days > 1 ? "s" : "")")
+        parts.append((t.days > 1 ? L("%d jours", t.days) : L("%d jour", t.days)))
         let country = t.country.trimmingCharacters(in: .whitespacesAndNewlines)
         if !country.isEmpty, country != "À définir" {
             parts.append(country)
@@ -505,7 +505,7 @@ struct TripDetailScreen: View {
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
                 statCard(
-                    label: "Dépensé",
+                    label: L("Dépensé"),
                     value: "\(t.spent)\(sym)",
                     sub: "/ \(t.budget)\(sym)",
                     color: .tAccent,
@@ -519,7 +519,7 @@ struct TripDetailScreen: View {
                 statCard(
                     label: "Photos",
                     value: "\(t.photoCount)",
-                    sub: t.photoCount > 1 ? "clichés" : "cliché",
+                    sub: t.photoCount > 1 ? L("clichés") : L("cliché"),
                     color: .tBlue,
                     action: { onNav(.tripSouvenirs) }
                 )
@@ -573,7 +573,7 @@ struct TripDetailScreen: View {
     ) -> some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Spots")
+                Text(L("Spots"))
                     .font(.tText(12, weight: .semibold))
                     .foregroundColor(.tTextMute)
                 Text("\(count)")
@@ -582,7 +582,7 @@ struct TripDetailScreen: View {
                     .foregroundColor(.tRose)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                Text("sauvés")
+                Text(L("sauvés"))
                     .font(.tText(11))
                     .foregroundColor(.tTextMute)
             }
@@ -642,17 +642,17 @@ struct TripDetailScreen: View {
         case .budget:
             shortcutCard(
                 glyph: .wallet,
-                title: "Suivi budget",
-                subtitle: "Consulte tes dépenses et ajoute-en de nouvelles.",
-                cta: "Ouvrir le budget",
+                title: L("Suivi budget"),
+                subtitle: L("Consulte tes dépenses et ajoute-en de nouvelles."),
+                cta: L("Ouvrir le budget"),
                 action: { onNav(.tripBudget) }
             )
         case .spots:
             shortcutCard(
                 glyph: .spot,
-                title: "Tes spots",
-                subtitle: "Restaurants, hôtels et lieux à visiter.",
-                cta: "Voir les spots",
+                title: L("Tes spots"),
+                subtitle: L("Restaurants, hôtels et lieux à visiter."),
+                cta: L("Voir les spots"),
                 action: { onNav(.spots) }
             )
         case .info:
@@ -660,17 +660,17 @@ struct TripDetailScreen: View {
         case .photos:
             shortcutCard(
                 glyph: .gallery,
-                title: "Photos du voyage",
-                subtitle: "Tes clichés et souvenirs de ce voyage.",
-                cta: "Voir les photos",
+                title: L("Photos du voyage"),
+                subtitle: L("Tes clichés et souvenirs de ce voyage."),
+                cta: L("Voir les photos"),
                 action: { onNav(.tripSouvenirs) }
             )
         case .notes:
             shortcutCard(
                 glyph: .edit,
-                title: "Notes du voyage",
-                subtitle: "Adresses, idées et rappels, jusqu'à 500 lignes.",
-                cta: "Ouvrir les notes",
+                title: L("Notes du voyage"),
+                subtitle: L("Adresses, idées et rappels, jusqu'à 500 lignes."),
+                cta: L("Ouvrir les notes"),
                 action: { onNav(.tripNotes) }
             )
         }
@@ -693,7 +693,7 @@ struct TripDetailScreen: View {
             Button(action: { onNav(.tripPlanning) }) {
                 HStack(spacing: 8) {
                     TIcon(glyph: .plus, size: 14, stroke: .tAccent2, strokeWidth: 2.5)
-                    Text("Planifier une étape")
+                    Text(L("Planifier une étape"))
                         .font(.tText(13, weight: .semibold))
                         .foregroundColor(.tAccent2)
                 }
@@ -712,9 +712,9 @@ struct TripDetailScreen: View {
         TCard(padding: 20) {
             VStack(spacing: 10) {
                 IconBubble(glyph: .cal, color: .tAccent2, size: 44)
-                Text("Aucune étape planifiée")
+                Text(L("Aucune étape planifiée"))
                     .font(.tText(15, weight: .bold))
-                Text("Ajoute tes activités pour \(trip.dest) jour par jour.")
+                Text(L("Ajoute tes activités pour %@ jour par jour.", trip.dest))
                     .font(.tText(13))
                     .foregroundColor(.tTextMute)
                     .multilineTextAlignment(.center)
@@ -736,7 +736,7 @@ struct TripDetailScreen: View {
                         Text(dayTitle(for: date))
                             .font(.tText(17, weight: .bold))
                             .foregroundColor(.tText)
-                        Text("\(items.count) étape\(items.count > 1 ? "s" : "")")
+                        Text(items.count > 1 ? L("%d étapes", items.count) : L("%d étape", items.count))
                             .font(.tText(12))
                             .foregroundColor(.tTextMute)
                     }
@@ -874,12 +874,12 @@ struct TripDetailScreen: View {
         VStack(spacing: 14) {
             TCard(padding: 18) {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("DÉTAILS DU VOYAGE")
+                    Text(L("DÉTAILS DU VOYAGE"))
                         .font(.tText(11, weight: .bold))
                         .tracking(1.2)
                         .foregroundColor(.tTextMute)
 
-                    infoRow(glyph: .spot, label: "Départ", value: departurePlace.isEmpty ? "—" : departurePlace)
+                    infoRow(glyph: .spot, label: L("Départ"), value: departurePlace.isEmpty ? "—" : departurePlace)
                     infoRow(glyph: .spot, label: "Destination", value: t.dest.isEmpty ? "—" : t.dest)
                     if !t.country.trimmingCharacters(in: .whitespaces).isEmpty, t.country != "À définir" {
                         infoRow(glyph: .globe, label: "Pays", value: "\(t.resolvedFlag) \(t.country)".trimmingCharacters(in: .whitespaces))
@@ -887,7 +887,7 @@ struct TripDetailScreen: View {
                     infoRow(glyph: .arrow, label: "Trajet", value: t.tripsListRouteLine)
                     infoRow(glyph: .cal, label: "Dates", value: formattedDateRange(for: t) ?? t.dates)
                     infoRow(glyph: .ticket, label: "Temps de trajet", value: travelTime.isEmpty ? "—" : travelTime)
-                    infoRow(glyph: .sun, label: "Durée", value: "\(t.days) jour\(t.days > 1 ? "s" : "")")
+                    infoRow(glyph: .sun, label: L("Durée"), value: (t.days > 1 ? L("%d jours", t.days) : L("%d jour", t.days)))
                     infoRow(glyph: transportGlyph(t.transportMode), label: "Transport", value: t.transportMode.label)
                     infoRow(glyph: .wallet, label: "Budget", value: "\(t.spent)\(sym) / \(t.budget)\(sym)")
                 }
@@ -896,16 +896,16 @@ struct TripDetailScreen: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 6) {
                     TIcon(glyph: .plane, size: 16, stroke: .tAccent2, strokeWidth: 2)
-                    Text("Vols & billets")
+                    Text(L("Vols & billets"))
                         .font(.tText(14, weight: .bold))
                 }
 
                 if tickets.isEmpty {
                     shortcutCard(
                         glyph: .plane,
-                        title: "Aucun vol enregistré",
-                        subtitle: "Ajoute ton billet pour retrouver horaires et détails ici.",
-                        cta: "Ajouter un vol",
+                        title: L("Aucun vol enregistré"),
+                        subtitle: L("Ajoute ton billet pour retrouver horaires et détails ici."),
+                        cta: L("Ajouter un vol"),
                         action: { onNav(.flights) }
                     )
                 } else {
@@ -916,7 +916,7 @@ struct TripDetailScreen: View {
                     Button(action: { onNav(.flights) }) {
                         HStack(spacing: 8) {
                             TIcon(glyph: .edit, size: 14, stroke: .tAccent2, strokeWidth: 2.5)
-                            Text("Gérer les vols")
+                            Text(L("Gérer les vols"))
                                 .font(.tText(13, weight: .semibold))
                                 .foregroundColor(.tAccent2)
                         }
@@ -1109,8 +1109,8 @@ struct TripDetailScreen: View {
             TCard(padding: 22) {
                 VStack(spacing: 12) {
                     TIcon(glyph: .globe, size: 36, stroke: .tAccent2)
-                    Text("Aucun voyage à afficher").font(.tDisplay(24))
-                    CTA(label: "Retour aux voyages", action: { onNav(.trips) })
+                    Text(L("Aucun voyage à afficher")).font(.tDisplay(24))
+                    CTA(label: L("Retour aux voyages"), action: { onNav(.trips) })
                 }
             }
             .padding(22)

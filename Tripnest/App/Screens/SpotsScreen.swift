@@ -65,9 +65,9 @@ struct SpotsScreen: View {
         let plural = n > 1 ? "s" : ""
         let dest = destinationName
         if dest.isEmpty {
-            return "\(n) enregistré\(plural)"
+            return (n > 1 ? L("%d enregistrés", n) : L("%d enregistré", n))
         }
-        return "\(n) enregistré\(plural) à \(dest)"
+        return (n > 1 ? L("%d enregistrés à %@", n, dest) : L("%d enregistré à %@", n, dest))
     }
 
     var body: some View {
@@ -88,8 +88,8 @@ struct SpotsScreen: View {
                 if store.activeTrip == nil {
                     Spacer()
                     emptySpotsCard(
-                        title: "Aucun voyage sélectionné",
-                        subtitle: "Choisis un voyage pour enregistrer tes spots."
+                        title: L("Aucun voyage sélectionné"),
+                        subtitle: L("Choisis un voyage pour enregistrer tes spots.")
                     )
                     .padding(.horizontal, 18)
                     Spacer()
@@ -103,7 +103,9 @@ struct SpotsScreen: View {
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 14) {
                             mapPreviewCard
-                                .frame(height: 240)
+                                // Cadre carré → le globe entier tient dedans (haut/bas
+                                // ne sont plus coupés comme avec la hauteur fixe de 240).
+                                .aspectRatio(1, contentMode: .fit)
                                 .padding(.horizontal, 18)
                                 .id("spotsMapPreview")
 
@@ -112,10 +114,10 @@ struct SpotsScreen: View {
 
                             if filtered.isEmpty {
                                 VStack(spacing: 6) {
-                                    Text("Aucun résultat")
+                                    Text(L("Aucun résultat"))
                                         .font(.tText(15, weight: .bold))
                                         .foregroundColor(.tText)
-                                    Text("Essaie d'ajuster ta recherche ou ta catégorie.")
+                                    Text(L("Essaie d'ajuster ta recherche ou ta catégorie."))
                                         .font(.tText(12))
                                         .foregroundColor(.tTextMute)
                                         .multilineTextAlignment(.center)
@@ -135,7 +137,7 @@ struct SpotsScreen: View {
                         .tripnestTabBarScrollPadding()
                     }
                     .tripnestScrollBounceWhenNeeded()
-                    .onChange(of: scrollToMapTrigger) { _ in
+                    .onChange(of: scrollToMapTrigger) { _, _ in
                         withAnimation(TripnestAnimation.soft) {
                             proxy.scrollTo("spotsMapPreview", anchor: .top)
                         }
@@ -167,7 +169,7 @@ struct SpotsScreen: View {
                 .interactiveDismissDisabled(true)
         }
         .confirmationDialog(
-            "Supprimer ce spot ?",
+            L("Supprimer ce spot ?"),
             isPresented: Binding(
                 get: { spotToDelete != nil },
                 set: { if !$0 { spotToDelete = nil } }
@@ -175,14 +177,14 @@ struct SpotsScreen: View {
             titleVisibility: .visible,
             presenting: spotToDelete
         ) { spot in
-            Button("Supprimer", role: .destructive) {
+            Button(L("Supprimer"), role: .destructive) {
                 Haptics.impact(.medium)
                 store.deleteSpot(id: spot.id)
                 spotToDelete = nil
             }
-            Button("Annuler", role: .cancel) { spotToDelete = nil }
+            Button(L("Annuler"), role: .cancel) { spotToDelete = nil }
         } message: { spot in
-            Text("« \(spot.name) » sera définitivement supprimé.")
+            Text(L("« %@ » sera définitivement supprimé.", spot.name))
         }
     }
 
@@ -194,10 +196,10 @@ struct SpotsScreen: View {
                 IconBtn(glyph: .back)
             }
             .buttonStyle(TripnestPressStyle())
-            .accessibilityLabel("Retour")
+            .accessibilityLabel(L("Revenir"))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Spots")
+                Text(L("Spots"))
                     .font(.tDisplay(32, weight: .heavy))
                     .tracking(-0.6)
                     .foregroundColor(.tText)
@@ -213,7 +215,7 @@ struct SpotsScreen: View {
                 }
                 .disabled(store.activeTrip == nil)
                 .opacity(store.activeTrip == nil ? 0.45 : 1)
-                .accessibilityLabel("Ajouter un spot")
+                .accessibilityLabel(L("Ajouter un spot"))
 
                 circleIconButton(systemName: "magnifyingglass") {
                     withAnimation(TripnestAnimation.soft) {
@@ -229,7 +231,7 @@ struct SpotsScreen: View {
                     }
                     Haptics.selection()
                 }
-                .accessibilityLabel(showSearch ? "Fermer la recherche" : "Rechercher")
+                .accessibilityLabel(showSearch ? L("Fermer la recherche") : "Rechercher")
             }
         }
     }
@@ -259,7 +261,7 @@ struct SpotsScreen: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.tTextMute)
-            TextField("Rechercher un spot", text: $searchText)
+            TextField(L("Rechercher un spot"), text: $searchText)
                 .font(.tText(14))
                 .foregroundColor(.tText)
                 .autocorrectionDisabled()
@@ -320,7 +322,7 @@ struct SpotsScreen: View {
                             .overlay(Circle().stroke(Color.tAccent2.opacity(0.35), lineWidth: 1))
                     }
                     .buttonStyle(TripnestPressStyle())
-                    .accessibilityLabel("Centrer sur ma position")
+                    .accessibilityLabel(L("Centrer sur ma position"))
                 }
                 Spacer()
             }
@@ -406,10 +408,10 @@ struct SpotsScreen: View {
                         if spot.toRedo || spot.visited {
                             HStack(spacing: 6) {
                                 if spot.toRedo {
-                                    statusBadge("À refaire", color: .tRose, systemImage: "arrow.clockwise")
+                                    statusBadge(L("À refaire"), color: .tRose, systemImage: "arrow.clockwise")
                                 }
                                 if spot.visited {
-                                    statusBadge("Déjà visité", color: .tMint, systemImage: "checkmark")
+                                    statusBadge(L("Déjà visité"), color: .tMint, systemImage: "checkmark")
                                 }
                             }
                         }
@@ -436,7 +438,7 @@ struct SpotsScreen: View {
                     .buttonStyle(.plain)
                     .opacity(hasMarker ? 1 : 0.32)
                     .disabled(!hasMarker)
-                    .accessibilityLabel("Localiser ce spot sur la carte")
+                    .accessibilityLabel(L("Localiser ce spot sur la carte"))
 
                     Button {
                         store.toggleSpotVisited(id: spot.id)
@@ -450,7 +452,7 @@ struct SpotsScreen: View {
                             .overlay(Circle().stroke(spot.visited ? Color.tMint.opacity(0.35) : Color.tBorder, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(spot.visited ? "Marquer comme non visité" : "Marquer comme déjà fait")
+                    .accessibilityLabel(spot.visited ? L("Marquer comme non visité") : L("Marquer comme déjà fait"))
 
                     Button {
                         store.toggleSpotSaved(id: spot.id)
@@ -464,7 +466,7 @@ struct SpotsScreen: View {
                             .overlay(Circle().stroke(spot.saved ? Color.tRose.opacity(0.35) : Color.tBorder, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(spot.saved ? "Retirer des spots sauvés" : "Sauver ce spot")
+                    .accessibilityLabel(spot.saved ? L("Retirer des spots sauvés") : "Sauver ce spot")
                 }
             }
             .overlay(alignment: .topTrailing) {
@@ -481,7 +483,7 @@ struct SpotsScreen: View {
                 }
                 .buttonStyle(.plain)
                 .offset(x: 7, y: -7)
-                .accessibilityLabel("Supprimer ce spot")
+                .accessibilityLabel(L("Supprimer ce spot"))
             }
         }
         .buttonStyle(TripnestPressStyle())
@@ -490,13 +492,13 @@ struct SpotsScreen: View {
                 store.toggleSpotSaved(id: spot.id)
                 Haptics.selection()
             } label: {
-                Label(spot.saved ? "Retirer des sauvés" : "Sauver", systemImage: spot.saved ? "heart.slash" : "heart")
+                Label(spot.saved ? L("Retirer des sauvés") : "Sauver", systemImage: spot.saved ? "heart.slash" : "heart")
             }
             Button(role: .destructive) {
                 Haptics.impact(.medium)
                 store.deleteSpot(id: spot.id)
             } label: {
-                Label("Supprimer", systemImage: "trash")
+                Label(L("Supprimer"), systemImage: "trash")
             }
         }
     }
@@ -504,8 +506,8 @@ struct SpotsScreen: View {
     // MARK: - Empty state
 
     private func emptySpotsCard(
-        title: String = "Aucun spot enregistré",
-        subtitle: String = "Ajoute tes restaurants, hôtels ou activités pour les retrouver pendant ton voyage.",
+        title: String = L("Aucun spot enregistré"),
+        subtitle: String = L("Ajoute tes restaurants, hôtels ou activités pour les retrouver pendant ton voyage."),
         action: (() -> Void)? = nil
     ) -> some View {
         TCard(
@@ -530,7 +532,7 @@ struct SpotsScreen: View {
                     .foregroundColor(.tTextMute)
                     .multilineTextAlignment(.center)
                 if let action {
-                    CTA(label: "Ajouter un spot", action: action)
+                    CTA(label: L("Ajouter un spot"), action: action)
                         .padding(.top, 2)
                 }
             }
@@ -614,14 +616,14 @@ struct SpotsScreen: View {
         Haptics.selection()
     }
 
-    private static func spotStatus(_ spot: Spot) -> String {
+    nonisolated private static func spotStatus(_ spot: Spot) -> String {
         var parts: [String] = []
         if spot.toRedo { parts.append("redo") }
         if spot.visited { parts.append("visited") }
         return parts.joined(separator: ",")
     }
 
-    private static func spotEmoji(for category: String) -> String {
+    nonisolated private static func spotEmoji(for category: String) -> String {
         switch category {
         case "Restaurant": return "🍽️"
         case "Hôtel":      return "🏨"
@@ -877,7 +879,7 @@ private struct CategoryColorPill: View {
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Supprimer la catégorie \(label)")
+                .accessibilityLabel(L("Supprimer la catégorie %@", label))
             }
         }
         .padding(.leading, 14)
@@ -890,7 +892,7 @@ private struct CategoryColorPill: View {
 }
 
 @MainActor
-private final class SpotsLocationTracker: NSObject, ObservableObject, CLLocationManagerDelegate {
+private final class SpotsLocationTracker: NSObject, ObservableObject, @preconcurrency CLLocationManagerDelegate {
     @Published private(set) var coordinate: CLLocationCoordinate2D?
     @Published private(set) var revision = 0
 
@@ -1060,7 +1062,7 @@ struct AddSpotSheet: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
-                        FormField(label: "Nom du lieu", text: $name, placeholder: "Ex. Time Out Market")
+                        FormField(label: L("Nom du lieu"), text: $name, placeholder: "Ex. Time Out Market")
                         addressSection
                         descriptionSection
                         photosSection
@@ -1073,7 +1075,7 @@ struct AddSpotSheet: View {
                             VStack(spacing: 0) {
                                 Stepper(value: $rating, in: 1...5, step: 0.5) {
                                     HStack {
-                                        Text("Note").font(.tText(14, weight: .semibold))
+                                        Text(L("Note")).font(.tText(14, weight: .semibold))
                                         Spacer()
                                         HStack(spacing: 4) {
                                             let sc = starColor(rating)
@@ -1092,11 +1094,11 @@ struct AddSpotSheet: View {
                     .padding(22).padding(.bottom, 20)
                 }
             }
-            .navigationTitle(isEditing ? "Modifier le spot" : "Nouveau spot")
+            .navigationTitle(isEditing ? L("Modifier le spot") : "Nouveau spot")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Fermer") { close() }.foregroundColor(.tAccent2)
+                    Button(L("Fermer")) { close() }.foregroundColor(.tAccent2)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(isEditing ? "Enregistrer" : "Ajouter", action: save)
@@ -1138,7 +1140,7 @@ struct AddSpotSheet: View {
             addCategorySheet
         }
         .confirmationDialog(
-            "Supprimer cette catégorie ?",
+            L("Supprimer cette catégorie ?"),
             isPresented: Binding(
                 get: { categoryToDelete != nil },
                 set: { if !$0 { categoryToDelete = nil } }
@@ -1146,13 +1148,13 @@ struct AddSpotSheet: View {
             titleVisibility: .visible,
             presenting: categoryToDelete
         ) { name in
-            Button("Supprimer", role: .destructive) {
+            Button(L("Supprimer"), role: .destructive) {
                 deleteCustomCategory(name)
                 categoryToDelete = nil
             }
-            Button("Annuler", role: .cancel) { categoryToDelete = nil }
+            Button(L("Annuler"), role: .cancel) { categoryToDelete = nil }
         } message: { name in
-            Text("La catégorie « \(name) » sera supprimée.")
+            Text(L("La catégorie « %@ » sera supprimée.", name))
         }
     }
 
@@ -1161,7 +1163,7 @@ struct AddSpotSheet: View {
     private var tripSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                Text("VOYAGE LIÉ")
+                Text(L("VOYAGE LIÉ"))
                     .font(.tText(12, weight: .bold))
                     .tracking(1.5)
                     .foregroundColor(.tTextMute)
@@ -1173,7 +1175,7 @@ struct AddSpotSheet: View {
             }
 
             if store.trips.isEmpty {
-                Text("Aucun voyage disponible")
+                Text(L("Aucun voyage disponible"))
                     .font(.tText(14))
                     .foregroundColor(.tTextMute)
                     .padding(.horizontal, 18)
@@ -1192,7 +1194,7 @@ struct AddSpotSheet: View {
                 }
 
                 if visibleTrips.isEmpty {
-                    Text(tripFilter == .ongoing ? "Aucun voyage en cours" : "Aucun voyage terminé")
+                    Text(tripFilter == .ongoing ? L("Aucun voyage en cours") : L("Aucun voyage terminé"))
                         .font(.tText(14))
                         .foregroundColor(.tTextMute)
                         .padding(.horizontal, 18)
@@ -1262,7 +1264,7 @@ struct AddSpotSheet: View {
     private var descriptionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("DESCRIPTION")
+                Text(L("DESCRIPTION"))
                     .font(.tText(12, weight: .bold))
                     .tracking(1.5)
                     .foregroundColor(.tTextMute)
@@ -1274,7 +1276,7 @@ struct AddSpotSheet: View {
 
             ZStack(alignment: .topLeading) {
                 if spotDescription.isEmpty {
-                    Text("Ajoute une note, une impression, une anecdote…")
+                    Text(L("Ajoute une note, une impression, une anecdote…"))
                         .font(.tText(15))
                         .foregroundColor(.tTextMute.opacity(0.5))
                         .padding(.top, 14)
@@ -1309,7 +1311,7 @@ struct AddSpotSheet: View {
     private var addressSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
-                Text("ADRESSE")
+                Text(L("ADRESSE"))
                     .font(.tText(12, weight: .bold))
                     .tracking(1.5)
                     .foregroundColor(.tTextMute)
@@ -1328,7 +1330,7 @@ struct AddSpotSheet: View {
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(.tAccent2)
                         }
-                        Text("Adresse détectée")
+                        Text(L("Adresse détectée"))
                             .font(.tText(12, weight: .semibold))
                             .foregroundColor(.tAccent2)
                     }
@@ -1343,7 +1345,7 @@ struct AddSpotSheet: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 0) {
-                    TextField("Ex. 1 Rue de Rivoli, Paris", text: $address)
+                    TextField(L("Ex. 1 Rue de Rivoli, Paris"), text: $address)
                         .font(.tText(16))
                         .foregroundColor(.tText)
                         .autocorrectionDisabled()
@@ -1437,7 +1439,7 @@ struct AddSpotSheet: View {
 
     private var photosSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("PHOTOS")
+            Text(L("PHOTOS"))
                 .font(.tText(12, weight: .bold))
                 .tracking(1.5)
                 .foregroundColor(.tTextMute)
@@ -1472,18 +1474,18 @@ struct AddSpotSheet: View {
                                 showGalleryPicker = true
                                 Haptics.selection()
                             } label: {
-                                Label("Galerie", systemImage: "photo.on.rectangle.angled")
+                                Label(L("Galerie"), systemImage: "photo.on.rectangle.angled")
                             }
                             Button {
                                 showCameraPicker = true
                                 Haptics.selection()
                             } label: {
-                                Label("Appareil photo", systemImage: "camera.fill")
+                                Label(L("Appareil photo"), systemImage: "camera.fill")
                             }
                         } label: {
                             VStack(spacing: 6) {
                                 TIcon(glyph: .plus, size: 18, stroke: .tAccent2, strokeWidth: 2.5)
-                                Text("Ajouter")
+                                Text(L("Ajouter"))
                                     .font(.tText(11, weight: .semibold))
                                     .foregroundColor(.tAccent2)
                             }
@@ -1523,7 +1525,7 @@ struct AddSpotSheet: View {
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(.tGold)
                 }
-                TextField("Ex. 25 € / pers", text: $budget)
+                TextField(L("Ex. 25 € / pers"), text: $budget)
                     .font(.tText(15, weight: .semibold))
                     .foregroundColor(.tText)
                     .keyboardType(.default)
@@ -1543,7 +1545,7 @@ struct AddSpotSheet: View {
 
     private var categorySection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("CATÉGORIE")
+            Text(L("CATÉGORIE"))
                 .font(.tText(12, weight: .bold))
                 .tracking(1.5)
                 .foregroundColor(.tTextMute)
@@ -1600,11 +1602,11 @@ struct AddSpotSheet: View {
                 Color.tBg1.ignoresSafeArea()
                 VStack(alignment: .leading, spacing: 22) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("NOM")
+                        Text(L("NOM"))
                             .font(.tText(12, weight: .bold))
                             .tracking(1.5)
                             .foregroundColor(.tTextMute)
-                        TextField("Ex. Bar, Café, Musée…", text: $newCategoryName)
+                        TextField(L("Ex. Bar, Café, Musée…"), text: $newCategoryName)
                             .font(.tText(15))
                             .foregroundColor(.tText)
                             .padding(.horizontal, 14).padding(.vertical, 12)
@@ -1613,7 +1615,7 @@ struct AddSpotSheet: View {
                     }
 
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("COULEUR")
+                        Text(L("COULEUR"))
                             .font(.tText(12, weight: .bold))
                             .tracking(1.5)
                             .foregroundColor(.tTextMute)
@@ -1647,18 +1649,18 @@ struct AddSpotSheet: View {
                 }
                 .padding(22)
             }
-            .navigationTitle("Nouvelle catégorie")
+            .navigationTitle(L("Nouvelle catégorie"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") {
+                    Button(L("Annuler")) {
                         showAddCategory = false
                         newCategoryName = ""
                     }
                     .foregroundColor(.tAccent2)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Ajouter") { addCustomCategory() }
+                    Button(L("Ajouter")) { addCustomCategory() }
                         .font(.tText(15, weight: .bold))
                         .foregroundColor(canAddCategory ? .tAccent2 : .tTextMute)
                         .disabled(!canAddCategory)
@@ -1742,14 +1744,18 @@ struct AddSpotSheet: View {
         guard !trimmed.isEmpty, !selectedTripId.isEmpty else { return }
 
         let trimmedAddress = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        let photoSnapshot = photos
 
         if let spot = editingSpot {
-            // Supprime les anciennes photos si le nombre a changé
-            if spot.photoCount != photos.count {
-                SpotImageStore.deleteAll(spotId: spot.id, count: spot.photoCount)
-            }
-            for (i, photo) in photos.enumerated() {
-                SpotImageStore.save(photo, spotId: spot.id, index: i)
+            let spotId = spot.id
+            let previousPhotoCount = spot.photoCount
+            Task.detached(priority: .utility) {
+                if previousPhotoCount != photoSnapshot.count {
+                    SpotImageStore.deleteAll(spotId: spotId, count: previousPhotoCount)
+                }
+                for (i, photo) in photoSnapshot.enumerated() {
+                    SpotImageStore.save(photo, spotId: spotId, index: i)
+                }
             }
             let addressChanged = trimmedAddress != spot.address
             store.updateSpot(
@@ -1760,7 +1766,7 @@ struct AddSpotSheet: View {
                 spotDescription: spotDescription,
                 budget: budget,
                 toRedo: toRedo,
-                photoCount: photos.count,
+                photoCount: photoSnapshot.count,
                 rating: rating,
                 tripId: selectedTripId,
                 visited: visited
@@ -1777,13 +1783,15 @@ struct AddSpotSheet: View {
                 spotDescription: spotDescription,
                 budget: budget,
                 toRedo: toRedo,
-                photoCount: photos.count,
+                photoCount: photoSnapshot.count,
                 rating: rating,
                 tripId: selectedTripId,
                 visited: visited
             ) else { return }
-            for (i, photo) in photos.enumerated() {
-                SpotImageStore.save(photo, spotId: spotId, index: i)
+            Task.detached(priority: .utility) {
+                for (i, photo) in photoSnapshot.enumerated() {
+                    SpotImageStore.save(photo, spotId: spotId, index: i)
+                }
             }
             if !trimmedAddress.isEmpty {
                 geocodeInBackground(spotId: spotId, address: trimmedAddress)

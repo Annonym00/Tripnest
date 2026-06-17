@@ -10,9 +10,9 @@ enum TripnestNotificationStatus: Equatable {
 
     var settingsLabel: String {
         switch self {
-        case .notDetermined: return "À activer"
-        case .denied: return "Désactivées"
-        case .authorized: return "Activées"
+        case .notDetermined: return L("À activer")
+        case .denied: return L("Désactivées")
+        case .authorized: return L("Activées")
         }
     }
 }

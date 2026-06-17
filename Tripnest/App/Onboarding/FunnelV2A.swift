@@ -14,14 +14,14 @@ struct V2_01: View {
             VStack(spacing: 22) {
                 TripnestLogo(size: 120)
                 VStack(spacing: 14) {
-                    Text("BIENVENUE")
+                    Text(L("BIENVENUE"))
                         .font(.tText(11, weight: .bold)).tracking(2.5)
                         .foregroundColor(.tAccent2)
-                    (Text("Tes voyages\nau même endroit").font(.tDisplay(38)).tracking(-1.4)
+                    (Text(L("Tes voyages\nau même endroit")).font(.tDisplay(38)).tracking(-1.4)
                      + Text(".").foregroundColor(.tAccent2).font(.tDisplay(38)).tracking(-1.4))
                         .multilineTextAlignment(.center)
                         .lineSpacing(0)
-                    Text("On va te poser quelques questions.\n2 minutes pour préparer ton espace voyage.")
+                    Text(L("On va te poser quelques questions.\n2 minutes pour préparer ton espace voyage."))
                         .font(.tText(15))
                         .foregroundColor(.tTextMute)
                         .multilineTextAlignment(.center)
@@ -35,8 +35,8 @@ struct V2_01: View {
             Spacer()
 
             VStack(spacing: 8) {
-                CTA(label: "Construire mon plan voyage")
-                CTA(label: "J'ai déjà un compte", ghost: true)
+                CTA(label: L("Construire mon plan voyage"))
+                CTA(label: L("J'ai déjà un compte"), ghost: true)
             }
             .padding(.horizontal, 28).padding(.bottom, 36)
         }
@@ -52,10 +52,10 @@ struct V2_01: View {
                         .overlay(Circle().stroke(Color.tBg1, lineWidth: 1.5))
                 }
             }
-            Text("Données locales · ")
+            Text(L("Données locales · "))
                 .font(.tText(11, weight: .semibold))
             TIcon(glyph: .check, size: 11, stroke: .tMint)
-            Text("privées").font(.tText(11, weight: .bold)).foregroundColor(.tMint)
+            Text(L("privées")).font(.tText(11, weight: .bold)).foregroundColor(.tMint)
         }
         .padding(.horizontal, 14).padding(.vertical, 8)
         .background(Capsule().fill(Color.tSurface))
@@ -68,21 +68,21 @@ struct V2_01: View {
 struct V2_02: View {
     var body: some View {
         OBQuestion(
-            step: 2, label: "Réflexion",
-            subtitle: "POUR COMMENCER",
-            title: AnyView(Text("Pourquoi as-tu téléchargé\nTripnest aujourd'hui ?")),
-            hint: "Une seule réponse — celle qui te ressemble le plus."
+            step: 2, label: L("Réflexion"),
+            subtitle: L("POUR COMMENCER"),
+            title: AnyView(Text(L("Pourquoi as-tu téléchargé\nTripnest aujourd'hui ?"))),
+            hint: L("Une seule réponse — celle qui te ressemble le plus.")
         ) {
             VStack(spacing: 10) {
-                OptCard(emoji: "wallet", label: "Économiser sur mes voyages",
-                        detail: "J'ai déjà dépassé mon budget une fois de trop", active: true)
+                OptCard(emoji: "wallet", label: L("Économiser sur mes voyages"),
+                        detail: L("J'ai déjà dépassé mon budget une fois de trop"), active: true)
                 OptCard(emoji: "map", label: "Mieux m'organiser",
-                        detail: "Mes voyages sont chaotiques", color: .tRose)
+                        detail: L("Mes voyages sont chaotiques"), color: .tRose)
                 OptCard(emoji: "globe", label: "Voir plus du monde",
-                        detail: "J'ai des destinations en tête à concrétiser", color: .tBlue)
-                OptCard(emoji: "camera", label: "Garder mes souvenirs",
-                        detail: "Mes voyages partent dans l'oubli", color: .tGold)
-                OptCard(emoji: "plane", label: "Tout ça à la fois", color: .tMint)
+                        detail: L("J'ai des destinations en tête à concrétiser"), color: .tBlue)
+                OptCard(emoji: "camera", label: L("Garder mes souvenirs"),
+                        detail: L("Mes voyages partent dans l'oubli"), color: .tGold)
+                OptCard(emoji: "plane", label: L("Tout ça à la fois"), color: .tMint)
             }
         }
     }
@@ -93,20 +93,20 @@ struct V2_02: View {
 struct V2_03: View {
     var body: some View {
         OBQuestion(
-            step: 3, label: "Réflexion",
-            subtitle: "TON DÉFI",
-            title: AnyView(Text("Quel est ton plus gros défi\nquand tu voyages ?")),
-            hint: "Sois honnête — c'est ce qu'on va régler ensemble."
+            step: 3, label: L("Réflexion"),
+            subtitle: L("TON DÉFI"),
+            title: AnyView(Text(L("Quel est ton plus gros défi\nquand tu voyages ?"))),
+            hint: L("Sois honnête — c'est ce qu'on va régler ensemble.")
         ) {
             VStack(spacing: 10) {
-                OptCard(emoji: "wallet", label: "Dépasser mon budget",
-                        detail: "Je perds le contrôle vite", active: true, color: .tGold)
-                OptCard(emoji: "list", label: "Oublier les détails",
-                        detail: "Réservations, horaires, documents", color: .tRose)
+                OptCard(emoji: "wallet", label: L("Dépasser mon budget"),
+                        detail: L("Je perds le contrôle vite"), active: true, color: .tGold)
+                OptCard(emoji: "list", label: L("Oublier les détails"),
+                        detail: L("Réservations, horaires, documents"), color: .tRose)
                 OptCard(emoji: "mind", label: "Tout planifier en amont",
                         detail: "Trop d'onglets, trop d'apps", color: .tBlue)
-                OptCard(emoji: "camera", label: "Garder une trace propre",
-                        detail: "Mes photos s'éparpillent", color: .tMint)
+                OptCard(emoji: "camera", label: L("Garder une trace propre"),
+                        detail: L("Mes photos s'éparpillent"), color: .tMint)
             }
         }
     }
@@ -118,12 +118,12 @@ struct V2_04: View {
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
-                OBHeader(step: 4, label: "Tu n'es pas seul·e")
+                OBHeader(step: 4, label: L("Tu n'es pas seul·e"))
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("TU N'ES PAS SEUL·E")
+                    Text(L("TU N'ES PAS SEUL·E"))
                         .font(.tText(11, weight: .bold)).tracking(2)
                         .foregroundColor(.tAccent2)
-                    (Text("Garde le contrôle\nde ton budget").font(.tDisplay(28)).tracking(-0.9)
+                    (Text(L("Garde le contrôle\nde ton budget")).font(.tDisplay(28)).tracking(-0.9)
                      + Text(".").foregroundColor(.tGold).font(.tDisplay(28)))
                         .padding(.top, 8)
 
@@ -133,7 +133,7 @@ struct V2_04: View {
                     insightCard.padding(.top, 18)
 
                     Spacer()
-                    CTA(label: "Je veux garder le contrôle →")
+                    CTA(label: L("Je veux garder le contrôle →"))
                 }
                 .padding(.horizontal, 26)
                 .padding(.top, 20).padding(.bottom, 30)
@@ -160,7 +160,7 @@ struct V2_04: View {
                 }
             }
             .frame(maxWidth: 280)
-            Text("Un budget clair commence avec tes propres dépenses")
+            Text(L("Un budget clair commence avec tes propres dépenses"))
                 .font(.tText(11, weight: .semibold)).foregroundColor(.tTextMute)
         }
         .frame(maxWidth: .infinity)
@@ -171,8 +171,8 @@ struct V2_04: View {
             HStack(alignment: .top, spacing: 12) {
                 IconBubble(glyph: .sun, color: .tGold, size: 46)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Le saviez-vous").font(.tText(13, weight: .bold)).foregroundColor(.tGold)
-                    Text("Suis tes dépenses en temps réel pour décider avec tes propres chiffres.")
+                    Text(L("Le saviez-vous")).font(.tText(13, weight: .bold)).foregroundColor(.tGold)
+                    Text(L("Suis tes dépenses en temps réel pour décider avec tes propres chiffres."))
                         .font(.tText(13))
                 }
             }
@@ -187,17 +187,17 @@ struct V2_05: View {
     @EnvironmentObject private var onboarding: OnboardingState
     private struct Opt { let glyph: TIcon.Glyph; let label, detail: String; let active: Bool; let color: Color }
     private let opts: [Opt] = [
-        .init(glyph: .user, label: "Solo",        detail: "Indépendant·e", active: true,  color: .tAccent2),
-        .init(glyph: .heart, label: "En couple",   detail: "Voyage à deux", active: false, color: .tRose),
-        .init(glyph: .home, label: "En famille",  detail: "Avec enfants",  active: false, color: .tGold),
+        .init(glyph: .user, label: "Solo",        detail: L("Indépendant·e"), active: true,  color: .tAccent2),
+        .init(glyph: .heart, label: "En couple",   detail: L("Voyage à deux"), active: false, color: .tRose),
+        .init(glyph: .home, label: "En famille",  detail: L("Avec enfants"),  active: false, color: .tGold),
         .init(glyph: .trips, label: "Entre amis",  detail: "Groupe",        active: false, color: .tMint),
     ]
 
     var body: some View {
         OBQuestion(
             step: 5, label: "Personnalisation",
-            subtitle: "Q1 · TON STYLE",
-            title: AnyView(Text("Avec qui voyages-tu\nle plus souvent ?"))
+            subtitle: L("Q1 · TON STYLE"),
+            title: AnyView(Text(L("Avec qui voyages-tu\nle plus souvent ?")))
         ) {
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10),
                                 GridItem(.flexible(), spacing: 10)],
@@ -246,14 +246,14 @@ struct V2_06: View {
     var body: some View {
         OBQuestion(
             step: 6, label: "Personnalisation",
-            subtitle: "Q2 · FRÉQUENCE",
-            title: AnyView(Text("À quelle fréquence\npars-tu en voyage ?"))
+            subtitle: L("Q2 · FRÉQUENCE"),
+            title: AnyView(Text(L("À quelle fréquence\npars-tu en voyage ?")))
         ) {
             VStack(spacing: 8) {
-                OptCard(emoji: "plane", label: "Plusieurs fois par an", detail: "4+ voyages", active: true)
-                OptCard(emoji: "weather", label: "Une à deux fois par an", detail: "1–2 voyages")
-                OptCard(emoji: "globe", label: "Un grand voyage par an", detail: "Long séjour")
-                OptCard(emoji: "star", label: "Plus rarement, mais je rêve", detail: "")
+                OptCard(emoji: "plane", label: "Plusieurs fois par an", detail: L("4+ voyages"), active: true)
+                OptCard(emoji: "weather", label: L("Une à deux fois par an"), detail: L("1–2 voyages"))
+                OptCard(emoji: "globe", label: L("Un grand voyage par an"), detail: L("Long séjour"))
+                OptCard(emoji: "star", label: L("Plus rarement, mais je rêve"), detail: "")
             }
         }
     }
@@ -264,21 +264,21 @@ struct V2_06: View {
 struct V2_07: View {
     var body: some View {
         OBQuestion(
-            step: 7, label: "Vérité",
-            subtitle: "Q3 · MOMENT DE VÉRITÉ",
-            title: AnyView(Text("As-tu déjà dépassé ton\nbudget en voyage ?")),
-            hint: "Pas de jugement. Juste pour calibrer ton plan."
+            step: 7, label: L("Vérité"),
+            subtitle: L("Q3 · MOMENT DE VÉRITÉ"),
+            title: AnyView(Text(L("As-tu déjà dépassé ton\nbudget en voyage ?"))),
+            hint: L("Pas de jugement. Juste pour calibrer ton plan.")
         ) {
             VStack(spacing: 10) {
                 Color.clear.frame(height: 10)
                 OptCard(emoji: "wallet", label: "Oui, plusieurs fois",
-                        detail: "C'est même devenu une habitude", active: true, color: .tGold)
-                OptCard(emoji: "user", label: "Oui, une fois ou deux",
-                        detail: "Et c'est pour ça que je suis ici")
+                        detail: L("C'est même devenu une habitude"), active: true, color: .tGold)
+                OptCard(emoji: "user", label: L("Oui, une fois ou deux"),
+                        detail: L("Et c'est pour ça que je suis ici"))
                 OptCard(emoji: "unknown", label: "Je ne sais pas",
-                        detail: "Je ne suis pas vraiment mon budget")
+                        detail: L("Je ne suis pas vraiment mon budget"))
                 OptCard(emoji: "calm", label: "Non, jamais",
-                        detail: "Mais je veux optimiser quand même")
+                        detail: L("Mais je veux optimiser quand même"))
             }
         }
     }
@@ -294,22 +294,22 @@ struct V2_08: View {
 
     var body: some View {
         OBQuestion(
-            step: 8, label: "Vérité",
-            subtitle: "Q4 · DE COMBIEN",
-            title: AnyView(Text("De combien as-tu dépassé\nen moyenne ?"))
+            step: 8, label: L("Vérité"),
+            subtitle: L("Q4 · DE COMBIEN"),
+            title: AnyView(Text(L("De combien as-tu dépassé\nen moyenne ?")))
         ) {
             VStack(spacing: 26) {
                 Color.clear.frame(height: 20)
                 VStack(spacing: 6) {
                     GradientNumber(text: "~\(val)€", size: 84, colors: [.tGold, .tAccent])
-                    Text("par voyage en moyenne")
+                    Text(L("par voyage en moyenne"))
                         .font(.tText(13)).foregroundColor(.tTextMute)
                 }
                 .frame(maxWidth: .infinity)
                 VStack(spacing: 14) {
                     OBSlider(pct: pct, trackColors: [.tGold, .tAccent], thumbBorder: .tAccent)
                     HStack {
-                        Text("moins de 100€"); Spacer()
+                        Text(L("moins de 100€")); Spacer()
                         Text("500€"); Spacer()
                         Text("1500€+")
                     }
@@ -317,9 +317,9 @@ struct V2_08: View {
                 }
                 .padding(.horizontal, 6)
                 TCard(padding: 12) {
-                    (Text("Sur 4 voyages par an, ça fait ").font(.tText(12))
-                     + Text("1 520€ par an").font(.tText(12, weight: .bold)).foregroundColor(.tRose)
-                     + Text(" de perte.").font(.tText(12)))
+                    (Text(L("Sur 4 voyages par an, ça fait ")).font(.tText(12))
+                     + Text(L("1 520€ par an")).font(.tText(12, weight: .bold)).foregroundColor(.tRose)
+                     + Text(L(" de perte.")).font(.tText(12)))
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 }
@@ -333,22 +333,22 @@ struct V2_08: View {
 struct V2_09: View {
     var body: some View {
         OBQuestion(
-            step: 9, label: "État des lieux",
-            subtitle: "Q5 · TES OUTILS",
-            title: AnyView(Text("Comment t'organises-tu\naujourd'hui ?")),
+            step: 9, label: L("État des lieux"),
+            subtitle: L("Q5 · TES OUTILS"),
+            title: AnyView(Text(L("Comment t'organises-tu\naujourd'hui ?"))),
             hint: "Plusieurs choix possibles."
         ) {
             VStack(spacing: 8) {
-                MultiCard(emoji: "sheet", label: "Une feuille Excel / Google Sheets",
-                          detail: "Toujours obsolète, jamais à jour", active: true)
+                MultiCard(emoji: "sheet", label: L("Une feuille Excel / Google Sheets"),
+                          detail: L("Toujours obsolète, jamais à jour"), active: true)
                 MultiCard(emoji: "notes", label: "L'app Notes",
                           detail: "Tout est en vrac", active: true, color: .tRose)
-                MultiCard(emoji: "wallet", label: "L'app de ma banque",
-                          detail: "Catégories pas adaptées au voyage")
-                MultiCard(emoji: "unknown", label: "Rien de précis",
+                MultiCard(emoji: "wallet", label: L("L'app de ma banque"),
+                          detail: L("Catégories pas adaptées au voyage"))
+                MultiCard(emoji: "unknown", label: L("Rien de précis"),
                           detail: "Je fais au feeling", color: .tGold)
-                MultiCard(emoji: "calculator", label: "Une autre app",
-                          detail: "Mais ça ne me convient pas", color: .tBlue)
+                MultiCard(emoji: "calculator", label: L("Une autre app"),
+                          detail: L("Mais ça ne me convient pas"), color: .tBlue)
             }
         }
     }
@@ -359,22 +359,22 @@ struct V2_09: View {
 struct V2_10: View {
     var body: some View {
         OBQuestion(
-            step: 10, label: "État des lieux",
-            subtitle: "Q6 · CE QUI TE FRUSTRE",
-            title: AnyView(Text("Qu'est-ce qui te frustre\nle plus avec ces outils ?")),
+            step: 10, label: L("État des lieux"),
+            subtitle: L("Q6 · CE QUI TE FRUSTRE"),
+            title: AnyView(Text(L("Qu'est-ce qui te frustre\nle plus avec ces outils ?"))),
             hint: "Plusieurs choix possibles."
         ) {
             VStack(spacing: 8) {
-                MultiCard(emoji: "time", label: "Trop de temps à saisir",
-                          detail: "Je finis par ne plus le faire", active: true)
-                MultiCard(emoji: "wallet", label: "Les conversions de devises",
-                          detail: "Je ne sais jamais où j'en suis", active: true, color: .tGold)
+                MultiCard(emoji: "time", label: L("Trop de temps à saisir"),
+                          detail: L("Je finis par ne plus le faire"), active: true)
+                MultiCard(emoji: "wallet", label: L("Les conversions de devises"),
+                          detail: L("Je ne sais jamais où j'en suis"), active: true, color: .tGold)
                 MultiCard(emoji: "bell", label: "Pas de mode hors-ligne",
-                          detail: "Inutile en plein voyage")
-                MultiCard(emoji: "globe", label: "Aucune vision d'ensemble",
-                          detail: "Je découvre les dégâts au retour", active: true, color: .tRose)
-                MultiCard(emoji: "spot", label: "Je perds les lieux découverts",
-                          detail: "Adresses oubliées, restos perdus", color: .tBlue)
+                          detail: L("Inutile en plein voyage"))
+                MultiCard(emoji: "globe", label: L("Aucune vision d'ensemble"),
+                          detail: L("Je découvre les dégâts au retour"), active: true, color: .tRose)
+                MultiCard(emoji: "spot", label: L("Je perds les lieux découverts"),
+                          detail: L("Adresses oubliées, restos perdus"), color: .tBlue)
             }
         }
     }
@@ -385,19 +385,19 @@ struct V2_10: View {
 struct V2_11: View {
     var body: some View {
         OBQuestion(
-            step: 11, label: "Ton objectif",
-            subtitle: "OBJECTIF PRINCIPAL",
-            title: AnyView(Text("Quel est ton objectif\nnuméro 1 cette année ?"))
+            step: 11, label: L("Ton objectif"),
+            subtitle: L("OBJECTIF PRINCIPAL"),
+            title: AnyView(Text(L("Quel est ton objectif\nnuméro 1 cette année ?")))
         ) {
             VStack(spacing: 10) {
-                OptCard(emoji: "wallet", label: "Économiser 500€+ sur mes voyages",
+                OptCard(emoji: "wallet", label: L("Économiser 500€+ sur mes voyages"),
                         detail: "Plus de marge, moins de stress", active: true, color: .tGold)
-                OptCard(emoji: "map", label: "Visiter 3 nouvelles destinations",
-                        detail: "Sortir de ma zone", color: .tRose)
-                OptCard(emoji: "calendar", label: "Mieux planifier mes vacances",
+                OptCard(emoji: "map", label: L("Visiter 3 nouvelles destinations"),
+                        detail: L("Sortir de ma zone"), color: .tRose)
+                OptCard(emoji: "calendar", label: L("Mieux planifier mes vacances"),
                         detail: "Anticiper, ne plus subir", color: .tBlue)
-                OptCard(emoji: "globe", label: "Faire le voyage de ma vie",
-                        detail: "Cette année, c'est la bonne", color: .tMint)
+                OptCard(emoji: "globe", label: L("Faire le voyage de ma vie"),
+                        detail: L("Cette année, c'est la bonne"), color: .tMint)
             }
         }
     }
@@ -414,9 +414,9 @@ struct V2_12: View {
 
     var body: some View {
         OBQuestion(
-            step: 12, label: "Ton objectif",
-            subtitle: "TON BUDGET MOYEN",
-            title: AnyView(Text("Combien dépenses-tu\npar voyage en moyenne ?")),
+            step: 12, label: L("Ton objectif"),
+            subtitle: L("TON BUDGET MOYEN"),
+            title: AnyView(Text(L("Combien dépenses-tu\npar voyage en moyenne ?"))),
             hint: "Hors transport longue distance. Estime au mieux."
         ) {
             VStack(spacing: 30) {
@@ -424,7 +424,7 @@ struct V2_12: View {
                 VStack(spacing: 4) {
                     GradientNumber(text: "\(v.formatted(.number.locale(Locale(identifier: "fr_FR"))))€",
                                   size: 78, colors: [.white, .tAccent2])
-                    Text("≈ 230€ / jour pour 8 jours")
+                    Text(L("≈ 230€ / jour pour 8 jours"))
                         .font(.tText(13)).foregroundColor(.tTextMute)
                 }
                 .frame(maxWidth: .infinity)
@@ -458,20 +458,20 @@ struct V2_13: View {
         .init(glyph: .globe, name: "Japon",    hue: 340, on: true),
         .init(glyph: .globe, name: "Maroc",    hue: 50,  on: true),
         .init(glyph: .globe, name: "Mexique",  hue: 20,  on: false),
-        .init(glyph: .search, name: "À définir", hue: 160, on: true),
+        .init(glyph: .search, name: L("À définir"), hue: 160, on: true),
         .init(glyph: .globe, name: "Islande",  hue: 220, on: false),
         .init(glyph: .globe, name: "Portugal", hue: 25,  on: false),
         .init(glyph: .globe, name: "Vietnam",  hue: 130, on: false),
         .init(glyph: .globe, name: "Italie",   hue: 15,  on: false),
-        .init(glyph: .globe, name: "Pérou",    hue: 90,  on: true),
+        .init(glyph: .globe, name: L("Pérou"),    hue: 90,  on: true),
     ]
 
     var body: some View {
         OBQuestion(
             step: 13, label: "Inspiration",
-            subtitle: "DESTINATIONS RÊVÉES",
-            title: AnyView(Text("Où as-tu envie d'aller\nen priorité ?")),
-            hint: "Choisis au moins 3 destinations.",
+            subtitle: L("DESTINATIONS RÊVÉES"),
+            title: AnyView(Text(L("Où as-tu envie d'aller\nen priorité ?"))),
+            hint: L("Choisis au moins 3 destinations."),
             cta: "Continuer (\(selectedCount) choisie\(selectedCount > 1 ? "s" : ""))"
         ) {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
@@ -544,22 +544,22 @@ struct V2_14: View {
     var body: some View {
         OBQuestion(
             step: 14, label: "Engagement",
-            subtitle: "TON PROCHAIN VOYAGE",
-            title: AnyView(Text("Où as-tu envie\nd'aller ?")),
-            hint: "On l'utilise pour construire ton premier plan. Tu pourras ajouter les dates plus tard.",
-            cta: "Construire mon plan"
+            subtitle: L("TON PROCHAIN VOYAGE"),
+            title: AnyView(Text(L("Où as-tu envie\nd'aller ?"))),
+            hint: L("On l'utilise pour construire ton premier plan. Tu pourras ajouter les dates plus tard."),
+            cta: L("Construire mon plan")
         ) {
             VStack(spacing: 16) {
                 fieldBox("DESTINATION") {
                     HStack(spacing: 10) {
                         TIcon(glyph: .plane, size: 22, stroke: .tAccent2)
-                        TextField("Destination à définir", text: $destination)
+                        TextField(L("Destination à définir"), text: $destination)
                             .font(.tText(16, weight: .semibold))
                             .foregroundColor(.tText)
                     }
                 }
                 Button(action: defaultAction) {
-                    Text("Je n'ai pas encore de plan précis →")
+                    Text(L("Je n'ai pas encore de plan précis →"))
                         .font(.tText(13, weight: .semibold))
                         .foregroundColor(.tTextMute)
                         .frame(maxWidth: .infinity).padding(.vertical, 6)
@@ -593,17 +593,17 @@ struct V2_15: View {
     var body: some View {
         OBQuestion(
             step: 15, label: "Engagement",
-            subtitle: "TON OBJECTIF D'ÉCONOMIE",
-            title: AnyView(Text("Combien veux-tu économiser\nsur ton prochain voyage ?")),
-            hint: "Sois ambitieux·se. On va t'y aider."
+            subtitle: L("TON OBJECTIF D'ÉCONOMIE"),
+            title: AnyView(Text(L("Combien veux-tu économiser\nsur ton prochain voyage ?"))),
+            hint: L("Sois ambitieux·se. On va t'y aider.")
         ) {
             VStack(spacing: 26) {
                 Color.clear.frame(height: 10)
                 VStack(spacing: 6) {
-                    Text("OBJECTIF")
+                    Text(L("OBJECTIF"))
                         .font(.tText(12, weight: .bold)).tracking(2).foregroundColor(.tMint)
                     GradientNumber(text: "−\(save)€", size: 78, colors: [.tMint, .tAccent2])
-                    Text("selon ton budget réel")
+                    Text(L("selon ton budget réel"))
                         .font(.tText(13)).foregroundColor(.tTextMute)
                 }
                 .frame(maxWidth: .infinity)
@@ -623,8 +623,8 @@ struct V2_15: View {
                 TCard(padding: 14) {
                     HStack(spacing: 12) {
                         IconBubble(glyph: .filter, color: .tMint, size: 46)
-                        (Text("Réaliste").font(.tText(13, weight: .bold)).foregroundColor(.tMint)
-                         + Text(" — il sera ajusté avec tes vraies dépenses dans l'app.")
+                        (Text(L("Réaliste")).font(.tText(13, weight: .bold)).foregroundColor(.tMint)
+                         + Text(L(" — il sera ajusté avec tes vraies dépenses dans l'app."))
                             .font(.tText(13)))
                     }
                 }

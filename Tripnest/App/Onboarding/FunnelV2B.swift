@@ -6,32 +6,32 @@ struct V2_16: View {
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
-                OBHeader(step: 16, label: "Tu as ce qu'il faut")
+                OBHeader(step: 16, label: L("Tu as ce qu'il faut"))
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("BONNE NOUVELLE")
+                    Text(L("BONNE NOUVELLE"))
                         .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tMint)
-                    (Text("Tu as tout pour réussir\nton objectif").font(.tDisplay(30)).tracking(-0.9)
+                    (Text(L("Tu as tout pour réussir\nton objectif")).font(.tDisplay(30)).tracking(-0.9)
                      + Text(".").foregroundColor(.tMint).font(.tDisplay(30)))
                         .padding(.top, 8)
-                    Text("Tes réponses vont servir à préparer ton espace.")
+                    Text(L("Tes réponses vont servir à préparer ton espace."))
                         .font(.tText(14)).foregroundColor(.tTextMute).padding(.top, 8)
 
                     VStack(spacing: 10) {
-                        infoCard(.filter, title: "Ton objectif",
+                        infoCard(.filter, title: L("Ton objectif"),
                                  content: "Construire ", highlight: "ton budget", trailing: " de voyage",
                                  highlightColor: .tMint, color: .tMint, bg: Color(hex: 0x2a194f))
-                        infoCard(.user, title: "Ton profil",
-                                 content: "Profil voyageur à affiner",
+                        infoCard(.user, title: L("Ton profil"),
+                                 content: L("Profil voyageur à affiner"),
                                  color: .tBlue, bg: Color.tBlue.opacity(0.18))
-                        infoCard(.star, title: "Ta motivation",
-                                 content: "Prête à organiser tes voyages",
+                        infoCard(.star, title: L("Ta motivation"),
+                                 content: L("Prête à organiser tes voyages"),
                                  color: .tRose, bg: Color.tRose.opacity(0.18))
                         predictionCard
                     }
                     .padding(.top, 22)
 
                     Spacer(minLength: 0)
-                    CTA(label: "Voir mon plan personnalisé →").padding(.top, 12)
+                    CTA(label: L("Voir mon plan personnalisé →")).padding(.top, 12)
                 }
                 .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
             }
@@ -66,10 +66,10 @@ struct V2_16: View {
             HStack(alignment: .top, spacing: 14) {
                 IconBubble(glyph: .star, color: .tMint, size: 48)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Ce qui compte").font(.tText(13, weight: .bold)).foregroundColor(.tMint)
-                    (Text("Le plan se remplira avec ").font(.tText(14))
-                     + Text("tes vrais voyages").font(.tText(14, weight: .bold)).foregroundColor(.tMint)
-                     + Text(", tes dépenses et tes lieux sauvegardés.").font(.tText(14)))
+                    Text(L("Ce qui compte")).font(.tText(13, weight: .bold)).foregroundColor(.tMint)
+                    (Text(L("Le plan se remplira avec ")).font(.tText(14))
+                     + Text(L("tes vrais voyages")).font(.tText(14, weight: .bold)).foregroundColor(.tMint)
+                     + Text(L(", tes dépenses et tes lieux sauvegardés.")).font(.tText(14)))
                 }
             }
         }
@@ -81,19 +81,19 @@ struct V2_16: View {
 struct V2_17: View {
     private struct T { let glyph: TIcon.Glyph; let title, detail: String; let color: Color }
     private let testimonials: [T] = [
-        .init(glyph: .wallet, title: "Budget réel", detail: "Chaque dépense ajoutée met ton budget à jour.", color: .tRose),
-        .init(glyph: .plane, title: "Voyages réels", detail: "Tes prochains voyages apparaissent dès que tu les crées.", color: .tBlue),
-        .init(glyph: .spot, title: "Spots sauvegardés", detail: "Tes lieux favoris restent rattachés au bon voyage.", color: .tGold),
+        .init(glyph: .wallet, title: L("Budget réel"), detail: L("Chaque dépense ajoutée met ton budget à jour."), color: .tRose),
+        .init(glyph: .plane, title: L("Voyages réels"), detail: L("Tes prochains voyages apparaissent dès que tu les crées."), color: .tBlue),
+        .init(glyph: .spot, title: L("Spots sauvegardés"), detail: L("Tes lieux favoris restent rattachés au bon voyage."), color: .tGold),
     ]
 
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
-                OBHeader(step: 17, label: "Fonctions clés")
+                OBHeader(step: 17, label: L("Fonctions clés"))
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("CE QUE TU VAS UTILISER")
+                    Text(L("CE QUE TU VAS UTILISER"))
                         .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
-                    Text("Des écrans branchés\nsur tes données.")
+                    Text(L("Des écrans branchés\nsur tes données."))
                         .font(.tDisplay(28)).tracking(-0.8)
                         .padding(.top, 8)
 
@@ -133,21 +133,21 @@ struct V2_17: View {
 
 struct V2_18: View {
     private let setupItems: [String] = [
-        "Profil voyageur calibré",
-        "Budget initialisé",
-        "Style de voyage défini",
-        "Espace local sécurisé",
+        L("Profil voyageur calibré"),
+        L("Budget initialisé"),
+        L("Style de voyage défini"),
+        L("Espace local sécurisé"),
     ]
 
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
-                OBHeader(step: 18, label: "Ton espace")
+                OBHeader(step: 18, label: L("Ton espace"))
                 VStack(spacing: 22) {
                     VStack(spacing: 8) {
-                        Text("TON ESPACE EST PRÊT")
+                        Text(L("TON ESPACE EST PRÊT"))
                             .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tMint)
-                        Text("Tout est calibré\npour toi.")
+                        Text(L("Tout est calibré\npour toi."))
                             .font(.tDisplay(30)).tracking(-0.9)
                             .multilineTextAlignment(.center)
                     }
@@ -178,8 +178,8 @@ struct V2_18: View {
                             TIcon(glyph: .check, size: 10, stroke: .tMint, strokeWidth: 3)
                         }
                         .frame(width: 20, height: 20)
-                        (Text("100 % local").font(.tText(12, weight: .bold)).foregroundColor(.tMint)
-                         + Text(" — tes données restent sur ton appareil.").font(.tText(12)).foregroundColor(.tTextMute))
+                        (Text(L("100 % local")).font(.tText(12, weight: .bold)).foregroundColor(.tMint)
+                         + Text(L(" — tes données restent sur ton appareil.")).font(.tText(12)).foregroundColor(.tTextMute))
                         Spacer()
                     }
                     .padding(.horizontal, 14).padding(.vertical, 10)
@@ -188,7 +188,7 @@ struct V2_18: View {
                     .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .stroke(Color.tMint.opacity(0.20), lineWidth: 1))
 
-                    CTA(label: "Préparer mon espace →")
+                    CTA(label: L("Préparer mon espace →"))
                 }
                 .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 30)
             }
@@ -244,10 +244,10 @@ struct V2_18: View {
 struct V2_19: View {
     private struct Step { let n, label, detail: String; var done = false; var busy = false; var wait = false }
     private let steps: [Step] = [
-        .init(n: "01", label: "Analyse de ton profil",     detail: "On croise tes 15 réponses",        done: true),
-        .init(n: "02", label: "Calibrage de ton budget",   detail: "On ajuste avec tes réponses",  done: true),
-        .init(n: "03", label: "Recommandations de spots",  detail: "Sélection adaptée à ton style",   busy: true),
-        .init(n: "04", label: "Stratégie d'économie",      detail: "On prépare ton objectif", wait: true),
+        .init(n: "01", label: L("Analyse de ton profil"),     detail: L("On croise tes 15 réponses"),        done: true),
+        .init(n: "02", label: L("Calibrage de ton budget"),   detail: L("On ajuste avec tes réponses"),  done: true),
+        .init(n: "03", label: "Recommandations de spots",  detail: L("Sélection adaptée à ton style"),   busy: true),
+        .init(n: "04", label: L("Stratégie d'économie"),      detail: L("On prépare ton objectif"), wait: true),
     ]
 
     var body: some View {
@@ -255,9 +255,9 @@ struct V2_19: View {
             VStack(spacing: 0) {
                 OBHeader(step: 19, label: "On y est presque")
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("DERNIÈRE LIGNE DROITE")
+                    Text(L("DERNIÈRE LIGNE DROITE"))
                         .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
-                    (Text("On va construire ton plan\nen 4 étapes").font(.tDisplay(30)).tracking(-0.9)
+                    (Text(L("On va construire ton plan\nen 4 étapes")).font(.tDisplay(30)).tracking(-0.9)
                      + Text(".").foregroundColor(.tAccent2).font(.tDisplay(30)))
                         .padding(.top, 8)
 
@@ -269,7 +269,7 @@ struct V2_19: View {
                     .padding(.top, 26)
 
                     Spacer()
-                    CTA(label: "Lancer la construction →")
+                    CTA(label: L("Lancer la construction →"))
                 }
                 .padding(.horizontal, 26).padding(.top, 24).padding(.bottom, 30)
             }
@@ -298,7 +298,7 @@ struct V2_19: View {
             }
             Spacer()
             if s.busy {
-                Text("EN COURS")
+                Text(L("EN COURS"))
                     .font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tAccent2)
             }
         }
@@ -316,7 +316,7 @@ struct V2_20: View {
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
-                OBHeader(step: 20, label: "Construction · 1/4")
+                OBHeader(step: 20, label: L("Construction · 1/4"))
 
                 Spacer()
 
@@ -324,7 +324,7 @@ struct V2_20: View {
                     ZStack {
                         ProgressRing(value: progress, max: 100, size: 200, stroke: 6, color: .tAccent2) {
                             VStack(spacing: 0) {
-                                Text("ANALYSE").font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tTextMute)
+                                Text(L("ANALYSE")).font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tTextMute)
                                 Text("\(Int(progress))%").font(.tDisplay(48)).tracking(-2)
                                     .contentTransition(.numericText())
                             }
@@ -333,16 +333,16 @@ struct V2_20: View {
                     .frame(width: 200, height: 200)
 
                     VStack(spacing: 6) {
-                        Text("Analyse de ton profil…").font(.tDisplay(24)).tracking(-0.7)
-                        Text("On croise tes 15 réponses pour construire un plan vraiment perso.")
+                        Text(L("Analyse de ton profil…")).font(.tDisplay(24)).tracking(-0.7)
+                        Text(L("On croise tes 15 réponses pour construire un plan vraiment perso."))
                             .font(.tText(13)).foregroundColor(.tTextMute)
                             .multilineTextAlignment(.center)
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
-                        stepLine("Préférences d'onboarding enregistrées", done: progress >= 35)
-                        stepLine("Écrans principaux reliés", done: progress >= 65)
-                        stepLine("Préparation de ton premier voyage…", done: thirdLineDone)
+                        stepLine(L("Préférences d'onboarding enregistrées"), done: progress >= 35)
+                        stepLine(L("Écrans principaux reliés"), done: progress >= 65)
+                        stepLine(L("Préparation de ton premier voyage…"), done: thirdLineDone)
                     }
                     .frame(maxWidth: 280)
                 }
@@ -350,7 +350,7 @@ struct V2_20: View {
 
                 Spacer()
 
-                Text("Étape 1 sur 4 · ne ferme pas l'app")
+                Text(L("Étape 1 sur 4 · ne ferme pas l'app"))
                     .font(.tText(11)).foregroundColor(.tTextDim)
                     .padding(.bottom, 30)
             }
@@ -406,15 +406,15 @@ struct V2_21: View {
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
-                OBHeader(step: 21, label: "Construction · 2/4")
+                OBHeader(step: 21, label: L("Construction · 2/4"))
 
                 Spacer()
 
                 VStack(spacing: 24) {
                     barsChart
                     VStack(spacing: 6) {
-                        Text("Calibrage du budget…").font(.tDisplay(24)).tracking(-0.7)
-                        Text("On prépare une base que tu pourras remplacer par tes vraies données.")
+                        Text(L("Calibrage du budget…")).font(.tDisplay(24)).tracking(-0.7)
+                        Text(L("On prépare une base que tu pourras remplacer par tes vraies données."))
                             .font(.tText(13)).foregroundColor(.tTextMute)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 10)
@@ -425,11 +425,11 @@ struct V2_21: View {
                     }
                     TCard(padding: 14) {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("MICRO-INSIGHT")
+                            Text(L("MICRO-INSIGHT"))
                                 .font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tTextMute)
-                            (Text("Ton budget sera ").font(.tText(13))
-                             + Text("basé sur tes saisies").font(.tText(13, weight: .bold)).foregroundColor(.tMint)
-                             + Text(", pas sur des exemples.").font(.tText(13)))
+                            (Text(L("Ton budget sera ")).font(.tText(13))
+                             + Text(L("basé sur tes saisies")).font(.tText(13, weight: .bold)).foregroundColor(.tMint)
+                             + Text(L(", pas sur des exemples.")).font(.tText(13)))
                         }
                     }
                     .frame(maxWidth: 320)
@@ -439,7 +439,7 @@ struct V2_21: View {
 
                 Spacer()
 
-                Text("Étape 2 sur 4 · ne ferme pas l'app")
+                Text(L("Étape 2 sur 4 · ne ferme pas l'app"))
                     .font(.tText(11)).foregroundColor(.tTextDim)
                     .padding(.bottom, 30)
             }
@@ -473,7 +473,7 @@ struct V2_21: View {
                 ForEach(Array(bars.enumerated()), id: \.offset) { _, b in
                     VStack(spacing: 5) {
                         if b.isYou {
-                            Text("TOI")
+                            Text(L("TOI"))
                                 .font(.tText(9, weight: .black)).tracking(0.5)
                                 .foregroundColor(.tBg0)
                                 .fixedSize()
@@ -506,21 +506,21 @@ struct V2_22: View {
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
-                OBHeader(step: 22, label: "Ton profil voyageur")
+                OBHeader(step: 22, label: L("Ton profil voyageur"))
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("ANALYSE TERMINÉE")
+                    Text(L("ANALYSE TERMINÉE"))
                         .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
-                    (Text("Tu es une\n").font(.tDisplay(30)).tracking(-0.9)
-                     + Text("Voyageur organisé").font(.tDisplay(30)).foregroundColor(.tAccent2)
+                    (Text(L("Tu es une\n")).font(.tDisplay(30)).tracking(-0.9)
+                     + Text(L("Voyageur organisé")).font(.tDisplay(30)).foregroundColor(.tAccent2)
                      + Text(".").font(.tDisplay(30)))
                         .padding(.top, 8)
-                    Text("Ce profil évoluera avec tes vrais voyages.")
+                    Text(L("Ce profil évoluera avec tes vrais voyages."))
                         .font(.tText(13)).foregroundColor(.tTextMute).padding(.top, 8)
 
                     identityCard.padding(.top, 18)
 
                     Spacer()
-                    CTA(label: "Voir mon plan de voyage →")
+                    CTA(label: L("Voir mon plan de voyage →"))
                 }
                 .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
             }
@@ -540,10 +540,10 @@ struct V2_22: View {
                         .overlay(Circle().stroke(Color.tBorderStrong, lineWidth: 3))
                     TIcon(glyph: .globe, size: 44, stroke: .white, strokeWidth: 2.2)
                 }
-                Text("TYPE").font(.tText(12, weight: .bold)).tracking(1.5)
+                Text(L("TYPE")).font(.tText(12, weight: .bold)).tracking(1.5)
                     .foregroundColor(.tTextMute).padding(.top, 14)
-                Text("Voyageur organisé").font(.tDisplay(22)).tracking(-0.5).padding(.top, 2)
-                Text("Tu aimes voyager en autonomie, mais tu veux du contrôle. Tu optimises sans sacrifier le plaisir.")
+                Text(L("Voyageur organisé")).font(.tDisplay(22)).tracking(-0.5).padding(.top, 2)
+                Text(L("Tu aimes voyager en autonomie, mais tu veux du contrôle. Tu optimises sans sacrifier le plaisir."))
                     .font(.tText(13)).foregroundColor(.tTextMute)
                     .multilineTextAlignment(.center)
                     .padding(.top, 6).padding(.horizontal, 10)
@@ -584,29 +584,29 @@ struct V2_22: View {
 
 struct V2_23: View {
     private let included: [(String, String)] = [
-        ("Itinéraire",                       "À compléter avec tes étapes"),
-        ("Spots sauvegardés",                "Tes vrais lieux à retrouver"),
-        ("Vol à suivre",                     "Ajoute tes vrais billets"),
-        ("Alertes budget intelligentes",     "On t'avertit avant 100%"),
-        ("Souvenirs",                        "Tes voyages terminés"),
+        (L("Itinéraire"),                       L("À compléter avec tes étapes")),
+        (L("Spots sauvegardés"),                L("Tes vrais lieux à retrouver")),
+        (L("Vol à suivre"),                     L("Ajoute tes vrais billets")),
+        (L("Alertes budget intelligentes"),     "On t'avertit avant 100%"),
+        ("Souvenirs",                        L("Tes voyages terminés")),
     ]
 
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
-                OBHeader(step: 23, label: "Ton plan")
+                OBHeader(step: 23, label: L("Ton plan"))
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("TON PLAN PERSONNALISÉ")
+                        Text(L("TON PLAN PERSONNALISÉ"))
                             .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
-                        Text("Ton prochain voyage\ndéjà esquissé pour toi.")
+                        Text(L("Ton prochain voyage\ndéjà esquissé pour toi."))
                             .font(.tDisplay(28)).tracking(-0.8)
                             .padding(.top, 8)
 
                         coverBlock.padding(.top, 18)
                         statsCard.padding(.top, 12)
 
-                        Text("INCLUS DANS TON PLAN")
+                        Text(L("INCLUS DANS TON PLAN"))
                             .font(.tText(12, weight: .bold)).tracking(1).foregroundColor(.tTextMute)
                             .padding(.top, 12)
                         VStack(alignment: .leading, spacing: 6) {
@@ -626,14 +626,14 @@ struct V2_23: View {
 
     private var coverBlock: some View {
         ZStack(alignment: .topLeading) {
-            DestPhoto(label: "Destination à définir", hue: 340, radius: 0)
+            DestPhoto(label: L("Destination à définir"), hue: 340, radius: 0)
                 .frame(height: 170)
             LinearGradient(stops: [
                 .init(color: Color.tBg0.opacity(0.1), location: 0),
                 .init(color: Color.tBg0.opacity(0.85), location: 0.9),
             ], startPoint: .top, endPoint: .bottom)
             .frame(height: 170)
-            Text("FAIT POUR TOI")
+            Text(L("FAIT POUR TOI"))
                 .font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tGold)
                 .padding(.horizontal, 10).padding(.vertical, 4)
                 .background(RoundedRectangle(cornerRadius: 8).fill(Color.tGold.opacity(0.20)))
@@ -642,8 +642,8 @@ struct V2_23: View {
             VStack {
                 Spacer()
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Ton voyage").font(.tDisplay(26)).tracking(-0.8).foregroundColor(.white)
-                    Text("Dates à définir · durée à définir")
+                    Text(L("Ton voyage")).font(.tDisplay(26)).tracking(-0.8).foregroundColor(.white)
+                    Text(L("Dates à définir · durée à définir"))
                         .font(.tText(12)).foregroundColor(.white.opacity(0.8))
                 }
                 .padding(14)
@@ -699,9 +699,9 @@ struct V2_24: View {
             VStack(spacing: 0) {
                 OBHeader(step: 24, label: "Projection")
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("PROJECTION SUR 12 MOIS")
+                    Text(L("PROJECTION SUR 12 MOIS"))
                         .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tMint)
-                    Text("Ton suivi va se baser\nsur tes dépenses.")
+                    Text(L("Ton suivi va se baser\nsur tes dépenses."))
                         .font(.tDisplay(30)).tracking(-0.9)
                         .padding(.top, 8)
 
@@ -709,7 +709,7 @@ struct V2_24: View {
                         Color.clear.frame(height: 26)
                         GradientNumber(text: "0€", size: 90, colors: [.tMint, .tAccent2])
                             .shadow(color: Color.tMint.opacity(0.5), radius: 40)
-                        Text("avant d'ajouter tes vraies dépenses")
+                        Text(L("avant d'ajouter tes vraies dépenses"))
                             .font(.tText(13)).foregroundColor(.tTextMute)
                     }
                     .frame(maxWidth: .infinity)
@@ -718,7 +718,7 @@ struct V2_24: View {
                     bonusCard.padding(.top, 12)
 
                     Spacer(minLength: 0)
-                    CTA(label: "Sauvegarder mon plan →").padding(.top, 12)
+                    CTA(label: L("Sauvegarder mon plan →")).padding(.top, 12)
                 }
                 .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
             }
@@ -729,9 +729,9 @@ struct V2_24: View {
         TCard(padding: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Budget").font(.tText(11, weight: .semibold)).foregroundColor(.tTextMute)
+                    Text(L("Budget")).font(.tText(11, weight: .semibold)).foregroundColor(.tTextMute)
                     Spacer()
-                    Text("Dépenses").font(.tText(11, weight: .semibold)).foregroundColor(.tTextMute)
+                    Text(L("Dépenses")).font(.tText(11, weight: .semibold)).foregroundColor(.tTextMute)
                 }
                 Canvas { ctx, rect in
                     let w = rect.width, h: CGFloat = 100
@@ -759,11 +759,11 @@ struct V2_24: View {
                 }
                 .frame(height: 100)
                 HStack {
-                    Text("Jan"); Spacer()
-                    Text("Avr"); Spacer()
-                    Text("Juil"); Spacer()
-                    Text("Oct"); Spacer()
-                    Text("Déc")
+                    Text(L("Jan")); Spacer()
+                    Text(L("Avr")); Spacer()
+                    Text(L("Juil")); Spacer()
+                    Text(L("Oct")); Spacer()
+                    Text(L("Déc"))
                 }
                 .font(.tText(11)).foregroundColor(.tTextMute)
             }
@@ -775,9 +775,9 @@ struct V2_24: View {
             HStack(spacing: 12) {
                 IconBubble(glyph: .gift, color: .tMint, size: 46)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Démarre à 0€")
+                    Text(L("Démarre à 0€"))
                         .font(.tText(12, weight: .bold)).foregroundColor(.tMint)
-                    Text("Crée un voyage, ajoute tes dépenses, puis Tripnest calcule le reste.")
+                    Text(L("Crée un voyage, ajoute tes dépenses, puis Tripnest calcule le reste."))
                         .font(.tText(13))
                 }
             }
@@ -791,15 +791,15 @@ struct V2_25: View {
     @Environment(\.tripnestDefaultCTAAction) private var advance
     private struct Notif { let label, detail: String; let glyph: TIcon.Glyph; let color: Color; let on: Bool }
     @State private var enabled: Set<String> = [
-        "Alerte dépassement de budget",
-        "Rappels avant tes vols",
-        "Suggestion de spots à proximité",
+        L("Alerte dépassement de budget"),
+        L("Rappels avant tes vols"),
+        L("Suggestion de spots à proximité"),
     ]
     private let items: [Notif] = [
-        .init(label: "Alerte dépassement de budget",     detail: "Avant que tu atteignes 100%", glyph: .wallet, color: .tGold, on: true),
-        .init(label: "Rappels avant tes vols",            detail: "24h avant chaque départ",     glyph: .plane,  color: .tAccent2, on: true),
-        .init(label: "Suggestion de spots à proximité",   detail: "Quand tu es sur place",        glyph: .spot,   color: .tRose, on: true),
-        .init(label: "Bilan hebdo de tes économies",      detail: "Le lundi matin",               glyph: .sun,    color: .tBlue, on: false),
+        .init(label: L("Alerte dépassement de budget"),     detail: L("Avant que tu atteignes 100%"), glyph: .wallet, color: .tGold, on: true),
+        .init(label: L("Rappels avant tes vols"),            detail: L("24h avant chaque départ"),     glyph: .plane,  color: .tAccent2, on: true),
+        .init(label: L("Suggestion de spots à proximité"),   detail: L("Quand tu es sur place"),        glyph: .spot,   color: .tRose, on: true),
+        .init(label: L("Bilan hebdo de tes économies"),      detail: L("Le lundi matin"),               glyph: .sun,    color: .tBlue, on: false),
     ]
 
     var body: some View {
@@ -807,11 +807,11 @@ struct V2_25: View {
             VStack(spacing: 0) {
                 OBHeader(step: 25, label: "Notifications")
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("RAPPELS INTELLIGENTS")
+                    Text(L("RAPPELS INTELLIGENTS"))
                         .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
-                    Text("On t'aide à tenir\ntes objectifs.")
+                    Text(L("On t'aide à tenir\ntes objectifs."))
                         .font(.tDisplay(26)).tracking(-0.8).padding(.top, 8)
-                    Text("Autorise les alertes iOS pour tes rappels de budget, vols et spots.")
+                    Text(L("Autorise les alertes iOS pour tes rappels de budget, vols et spots."))
                         .font(.tText(13)).foregroundColor(.tTextMute).padding(.top, 6)
 
                     VStack(spacing: 8) {
@@ -822,7 +822,7 @@ struct V2_25: View {
                     .padding(.top, 22)
 
                     Spacer()
-                    CTA(label: "Activer les notifications", action: activateAndContinue)
+                    CTA(label: L("Activer les notifications"), action: activateAndContinue)
                 }
                 .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
             }
@@ -884,9 +884,9 @@ struct V2_26: View {
             VStack(spacing: 0) {
                 OBHeader(step: 26, label: "Sauvegarde")
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("SAUVEGARDE TON PROFIL")
+                    Text(L("SAUVEGARDE TON PROFIL"))
                         .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
-                    Text("Ton espace local\nest prêt.")
+                    Text(L("Ton espace local\nest prêt."))
                         .font(.tDisplay(26)).tracking(-0.8).padding(.top, 8)
 
                     summaryCard.padding(.top, 14)
@@ -894,7 +894,7 @@ struct V2_26: View {
                     TCard(padding: 16) {
                         HStack(spacing: 12) {
                             TIcon(glyph: .check, size: 20, stroke: .tMint)
-                            Text("Aucun compte requis pour commencer. Les données créées dans l'app restent locales pour l'instant.")
+                            Text(L("Aucun compte requis pour commencer. Les données créées dans l'app restent locales pour l'instant."))
                                 .font(.tText(13))
                                 .foregroundColor(.tTextMute)
                             Spacer(minLength: 0)
@@ -905,7 +905,7 @@ struct V2_26: View {
 
                     Spacer(minLength: 0)
                     CTA(label: "Continuer").padding(.top, 12)
-                    Text("Tu pourras ajouter tes voyages, dépenses et lieux dès l'écran d'accueil.")
+                    Text(L("Tu pourras ajouter tes voyages, dépenses et lieux dès l'écran d'accueil."))
                         .font(.tText(10))
                         .foregroundColor(.tTextDim)
                         .multilineTextAlignment(.center)
@@ -931,8 +931,8 @@ struct V2_26: View {
                     }
                     .frame(width: 40, height: 40)
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("Profil prêt à sauvegarder").font(.tText(12)).foregroundColor(.tTextMute)
-                        Text("Données locales").font(.tText(14, weight: .bold))
+                        Text(L("Profil prêt à sauvegarder")).font(.tText(12)).foregroundColor(.tTextMute)
+                        Text(L("Données locales")).font(.tText(14, weight: .bold))
                     }
                 }
                 Spacer()
@@ -950,29 +950,29 @@ struct V2_26: View {
 
 struct V2_27: View {
     private let summary: [(TIcon.Glyph, String, String)] = [
-        (.globe, "Profil voyageur",     "À construire"),
-        (.filter, "Objectif d'économie", "À définir"),
-        (.plane, "Voyage planifié",     "À créer"),
-        (.wallet, "Budget calibré",      "À définir"),
-        (.spot, "Spots sélectionnés",  "0 lieu"),
-        (.trips, "Projection",          "Selon tes dépenses"),
-        (.bell, "Alertes",             "À activer"),
+        (.globe, L("Profil voyageur"),     L("À construire")),
+        (.filter, L("Objectif d'économie"), "À définir"),
+        (.plane, L("Voyage planifié"),     L("À créer")),
+        (.wallet, L("Budget calibré"),      "À définir"),
+        (.spot, L("Spots sélectionnés"),  "0 lieu"),
+        (.trips, "Projection",          L("Selon tes dépenses")),
+        (.bell, "Alertes",             L("À activer")),
     ]
 
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
-                OBHeader(step: 27, label: "Récapitulatif")
+                OBHeader(step: 27, label: L("Récapitulatif"))
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 8) {
                         TIcon(glyph: .check, size: 14, stroke: .tMint, strokeWidth: 3)
-                        Text("PROFIL SAUVEGARDÉ")
+                        Text(L("PROFIL SAUVEGARDÉ"))
                             .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tMint)
                     }
-                    Text("Ton plan complet\nest prêt à décoller.")
+                    Text(L("Ton plan complet\nest prêt à décoller."))
                         .font(.tDisplay(28)).tracking(-0.8)
                         .padding(.top, 8)
-                    Text("Tu peux maintenant entrer dans l'app.")
+                    Text(L("Tu peux maintenant entrer dans l'app."))
                         .font(.tText(13)).foregroundColor(.tTextMute).padding(.top, 6)
 
                     ScrollView(showsIndicators: false) {
@@ -1031,9 +1031,9 @@ struct V2_28: View {
                         titleBlock.padding(.top, 14)
                         valueCard.padding(.top, 16)
                         trialTimeline.padding(.top, 14)
-                        CTA(label: "Entrer dans Tripnest", height: 60, fontSize: 17)
+                        CTA(label: L("Entrer dans Tripnest"), height: 60, fontSize: 17)
                             .padding(.top, 12)
-                        Text("Aucun paiement configuré dans cette version.")
+                        Text(L("Aucun paiement configuré dans cette version."))
                             .font(.tText(10)).foregroundColor(.tTextDim)
                             .multilineTextAlignment(.center)
                             .padding(.top, 8)
@@ -1048,7 +1048,7 @@ struct V2_28: View {
         HStack(spacing: 8) {
             Circle().fill(Color.tGold).frame(width: 6, height: 6)
                 .shadow(color: .tGold, radius: 5)
-            Text("TON ESPACE EST PRÊT")
+            Text(L("TON ESPACE EST PRÊT"))
                 .font(.tText(11, weight: .black)).tracking(1).foregroundColor(.tGold)
         }
         .padding(.horizontal, 14).padding(.vertical, 6)
@@ -1058,10 +1058,10 @@ struct V2_28: View {
 
     private var titleBlock: some View {
         VStack(spacing: 8) {
-            Text("DERNIÈRE ÉTAPE")
+            Text(L("DERNIÈRE ÉTAPE"))
                 .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
-            (Text("Lance ton espace\n").font(.tDisplay(30)).tracking(-1)
-             + Text("Tripnest.").font(.tDisplay(30))
+            (Text(L("Lance ton espace\n")).font(.tDisplay(30)).tracking(-1)
+             + Text(L("Tripnest.")).font(.tDisplay(30))
                 .foregroundStyle(LinearGradient(colors: [.tGold, .tAccent2],
                                                 startPoint: .topLeading, endPoint: .bottomTrailing)))
                 .multilineTextAlignment(.center)
@@ -1073,18 +1073,18 @@ struct V2_28: View {
         TCard(padding: 14, bg: AnyShapeStyle(Color.tMint.opacity(0.06)), border: Color.tMint.opacity(0.25)) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("DÉPART")
+                    Text(L("DÉPART"))
                         .font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tMint)
                     Text("0€")
                         .font(.tDisplay(28)).tracking(-0.8).foregroundColor(.tMint)
-                    Text("dépense enregistrée")
+                    Text(L("dépense enregistrée"))
                         .font(.tText(10)).foregroundColor(.tTextMute)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("Données").font(.tText(11)).foregroundColor(.tTextMute)
-                    Text("Locales").font(.tText(18, weight: .black))
-                    Text("stockées sur l'appareil").font(.tText(10)).foregroundColor(.tTextMute)
+                    Text(L("Données")).font(.tText(11)).foregroundColor(.tTextMute)
+                    Text(L("Locales")).font(.tText(18, weight: .black))
+                    Text(L("stockées sur l'appareil")).font(.tText(10)).foregroundColor(.tTextMute)
                 }
             }
         }
@@ -1106,9 +1106,9 @@ struct V2_28: View {
                 }
                 .frame(width: 22, height: 22)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Annuel · 7 jours offerts").font(.tText(16, weight: .black))
-                    Text("Tarif non configuré").font(.tText(12)).foregroundColor(.tTextMute)
-                    Text("OPTION À BRANCHER PLUS TARD")
+                    Text(L("Annuel · 7 jours offerts")).font(.tText(16, weight: .black))
+                    Text(L("Tarif non configuré")).font(.tText(12)).foregroundColor(.tTextMute)
+                    Text(L("OPTION À BRANCHER PLUS TARD"))
                         .font(.tText(10, weight: .bold)).tracking(0.5).foregroundColor(.tGold)
                         .padding(.top, 2)
                 }
@@ -1124,7 +1124,7 @@ struct V2_28: View {
                 .stroke(Color.tAccent, lineWidth: 2))
             .shadow(color: Color.tAccent.opacity(0.3), radius: 18, x: 0, y: 18)
 
-            Text("OPTIONNEL")
+            Text(L("OPTIONNEL"))
                 .font(.tText(10, weight: .black)).tracking(0.5).foregroundColor(.tBg0)
                 .padding(.horizontal, 10).padding(.vertical, 3)
                 .background(RoundedRectangle(cornerRadius: 6).fill(Color.tGold))
@@ -1136,8 +1136,8 @@ struct V2_28: View {
         HStack(spacing: 14) {
             Circle().stroke(Color.tBorder, lineWidth: 1.5).frame(width: 22, height: 22)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Mensuel").font(.tText(15, weight: .bold))
-                Text("Tarif non configuré").font(.tText(12)).foregroundColor(.tTextMute)
+                Text(L("Mensuel")).font(.tText(15, weight: .bold))
+                Text(L("Tarif non configuré")).font(.tText(12)).foregroundColor(.tTextMute)
             }
             Spacer()
         }
@@ -1150,12 +1150,12 @@ struct V2_28: View {
     private var trialTimeline: some View {
         TCard(padding: 12) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("PROCHAINES ÉTAPES")
+                Text(L("PROCHAINES ÉTAPES"))
                     .font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tTextMute)
                 HStack(spacing: 8) {
-                    timelineStep("1", "Créer voyage", .tMint, isLast: false)
-                    timelineStep("2", "Ajouter budget", .tGold, isLast: false)
-                    timelineStep("3", "Suivre dépenses", .tAccent2, isLast: true)
+                    timelineStep("1", L("Créer voyage"), .tMint, isLast: false)
+                    timelineStep("2", L("Ajouter budget"), .tGold, isLast: false)
+                    timelineStep("3", L("Suivre dépenses"), .tAccent2, isLast: true)
                 }
                 .padding(.top, 10)
             }
@@ -1185,9 +1185,9 @@ struct V2_28: View {
     private var trustStrip: some View {
         HStack(spacing: 14) {
             TIcon(glyph: .check, size: 12, stroke: .tMint)
-            Text("Local"); Text("·")
-            Text("0 exemple"); Text("·")
-            Text("Prêt")
+            Text(L("Local")); Text("·")
+            Text(L("0 exemple")); Text("·")
+            Text(L("Prêt"))
         }
         .font(.tText(10)).foregroundColor(.tTextDim)
     }
@@ -1220,12 +1220,12 @@ struct V2_29: View {
                 .frame(height: 200)
 
                 VStack(spacing: 10) {
-                    Text("BIENVENUE DANS TRIPNEST")
+                    Text(L("BIENVENUE DANS TRIPNEST"))
                         .font(.tText(11, weight: .bold)).tracking(2.5).foregroundColor(.tAccent2)
-                    Text("Décollage\nimminent.")
+                    Text(L("Décollage\nimminent."))
                         .font(.tDisplay(42)).tracking(-1.6)
                         .multilineTextAlignment(.center)
-                    Text("Ton espace Tripnest t'attend.\nL'aventure commence maintenant.")
+                    Text(L("Ton espace Tripnest t'attend.\nL'aventure commence maintenant."))
                         .font(.tText(15)).foregroundColor(.tTextMute)
                         .multilineTextAlignment(.center)
                 }
@@ -1234,9 +1234,9 @@ struct V2_29: View {
                     HStack(spacing: 12) {
                         IconBubble(glyph: .gift, color: .tGold, size: 42)
                         VStack(alignment: .leading, spacing: 0) {
-                            Text("Espace local · activé")
+                            Text(L("Espace local · activé"))
                                 .font(.tText(12, weight: .bold)).foregroundColor(.tGold)
-                            Text("Crée ton premier voyage pour démarrer")
+                            Text(L("Crée ton premier voyage pour démarrer"))
                                 .font(.tText(10)).foregroundColor(.tTextMute)
                         }
                     }
@@ -1245,8 +1245,8 @@ struct V2_29: View {
             .padding(.horizontal, 28)
             Spacer()
             VStack(spacing: 8) {
-                CTA(label: "Entrer dans Tripnest →")
-                CTA(label: "Partager avec un·e ami·e", ghost: true)
+                CTA(label: L("Entrer dans Tripnest →"))
+                CTA(label: L("Partager avec un·e ami·e"), ghost: true)
             }
             .padding(.horizontal, 28).padding(.bottom, 36)
         }

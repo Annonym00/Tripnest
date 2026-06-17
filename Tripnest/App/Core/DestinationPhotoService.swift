@@ -51,6 +51,15 @@ struct TripPhoto: View {
         .task(id: customLoadKey) {
             await loadCustomImageIfNeeded()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .tripCoverImageDidChange)) { notification in
+            guard previewImage == nil,
+                  coverKind == .custom,
+                  let tripId,
+                  notification.userInfo?["tripId"] as? String == tripId else { return }
+            Task {
+                await loadCustomImageIfNeeded()
+            }
+        }
     }
 
     private var colorCover: some View {

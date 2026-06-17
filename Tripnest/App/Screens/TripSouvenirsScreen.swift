@@ -43,10 +43,10 @@ struct TripSouvenirsScreen: View {
 
     private var missingTripState: some View {
         VStack(spacing: 0) {
-            TripSubpageTopBar(title: "Souvenirs", subtitle: "Voyage introuvable", onBack: onBack)
+            TripSubpageTopBar(title: "Souvenirs", subtitle: L("Voyage introuvable"), onBack: onBack)
             Spacer()
             TIcon(glyph: .gallery, size: 36, stroke: .tRose)
-            Text("Impossible de charger ce voyage.")
+            Text(L("Impossible de charger ce voyage."))
                 .font(.tText(15, weight: .semibold))
                 .padding(.top, 12)
             Spacer()
@@ -62,14 +62,6 @@ private struct SouvenirPhotoEntry: Identifiable {
     var memory: TripPhotoMemory
 }
 
-/// Recadrage en attente : nouvelle photo (replaceEntryId = nil) ou re-cadrage d'une
-/// photo existante (replaceEntryId = id de l'entrée à remplacer).
-private struct PendingSouvenirCrop: Identifiable {
-    let id = UUID()
-    let image: UIImage
-    let replaceEntryId: Int?
-}
-
 struct TripSouvenirsGallery: View {
     @EnvironmentObject private var store: TripStore
     let trip: Trip
@@ -77,12 +69,14 @@ struct TripSouvenirsGallery: View {
     @State private var entries: [SouvenirPhotoEntry] = []
     @State private var showGalleryPicker = false
     @State private var showCameraPicker = false
-    @State private var pendingCrop: PendingSouvenirCrop?
+    @State private var pendingCropImage: UIImage? = nil
     @State private var editingEntryId: Int?
+    @State private var fullscreenEntry: SouvenirPhotoEntry?
 
     @State private var editTitle = ""
     @State private var editCaption = ""
     @State private var editPhotoDate = Date()
+    @State private var showDatePicker = false
     @State private var photoToDeleteId: Int? = nil
 
     private let maxPhotos = 48
@@ -99,9 +93,9 @@ struct TripSouvenirsGallery: View {
                 TCard(padding: 28) {
                     VStack(spacing: 12) {
                         TIcon(glyph: .gallery, size: 40, stroke: .tRose)
-                        Text("Aucune photo pour l’instant")
+                        Text(L("Aucune photo pour l'instant"))
                             .font(.tText(17, weight: .bold))
-                        Text("Ajoute une photo, une date, un titre et une description (150 lignes max).")
+                        Text(L("Ajoute une photo, une date, un titre et une description (150 lignes max)."))
                             .font(.tText(13))
                             .foregroundColor(.tTextMute)
                             .multilineTextAlignment(.center)
@@ -109,7 +103,7 @@ struct TripSouvenirsGallery: View {
                     .frame(maxWidth: .infinity)
                 }
             } else {
-                Text("\(entries.count) photo\(entries.count > 1 ? "s" : "")")
+                Text(entries.count > 1 ? L("%d photos", entries.count) : L("%d photo", entries.count))
                     .font(.tText(12, weight: .semibold))
                     .foregroundColor(.tTextMute)
 
@@ -122,66 +116,82 @@ struct TripSouvenirsGallery: View {
         }
         .onAppear { reloadEntries() }
         .onChange(of: trip.photoCount) { _, _ in reloadEntries() }
+
         .sheet(isPresented: $showGalleryPicker) {
             GalleryPhotoPicker(
                 onImage: { image in
                     showGalleryPicker = false
-                    presentNewCrop(image)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        pendingCropImage = image
+                    }
                 },
                 onCancel: { showGalleryPicker = false }
             )
             .ignoresSafeArea()
         }
+
         .fullScreenCover(isPresented: $showCameraPicker) {
             CameraImagePicker(
                 onImage: { image in
                     showCameraPicker = false
-                    presentNewCrop(image)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        pendingCropImage = image
+                    }
                 },
                 onCancel: { showCameraPicker = false }
             )
         }
-        .fullScreenCover(item: $pendingCrop) { payload in
-            ImageCropSheet(
-                sourceImage: payload.image,
-                aspectRatio: 16.0 / 9.0,
-                isCircle: false,
-                title: "Recadrer la photo",
-                badge: "Format souvenir",
-                outputMaxPixel: 1600,
-                onConfirm: { cropped in
-                    if let replaceId = payload.replaceEntryId {
-                        replacePhotoImage(id: replaceId, with: cropped)
-                    } else {
-                        appendPhoto(cropped)
-                    }
-                    pendingCrop = nil
-                },
-                onCancel: { pendingCrop = nil }
+
+        .fullScreenCover(
+            isPresented: Binding(
+                get: { pendingCropImage != nil },
+                set: { if !$0 { pendingCropImage = nil } }
             )
+        ) {
+            if let img = pendingCropImage {
+                SouvenirCropSheet(
+                    image: img,
+                    onConfirm: { cropped in
+                        pendingCropImage = nil
+                        appendPhoto(cropped)
+                    },
+                    onCancel: { pendingCropImage = nil }
+                )
+            }
         }
+
+        // Sheet édition titre / date / description
         .sheet(isPresented: editSheetBinding) {
             photoEditSheet
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
         }
+
+        // Affichage plein écran au tap sur l'image
+        .fullScreenCover(item: $fullscreenEntry) { entry in
+            FullscreenPhotoViewer(entry: entry)
+        }
+
+        // Confirmation suppression
         .confirmationDialog(
-            "Supprimer cette photo ?",
+            L("Supprimer cette photo ?"),
             isPresented: Binding(
                 get: { photoToDeleteId != nil },
                 set: { if !$0 { photoToDeleteId = nil } }
             ),
             titleVisibility: .visible
         ) {
-            Button("Supprimer", role: .destructive) {
+            Button(L("Supprimer"), role: .destructive) {
                 if let id = photoToDeleteId { deletePhoto(id: id) }
                 photoToDeleteId = nil
             }
-            Button("Annuler", role: .cancel) { photoToDeleteId = nil }
+            Button(L("Annuler"), role: .cancel) { photoToDeleteId = nil }
         } message: {
-            Text("Cette photo sera définitivement supprimée.")
+            Text(L("Cette photo sera définitivement supprimée."))
         }
     }
+
+    // MARK: - Edit sheet
 
     private var editSheetBinding: Binding<Bool> {
         Binding(
@@ -195,64 +205,65 @@ struct TripSouvenirsGallery: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     if let id = editingEntryId, let entry = entries.first(where: { $0.id == id }) {
-                        Image(uiImage: entry.image)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 200)
-                            .frame(maxWidth: .infinity)
+                        // Aperçu carré dans la sheet d'édition
+                        Color.clear
+                            .aspectRatio(1, contentMode: .fit)
+                            .overlay(
+                                Image(uiImage: entry.image)
+                                    .resizable()
+                                    .scaledToFill()
+                            )
                             .clipped()
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-                        Button {
-                            let img = entry.image
-                            editingEntryId = nil
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                                pendingCrop = PendingSouvenirCrop(image: img, replaceEntryId: id)
-                            }
-                        } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: "crop")
-                                Text("Recadrer la photo")
-                            }
-                            .font(.tText(14, weight: .semibold))
-                            .foregroundColor(.tAccent2)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.tSurface))
-                            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.tBorder, lineWidth: 1))
-                        }
-
-                        Text("Titre")
+                        Text(L("Titre"))
                             .font(.tText(11, weight: .semibold))
                             .foregroundColor(.tTextMute)
-                        TextField("Titre du souvenir", text: $editTitle)
+                        TextField(L("Titre du souvenir"), text: $editTitle)
                             .font(.tText(16, weight: .semibold))
                             .padding(12)
                             .background(fieldBg)
 
-                        Text("Date")
+                        Text(L("Date"))
                             .font(.tText(11, weight: .semibold))
                             .foregroundColor(.tTextMute)
-                        DatePicker(
-                            "",
-                            selection: $editPhotoDate,
-                            displayedComponents: .date
-                        )
-                        .datePickerStyle(.compact)
-                        .labelsHidden()
-                        .environment(\.locale, Locale(identifier: "fr_FR"))
-                        .tint(.tAccent2)
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        VStack(spacing: 0) {
+                            Button {
+                                showDatePicker.toggle()
+                            } label: {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "calendar")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.tAccent2)
+                                    Text(editPhotoDate.formatted(.dateTime.day().month(.wide).year()))
+                                        .font(.tText(15, weight: .semibold))
+                                        .foregroundColor(.tText)
+                                        .environment(\.locale, Locale(identifier: "fr_FR"))
+                                    Spacer()
+                                }
+                                .padding(14)
+                            }
+                            .buttonStyle(.plain)
+
+                            if showDatePicker {
+                                DatePicker("", selection: $editPhotoDate, displayedComponents: .date)
+                                    .datePickerStyle(.graphical)
+                                    .tint(.tAccent2)
+                                    .environment(\.locale, Locale(identifier: "fr_FR"))
+                                    .padding(.horizontal, 8)
+                                    .padding(.bottom, 8)
+                            }
+                        }
                         .background(fieldBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                         HStack {
-                            Text("Description")
-                                .font(.tText(10, weight: .bold))
-                                .tracking(1)
+                            Text(L("Note"))
+                                .font(.tText(11, weight: .semibold))
                                 .foregroundColor(.tTextMute)
                             Spacer()
-                            Text("\(TripPhotoMemory.lineCount(for: editCaption))/\(TripPhotoMemory.maxCaptionLines) lignes")
+                            Text(L("%d/%d lignes", TripPhotoMemory.lineCount(for: editCaption), TripPhotoMemory.maxCaptionLines))
                                 .font(.tText(11, weight: .semibold))
                                 .foregroundColor(
                                     TripPhotoMemory.lineCount(for: editCaption) > TripPhotoMemory.maxCaptionLines
@@ -260,7 +271,7 @@ struct TripSouvenirsGallery: View {
                                 )
                         }
                         TextField(
-                            "Raconte ce moment…",
+                            L("Raconte ce moment…"),
                             text: $editCaption,
                             axis: .vertical
                         )
@@ -268,7 +279,6 @@ struct TripSouvenirsGallery: View {
                         .lineLimit(8...150)
                         .padding(12)
                         .background(fieldBg)
-                        .keyboardDoneBar()
                         .onChange(of: editCaption) { _, newValue in
                             if TripPhotoMemory.lineCount(for: newValue) > TripPhotoMemory.maxCaptionLines {
                                 editCaption = TripPhotoMemory.clampedCaption(newValue)
@@ -279,14 +289,14 @@ struct TripSouvenirsGallery: View {
                 .padding(18)
             }
             .background(Color.tBg0.ignoresSafeArea())
-            .navigationTitle("Détail photo")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") { editingEntryId = nil }
+                    Button(L("Annuler")) { editingEntryId = nil }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Enregistrer") { saveEditedPhoto() }
+                    Button(L("Enregistrer")) { saveEditedPhoto() }
                         .fontWeight(.bold)
                 }
             }
@@ -296,6 +306,8 @@ struct TripSouvenirsGallery: View {
     private var fieldBg: some View {
         RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.tSurface)
     }
+
+    // MARK: - Add actions
 
     private var addPhotoActions: some View {
         HStack(spacing: 10) {
@@ -327,17 +339,24 @@ struct TripSouvenirsGallery: View {
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.tBorder, lineWidth: 1))
     }
 
+    // MARK: - Photo card
+
     private func photoCard(_ entry: SouvenirPhotoEntry) -> some View {
         VStack(alignment: .leading, spacing: 8) {
+            // Image carrée propre — tap → plein écran
             ZStack(alignment: .topTrailing) {
-                Image(uiImage: entry.image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 160)
-                    .frame(maxWidth: .infinity)
+                Color.clear
+                    .aspectRatio(1, contentMode: .fit)
+                    .overlay(
+                        Image(uiImage: entry.image)
+                            .resizable()
+                            .scaledToFill()
+                    )
                     .clipped()
                     .contentShape(Rectangle())
+                    .onTapGesture { fullscreenEntry = entry }
 
+                // Bouton suppression
                 Button {
                     photoToDeleteId = entry.id
                     Haptics.impact(.light)
@@ -351,31 +370,41 @@ struct TripSouvenirsGallery: View {
             }
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
-            if let date = entry.memory.photoDate {
-                Text(date.formatted(date: .abbreviated, time: .omitted))
-                    .font(.tText(11, weight: .semibold))
-                    .foregroundColor(.tRose)
-            }
+            // Zone texte — tap → éditeur
+            VStack(alignment: .leading, spacing: 4) {
+                if let date = entry.memory.photoDate {
+                    Text(date.formatted(date: .abbreviated, time: .omitted))
+                        .font(.tText(11, weight: .semibold))
+                        .foregroundColor(.tRose)
+                        .allowsHitTesting(false)
+                }
 
-            Text(entry.memory.title.isEmpty ? "Sans titre" : entry.memory.title)
-                .font(.tText(14, weight: .bold))
-                .foregroundColor(.tText)
-                .lineLimit(2)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(entry.memory.title.isEmpty ? L("Sans titre") : entry.memory.title)
+                        .font(.tText(14, weight: .bold))
+                        .foregroundColor(.tText)
+                        .lineLimit(2)
 
-            if !entry.memory.caption.isEmpty {
-                Text(entry.memory.caption)
-                    .font(.tText(12))
-                    .foregroundColor(.tTextMute)
-                    .lineLimit(3)
-            } else {
-                Text("Ajouter titre & description")
-                    .font(.tText(11, weight: .semibold))
-                    .foregroundColor(.tAccent2)
+                    if !entry.memory.caption.isEmpty {
+                        Text(entry.memory.caption)
+                            .font(.tText(12))
+                            .foregroundColor(.tTextMute)
+                            .lineLimit(3)
+                    } else {
+                        Text(L("Ajouter titre & description"))
+                            .font(.tText(11, weight: .semibold))
+                            .foregroundColor(.tAccent2)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { openEditor(for: entry) }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .contentShape(Rectangle())
-        .onTapGesture { openEditor(for: entry) }
     }
+
+    // MARK: - Actions
 
     private func openEditor(for entry: SouvenirPhotoEntry) {
         editingEntryId = entry.id
@@ -409,23 +438,22 @@ struct TripSouvenirsGallery: View {
     }
 
     private func reloadEntries() {
-        let images = TripPhotoStore.loadAll(tripId: trip.id, count: trip.photoCount)
-        let memories = TripPhotoStore.loadMemories(tripId: trip.id, count: images.count)
-        entries = images.enumerated().map { index, image in
-            SouvenirPhotoEntry(
-                id: index,
-                image: image,
-                memory: index < memories.count ? memories[index] : TripPhotoMemory()
-            )
-        }
-    }
-
-    /// Présente le recadrage d'une NOUVELLE photo après fermeture du picker
-    /// (délai pour éviter le conflit de présentation SwiftUI).
-    private func presentNewCrop(_ image: UIImage) {
-        guard entries.count < maxPhotos else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            pendingCrop = PendingSouvenirCrop(image: image, replaceEntryId: nil)
+        let tripId = trip.id
+        let count = trip.photoCount
+        Task {
+            let (images, memories) = await Task.detached(priority: .userInitiated) {
+                let imgs = TripPhotoStore.loadAll(tripId: tripId, count: count)
+                let mems = TripPhotoStore.loadMemories(tripId: tripId, count: imgs.count)
+                return (imgs, mems)
+            }.value
+            guard tripId == trip.id else { return }
+            entries = images.enumerated().map { index, image in
+                SouvenirPhotoEntry(
+                    id: index,
+                    image: image,
+                    memory: index < memories.count ? memories[index] : TripPhotoMemory()
+                )
+            }
         }
     }
 
@@ -438,21 +466,167 @@ struct TripSouvenirsGallery: View {
         Haptics.success()
     }
 
-    /// Remplace l'image d'une photo existante par sa version recadrée (garde titre/date).
-    private func replacePhotoImage(id: Int, with image: UIImage) {
-        guard let idx = entries.firstIndex(where: { $0.id == id }) else { return }
-        entries[idx].image = image
-        persistAll()
-        Haptics.success()
-    }
-
     private func persistAll() {
         reindexEntries()
-        TripPhotoStore.deleteAll(tripId: trip.id, count: max(trip.photoCount, entries.count + 4))
-        for (index, entry) in entries.enumerated() {
-            TripPhotoStore.save(entry.image, tripId: trip.id, index: index)
+        let tripId = trip.id
+        let snapshot = entries
+        let previousCount = trip.photoCount
+        let memories = snapshot.map(\.memory)
+        Task {
+            await Task.detached(priority: .utility) {
+                TripPhotoStore.deleteAll(tripId: tripId, count: max(previousCount, snapshot.count + 4))
+                for (index, entry) in snapshot.enumerated() {
+                    TripPhotoStore.save(entry.image, tripId: tripId, index: index)
+                }
+                TripPhotoStore.saveMemories(tripId: tripId, memories: memories)
+            }.value
+            guard tripId == trip.id else { return }
+            store.updateTripPhotoCount(tripId: tripId, count: snapshot.count)
         }
-        TripPhotoStore.saveMemories(tripId: trip.id, memories: entries.map(\.memory))
-        store.updateTripPhotoCount(tripId: trip.id, count: entries.count)
+    }
+}
+
+// MARK: - Recadrage carré
+
+private struct SouvenirCropSheet: View {
+    let image: UIImage
+    let onConfirm: (UIImage) -> Void
+    let onCancel: () -> Void
+
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @State private var drag: CGSize = .zero
+    @State private var lastDrag: CGSize = .zero
+
+    var body: some View {
+        GeometryReader { geo in
+            let side = geo.size.width
+            let base = baseSize(side: side)
+            let buttonH: CGFloat = 80 + geo.safeAreaInsets.bottom
+
+            ZStack(alignment: .bottom) {
+                Color.black.ignoresSafeArea()
+
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: base.width * scale, height: base.height * scale)
+                    .offset(drag)
+                    .frame(width: side, height: side)
+                    .clipped()
+                    .contentShape(Rectangle())
+                    .frame(width: geo.size.width, height: geo.size.height - buttonH)
+                    .gesture(
+                        SimultaneousGesture(
+                            MagnificationGesture()
+                                .onChanged { v in scale = max(1, lastScale * v) }
+                                .onEnded { _ in
+                                    lastScale = scale
+                                    clamp(side: side, base: base)
+                                },
+                            DragGesture()
+                                .onChanged { v in
+                                    drag = CGSize(
+                                        width: lastDrag.width + v.translation.width,
+                                        height: lastDrag.height + v.translation.height
+                                    )
+                                }
+                                .onEnded { _ in
+                                    clamp(side: side, base: base)
+                                }
+                        )
+                    )
+
+                HStack {
+                    Button(L("Annuler"), action: onCancel)
+                        .foregroundColor(.white.opacity(0.75))
+                    Spacer()
+                    Button(L("Utiliser")) { confirm(side: side, base: base) }
+                        .foregroundColor(.tAccent2)
+                        .fontWeight(.bold)
+                }
+                .font(.system(size: 17))
+                .padding(.horizontal, 28)
+                .padding(.top, 16)
+                .padding(.bottom, geo.safeAreaInsets.bottom + 16)
+                .frame(height: buttonH)
+                .background(Color.black)
+            }
+        }
+        .ignoresSafeArea()
+    }
+
+    private func baseSize(side: CGFloat) -> CGSize {
+        let a = image.size.width / image.size.height
+        return a >= 1
+            ? CGSize(width: side * a, height: side)
+            : CGSize(width: side, height: side / a)
+    }
+
+    private func clamp(side: CGFloat, base: CGSize) {
+        let maxX = max(0, (base.width * scale - side) / 2)
+        let maxY = max(0, (base.height * scale - side) / 2)
+        drag = CGSize(
+            width: min(maxX, max(-maxX, drag.width)),
+            height: min(maxY, max(-maxY, drag.height))
+        )
+        lastDrag = drag
+    }
+
+    private func confirm(side: CGFloat, base: CGSize) {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side))
+        let cropped = renderer.image { _ in
+            let w = base.width * scale
+            let h = base.height * scale
+            image.draw(in: CGRect(
+                x: (side - w) / 2 + drag.width,
+                y: (side - h) / 2 + drag.height,
+                width: w, height: h
+            ))
+        }
+        onConfirm(cropped)
+    }
+}
+
+// MARK: - Visionneuse plein écran
+
+private struct FullscreenPhotoViewer: View {
+    let entry: SouvenirPhotoEntry
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            Image(uiImage: entry.image)
+                .resizable()
+                .scaledToFit()
+                .ignoresSafeArea()
+
+            // Titre / date en bas
+            if !entry.memory.title.isEmpty || entry.memory.photoDate != nil {
+                VStack {
+                    Spacer()
+                    VStack(spacing: 4) {
+                        if let date = entry.memory.photoDate {
+                            Text(date.formatted(date: .abbreviated, time: .omitted))
+                                .font(.tText(12, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.6))
+                        }
+                        if !entry.memory.title.isEmpty {
+                            Text(entry.memory.title)
+                                .font(.tText(17, weight: .bold))
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 24)
+                        }
+                    }
+                    .padding(.bottom, 40)
+                }
+            }
+        }
+        .ignoresSafeArea()
+        // Tap simple → fermer immédiatement
+        .onTapGesture { dismiss() }
     }
 }

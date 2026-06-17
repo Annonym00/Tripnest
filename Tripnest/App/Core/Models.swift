@@ -88,7 +88,7 @@ struct Trip: Identifiable, Hashable, Codable {
             var line = "\(from) → \(to)"
             if hasReturn {
                 let ret = returnLocation.map { Self.displayPlaceName($0) } ?? ""
-                line += ret.isEmpty ? " · Retour" : " · Retour · \(ret)"
+                line += ret.isEmpty ? L(" · Retour") : " · Retour · \(ret)"
             }
             return line
         }
@@ -96,16 +96,16 @@ struct Trip: Identifiable, Hashable, Codable {
 
     var tripsListDepartureLabel: String {
         guard let departureDate else {
-            if dates != "Dates à définir" { return "Départ · \(dates)" }
-            return "Départ · date à définir"
+            if dates != "Dates à définir" { return L("Départ · %@", dates) }
+            return L("Départ · date à définir")
         }
-        return "Départ · \(Self.formatSchedule(departureDate))"
+        return L("Départ · %@", Self.formatSchedule(departureDate))
     }
 
     var tripsListReturnLabel: String? {
         guard hasReturn else { return nil }
-        guard let returnDate else { return "Retour · date à définir" }
-        return "Retour · \(Self.formatSchedule(returnDate))"
+        guard let returnDate else { return L("Retour · date à définir") }
+        return L("Retour · %@", Self.formatSchedule(returnDate))
     }
 
     var routeLine: String {
@@ -139,14 +139,14 @@ struct Trip: Identifiable, Hashable, Codable {
             if let returnDate {
                 retParts.append(Self.formatDate(returnDate))
             }
-            parts.append(retParts.isEmpty ? "Retour" : "Retour · \(retParts.joined(separator: " · "))")
+            parts.append(retParts.isEmpty ? L("Retour") : L("Retour · %@", retParts.joined(separator: " · ")))
         } else {
-            parts.append("Aller simple")
+            parts.append(L("Aller simple"))
         }
         return parts.joined(separator: " · ")
     }
 
-    static let defaultTripTitle = "Titre du voyage"
+    static let defaultTripTitle = L("Titre du voyage")
 
     /// Titre personnalisé saisi, ou `nil` si vide / ancien remplissage auto (destination).
     var resolvedCustomTitle: String? {
@@ -179,8 +179,8 @@ struct Trip: Identifiable, Hashable, Codable {
     var homeOutboundLine: String {
         let from = origin.trimmingCharacters(in: .whitespacesAndNewlines)
         let to = dest.trimmingCharacters(in: .whitespacesAndNewlines)
-        let fromLabel = from.isEmpty ? "Départ ?" : Self.mapPlaceLabel(from)
-        let toLabel = to.isEmpty ? "Arrivée ?" : Self.mapPlaceLabel(to)
+        let fromLabel = from.isEmpty ? L("Départ ?") : Self.mapPlaceLabel(from)
+        let toLabel = to.isEmpty ? L("Arrivée ?") : Self.mapPlaceLabel(to)
         return "\(fromLabel) → \(toLabel)"
     }
 
@@ -189,7 +189,7 @@ struct Trip: Identifiable, Hashable, Codable {
         guard hasReturn else { return nil }
         let ret = returnLocation?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !ret.isEmpty else { return "Retour" }
-        return "Retour \(Self.routeDetailPlaceName(ret))"
+        return L("Retour %@", Self.routeDetailPlaceName(ret))
     }
 
     /// Trajet compact pour la carte Accueil (départ → arrivée + retour éventuel).
@@ -206,12 +206,12 @@ struct Trip: Identifiable, Hashable, Codable {
                 if let returnDate {
                     return "\(Self.formatDate(departureDate)) → \(Self.formatDate(returnDate))"
                 }
-                return "\(Self.formatDate(departureDate)) · Aller-retour"
+                return L("%@ · Aller-retour", Self.formatDate(departureDate))
             }
-            return "\(Self.formatDate(departureDate)) · Aller simple"
+            return L("%@ · Aller simple", Self.formatDate(departureDate))
         }
         if hasReturn, let returnDate {
-            return "Retour \(Self.formatDate(returnDate))"
+            return L("Retour %@", Self.formatDate(returnDate))
         }
         if dates != "Dates à définir" { return dates }
         return "Date à définir"
@@ -221,9 +221,9 @@ struct Trip: Identifiable, Hashable, Codable {
     var homeChipDateLine: String {
         guard hasReturn else { return homeDateLine }
         if let departureDate {
-            return "\(Self.formatDate(departureDate)) · Aller-retour"
+            return L("%@ · Aller-retour", Self.formatDate(departureDate))
         }
-        return "Aller-retour"
+        return L("Aller-retour")
     }
 
     /// Libellé complet pour la fiche trajet (pas de troncature).
@@ -258,7 +258,7 @@ struct Trip: Identifiable, Hashable, Codable {
         }
         let suffixes = [
             " International Airport", " Intl Airport", " Airport",
-            " Aéroport International", " Aéroport",
+            L(" Aéroport International"), L(" Aéroport"),
         ]
         for suffix in suffixes where name.hasSuffix(suffix) {
             name = String(name.dropLast(suffix.count))
@@ -277,7 +277,7 @@ struct Trip: Identifiable, Hashable, Codable {
     static func compactPlaceName(_ raw: String) -> String {
         var name = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         let prefixes = [
-            "Aéroport ", "Airport ", "Port de ", "Port d'", "Gare de ", "Gare du ",
+            L("Aéroport "), "Airport ", "Port de ", "Port d'", "Gare de ", "Gare du ",
             "Paris ", "London ", "Lyon ", "Lyon-",
         ]
         for prefix in prefixes where name.hasPrefix(prefix) {
@@ -816,8 +816,8 @@ enum TripFriendPermission: String, Codable, Equatable {
 
     var title: String {
         switch self {
-        case .viewOnly: return "Regarder seulement"
-        case .canEdit: return "Peut modifier"
+        case .viewOnly: return L("Regarder seulement")
+        case .canEdit: return L("Peut modifier")
         }
     }
 }
@@ -889,8 +889,8 @@ final class TripStore: ObservableObject {
     /// Annuaire simulé d'utilisateurs « inscrits ». En attendant le backend,
     /// on ne peut ajouter qu'un nom présent dans cet annuaire.
     static let userDirectory: [String] = [
-        "Lucas Martin", "Emma Bernard", "Léa Dubois", "Hugo Petit",
-        "Chloé Moreau", "Nathan Laurent", "Camille Roux", "Jade Fontaine",
+        "Lucas Martin", "Emma Bernard", L("Léa Dubois"), "Hugo Petit",
+        L("Chloé Moreau"), "Nathan Laurent", "Camille Roux", "Jade Fontaine",
     ]
 
     /// Nombre d'amis acceptés (les invitations en attente ne comptent pas).
@@ -988,7 +988,7 @@ final class TripStore: ObservableObject {
                 EmergencyFundEntry(
                     tripId: trip.id,
                     amount: trip.emergencyFund,
-                    cause: "Fond d'urgence"
+                    cause: L("Fond d'urgence")
                 )
             )
         }
@@ -1189,7 +1189,7 @@ final class TripStore: ObservableObject {
     ) -> String {
         let cleanedOrigin = origin.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanedDest = destination.trimmingCharacters(in: .whitespacesAndNewlines)
-        let placeTitle = cleanedDest.isEmpty ? "Nouveau voyage" : cleanedDest
+        let placeTitle = cleanedDest.isEmpty ? L("Nouveau voyage") : cleanedDest
         let cleanedReturn = returnLocation?.trimmingCharacters(in: .whitespacesAndNewlines)
         let storedReturn = (cleanedReturn?.isEmpty == false) ? cleanedReturn : nil
         let dateLabel = Self.tripDatesLabel(departure: departureDate, returnDate: returnDate)
@@ -1388,7 +1388,7 @@ final class TripStore: ObservableObject {
             EmergencyFundEntry(
                 tripId: tripId,
                 amount: amount,
-                cause: label.isEmpty ? "Fond d'urgence" : label,
+                cause: label.isEmpty ? L("Fond d'urgence") : label,
                 notes: notes.trimmingCharacters(in: .whitespacesAndNewlines)
             ),
             at: 0
@@ -1402,7 +1402,7 @@ final class TripStore: ObservableObject {
         let tripId = emergencyFundEntries[entryIdx].tripId
         let label = cause.trimmingCharacters(in: .whitespacesAndNewlines)
         emergencyFundEntries[entryIdx].amount = amount
-        emergencyFundEntries[entryIdx].cause = label.isEmpty ? "Fond d'urgence" : label
+        emergencyFundEntries[entryIdx].cause = label.isEmpty ? L("Fond d'urgence") : label
         emergencyFundEntries[entryIdx].notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
         syncEmergencyFundTotal(tripId: tripId)
     }
@@ -1418,7 +1418,7 @@ final class TripStore: ObservableObject {
         let tripId = entry.tripId
         let label = entry.cause.trimmingCharacters(in: .whitespacesAndNewlines)
         addExpense(
-            label: label.isEmpty ? "Fond d'urgence" : label,
+            label: label.isEmpty ? L("Fond d'urgence") : label,
             category: "Urgence",
             amount: entry.amount,
             currency: currency,
@@ -1474,6 +1474,12 @@ final class TripStore: ObservableObject {
         }
         if let coverKind { trips[index].coverKind = coverKind }
         if let coverColor { trips[index].coverColor = coverColor }
+    }
+
+    func updateTripCover(id: String, coverKind: TripCoverKind, coverColor: String) {
+        guard let index = trips.firstIndex(where: { $0.id == id }) else { return }
+        trips[index].coverKind = coverKind
+        trips[index].coverColor = coverColor
     }
 
     private static func tripDatesLabel(departure: Date?, returnDate: Date?) -> String {
@@ -1700,6 +1706,27 @@ final class TripStore: ObservableObject {
 
     private var saveWorkItem: DispatchWorkItem?
 
+    func saveImmediately() {
+        saveWorkItem?.cancel()
+        Self.saveSnapshot(
+            trips: trips,
+            expenses: expenses,
+            emergencyEntries: emergencyFundEntries,
+            flights: flights,
+            spots: spots,
+            planItems: planItems,
+            extraKeys: extraPlanDayKeys,
+            friends: friends,
+            defaults: defaults,
+            keys: storageKeys
+        )
+    }
+
+    private var storageKeys: (trips: String, expenses: String, emergency: String, flights: String, spots: String, plan: String, extra: String, friends: String) {
+        (trips: tripsKey, expenses: expensesKey, emergency: emergencyFundKey, flights: flightsKey,
+         spots: spotsKey, plan: planItemsKey, extra: extraPlanDaysKey, friends: friendsKey)
+    }
+
     private func save() {
         saveWorkItem?.cancel()
         // Snapshot value types on main thread (instant copy — no race condition possible)
@@ -1709,21 +1736,46 @@ final class TripStore: ObservableObject {
         let planItems = self.planItems, extraKeys = self.extraPlanDayKeys
         let friends = self.friends
         let defaults = self.defaults
-        let keys = (trips: tripsKey, expenses: expensesKey, emergency: emergencyFundKey, flights: flightsKey,
-                    spots: spotsKey, plan: planItemsKey, extra: extraPlanDaysKey, friends: friendsKey)
+        let keys = storageKeys
 
         let work = DispatchWorkItem {
-            Self.save(trips,     key: keys.trips,    defaults: defaults)
-            Self.save(expenses,  key: keys.expenses, defaults: defaults)
-            Self.save(emergencyEntries, key: keys.emergency, defaults: defaults)
-            Self.save(flights,   key: keys.flights,  defaults: defaults)
-            Self.save(spots,     key: keys.spots,    defaults: defaults)
-            Self.save(planItems, key: keys.plan,     defaults: defaults)
-            Self.save(extraKeys, key: keys.extra,    defaults: defaults)
-            Self.save(friends,   key: keys.friends,  defaults: defaults)
+            Self.saveSnapshot(
+                trips: trips,
+                expenses: expenses,
+                emergencyEntries: emergencyEntries,
+                flights: flights,
+                spots: spots,
+                planItems: planItems,
+                extraKeys: extraKeys,
+                friends: friends,
+                defaults: defaults,
+                keys: keys
+            )
         }
         saveWorkItem = work
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.4, execute: work)
+    }
+
+    private static func saveSnapshot(
+        trips: [Trip],
+        expenses: [Expense],
+        emergencyEntries: [EmergencyFundEntry],
+        flights: [Flight],
+        spots: [Spot],
+        planItems: [TripPlanItem],
+        extraKeys: [String: [String]],
+        friends: [Friend],
+        defaults: UserDefaults,
+        keys: (trips: String, expenses: String, emergency: String, flights: String, spots: String, plan: String, extra: String, friends: String)
+    ) {
+        Self.save(trips,     key: keys.trips,    defaults: defaults)
+        Self.save(expenses,  key: keys.expenses, defaults: defaults)
+        Self.save(emergencyEntries, key: keys.emergency, defaults: defaults)
+        Self.save(flights,   key: keys.flights,  defaults: defaults)
+        Self.save(spots,     key: keys.spots,    defaults: defaults)
+        Self.save(planItems, key: keys.plan,     defaults: defaults)
+        Self.save(extraKeys, key: keys.extra,    defaults: defaults)
+        Self.save(friends,   key: keys.friends,  defaults: defaults)
     }
 
     private static func load<T: Decodable>(_ type: T.Type, key: String, defaults: UserDefaults) -> T? {

@@ -30,7 +30,7 @@ struct TravelTicketFormSection: View {
                                 }
                             }
                             Spacer()
-                            Button("Modifier", action: onEdit)
+                            Button(L("Modifier"), action: onEdit)
                                 .font(.tText(12, weight: .semibold))
                                 .foregroundColor(.tAccent2)
                         }
@@ -45,7 +45,7 @@ struct TravelTicketFormSection: View {
 
             HStack(spacing: 8) {
                 Button(action: onEdit) {
-                    ticketActionLabel(title: "Saisir le billet", icon: "square.and.pencil")
+                    ticketActionLabel(title: L("Saisir le billet"), icon: "square.and.pencil")
                 }
                 .buttonStyle(TripnestPressStyle())
 
@@ -115,10 +115,10 @@ struct TravelTicketEditorSheet: View {
                             showsClearButton: true
                         )
                         FormField(label: mode.ticketCompanyLabel, text: $draft.company, placeholder: "Compagnie", showsClearButton: true)
-                        FormField(label: "Départ (code)", text: $draft.from, placeholder: mode == .plane ? "LYS" : "—", showsClearButton: true)
+                        FormField(label: L("Départ (code)"), text: $draft.from, placeholder: mode == .plane ? "LYS" : "—", showsClearButton: true)
 
                         FormLocationField(
-                            label: "Lieu de départ",
+                            label: L("Lieu de départ"),
                             placeholder: mode.originPlaceholder,
                             text: $draft.fromCity,
                             validation: $fromPlaceValidation,
@@ -126,10 +126,10 @@ struct TravelTicketEditorSheet: View {
                             showsClearButton: false
                         )
 
-                        FormField(label: "Arrivée (code)", text: $draft.to, placeholder: mode == .plane ? "MRS" : "—", showsClearButton: true)
+                        FormField(label: L("Arrivée (code)"), text: $draft.to, placeholder: mode == .plane ? "MRS" : "—", showsClearButton: true)
 
                         FormLocationField(
-                            label: "Lieu d'arrivée",
+                            label: L("Lieu d'arrivée"),
                             placeholder: mode.destinationPlaceholder,
                             text: $draft.toCity,
                             validation: $toPlaceValidation,
@@ -147,17 +147,17 @@ struct TravelTicketEditorSheet: View {
                         )
 
                         if mode == .plane {
-                            FormField(label: "Siège", text: $draft.seat, placeholder: "14A", showsClearButton: true)
+                            FormField(label: L("Siège"), text: $draft.seat, placeholder: "14A", showsClearButton: true)
                             FormField(label: "Porte", text: $draft.gate, placeholder: "G22", showsClearButton: true)
                             FormField(label: "Terminal", text: $draft.terminal, placeholder: "2E", showsClearButton: true)
                         } else if mode == .train {
-                            FormField(label: "Siège / place", text: $draft.seat, placeholder: "Voiture 4", showsClearButton: true)
+                            FormField(label: L("Siège / place"), text: $draft.seat, placeholder: "Voiture 4", showsClearButton: true)
                             FormField(label: "Voie / quai", text: $draft.gate, placeholder: "Voie B", showsClearButton: true)
                         } else {
                             FormField(label: "Cabine / place", text: $draft.seat, placeholder: "Pont 5", showsClearButton: true)
                             FormField(label: "Embarquement", text: $draft.gate, placeholder: "Porte 3", showsClearButton: true)
                         }
-                        CTA(label: "Valider le billet", action: validateAndClose)
+                        CTA(label: L("Valider le billet"), action: validateAndClose)
                             .opacity(draft.hasMinimumInfo ? 1 : 0.45)
                             .disabled(!draft.hasMinimumInfo)
                             .padding(.top, 8)
@@ -170,13 +170,13 @@ struct TravelTicketEditorSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Fermer") { dismiss() }
+                    Button(L("Fermer")) { dismiss() }
                         .foregroundColor(.tAccent2)
                 }
                 if let onScan {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button(action: onScan) {
-                            Label("Scanner", systemImage: "doc.text.viewfinder")
+                            Label(L("Scanner"), systemImage: "doc.text.viewfinder")
                         }
                         .font(.tText(13, weight: .semibold))
                         .foregroundColor(.tAccent2)
@@ -285,7 +285,7 @@ private struct TravelTicketScheduleFields: View {
 
     private var dateSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            fieldLabel("Date de départ")
+            fieldLabel(L("Date de départ"))
             if pickingDate {
                 VStack(spacing: 14) {
                     DatePicker("", selection: $draftDay, in: minimumDay..., displayedComponents: .date)
@@ -322,7 +322,7 @@ private struct TravelTicketScheduleFields: View {
                             .font(.tText(15, weight: .semibold))
                             .foregroundColor(.tText)
                         Spacer()
-                        Text("Modifier")
+                        Text(L("Modifier"))
                             .font(.tText(12, weight: .semibold))
                             .foregroundColor(.tAccent2)
                     }
@@ -337,7 +337,7 @@ private struct TravelTicketScheduleFields: View {
 
     private var departureTimeSection: some View {
         collapsibleTimeSection(
-            title: "Heure de départ",
+            title: L("Heure de départ"),
             value: departureTime,
             isPicking: pickingDeparture,
             onOpen: {
@@ -357,7 +357,7 @@ private struct TravelTicketScheduleFields: View {
 
     private var arrivalTimeSection: some View {
         collapsibleTimeSection(
-            title: "Heure d'arrivée",
+            title: L("Heure d'arrivée"),
             value: arrivalTime,
             isPicking: pickingArrival,
             onOpen: {
@@ -377,11 +377,11 @@ private struct TravelTicketScheduleFields: View {
 
     private var durationSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            fieldLabel("Durée du trajet")
+            fieldLabel(L("Durée du trajet"))
             if pickingDuration {
                 VStack(spacing: 14) {
                     HStack(spacing: 0) {
-                        Picker("Heures", selection: $draftDurationHours) {
+                        Picker(L("Heures"), selection: $draftDurationHours) {
                             ForEach(0..<24, id: \.self) { h in
                                 Text("\(h) h").tag(h)
                             }
@@ -389,7 +389,7 @@ private struct TravelTicketScheduleFields: View {
                         .pickerStyle(.wheel)
                         .frame(maxWidth: .infinity)
 
-                        Picker("Minutes", selection: $draftDurationMinutes) {
+                        Picker(L("Minutes"), selection: $draftDurationMinutes) {
                             ForEach(Array(stride(from: 0, through: 55, by: 5)), id: \.self) { m in
                                 Text("\(m) min").tag(m)
                             }
@@ -427,7 +427,7 @@ private struct TravelTicketScheduleFields: View {
                             .font(.tText(15, weight: .semibold))
                             .foregroundColor(.tText)
                         Spacer()
-                        Text("Modifier")
+                        Text(L("Modifier"))
                             .font(.tText(12, weight: .semibold))
                             .foregroundColor(.tAccent2)
                     }
@@ -474,7 +474,7 @@ private struct TravelTicketScheduleFields: View {
                             .font(.tText(15, weight: .semibold))
                             .foregroundColor(.tText)
                         Spacer()
-                        Text("Modifier")
+                        Text(L("Modifier"))
                             .font(.tText(12, weight: .semibold))
                             .foregroundColor(.tAccent2)
                     }
@@ -497,7 +497,7 @@ private struct TravelTicketScheduleFields: View {
     private func pickerActions(onCancel: @escaping () -> Void, onConfirm: @escaping () -> Void) -> some View {
         HStack(spacing: 10) {
             Button(action: onCancel) {
-                Text("Annuler")
+                Text(L("Annuler"))
                     .font(.tText(14, weight: .semibold))
                     .foregroundColor(.tTextMute)
                     .frame(maxWidth: .infinity)
@@ -510,7 +510,7 @@ private struct TravelTicketScheduleFields: View {
             .buttonStyle(TripnestPressStyle())
 
             Button(action: onConfirm) {
-                Text("Confirmer")
+                Text(L("Confirmer"))
                     .font(.tText(14, weight: .bold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -573,17 +573,17 @@ struct TravelTicketCameraScanFlow: View {
                     ProgressView()
                         .tint(.tAccent2)
                         .scaleEffect(1.2)
-                    Text("Lecture du billet…")
+                    Text(L("Lecture du billet…"))
                         .font(.tText(15, weight: .semibold))
                         .foregroundColor(.white)
                 }
             }
         }
-        .alert("Billet non reconnu", isPresented: showErrorBinding) {
-            Button("Réessayer", role: .cancel) {}
-            Button("Fermer") { dismiss() }
+        .alert(L("Billet non reconnu"), isPresented: showErrorBinding) {
+            Button(L("Réessayer"), role: .cancel) {}
+            Button(L("Fermer")) { dismiss() }
         } message: {
-            Text(errorMessage ?? "Prends une photo plus nette ou saisis le billet à la main.")
+            Text(errorMessage ?? L("Prends une photo plus nette ou saisis le billet à la main."))
         }
     }
 
@@ -809,7 +809,7 @@ struct HomeTravelTicketCard: View {
 
     private func ticketEndpoint(city: String, code: String, detail: String, leading: Bool) -> some View {
         VStack(alignment: leading ? .leading : .trailing, spacing: 4) {
-            Text(city.isEmpty ? "Départ" : city)
+            Text(city.isEmpty ? L("Départ") : city)
                 .font(.tText(15))
                 .foregroundColor(.tTextMute)
                 .lineLimit(1)
@@ -963,7 +963,7 @@ struct HomeTicketPlaceholder: View {
                 HStack(spacing: 7) {
                     Image(systemName: "ticket.fill")
                         .font(.system(size: 12, weight: .semibold))
-                    Text("Ajoute ton billet pour l'afficher ici.")
+                    Text(L("Ajoute ton billet pour l'afficher ici."))
                         .font(.tText(10, weight: .semibold))
                         .lineLimit(1)
                         .minimumScaleFactor(0.78)

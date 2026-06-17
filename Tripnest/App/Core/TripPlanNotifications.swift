@@ -65,8 +65,8 @@ enum TripPlanNotifications {
 
         let dateLabel = departure.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(frLocale))
         let content = UNMutableNotificationContent()
-        content.title = "Départ dans 1 h"
-        content.body = "Ton voyage vers \(trip.homeDestinationTitle) · \(dateLabel.capitalized)"
+        content.title = L("Départ dans 1 h")
+        content.body = L("Ton voyage vers %@ · %@", trip.homeDestinationTitle, dateLabel.capitalized)
         content.sound = .default
 
         let id = "plan.\(trip.id).departure"
@@ -89,7 +89,7 @@ enum TripPlanNotifications {
 
         let dayLabel = day.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).locale(frLocale))
         let content = UNMutableNotificationContent()
-        content.title = "Dans 1 h : \(item.title)"
+        content.title = L("Dans 1 h : %@", item.title)
         content.body = "\(trip.homeDestinationTitle) · \(dayLabel.capitalized)"
         if !item.notes.isEmpty {
             content.subtitle = String(item.notes.prefix(120))

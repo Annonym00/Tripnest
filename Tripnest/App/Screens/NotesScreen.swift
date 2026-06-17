@@ -61,12 +61,12 @@ struct NotesScreen: View {
         TCard(padding: 16) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("MES NOTES")
+                    Text(L("MES NOTES"))
                         .font(.tText(11, weight: .bold))
                         .tracking(1.2)
                         .foregroundColor(.tTextMute)
                     Spacer()
-                    Text("\(lineCount)/\(Self.maxLines) lignes")
+                    Text(L("%d/%d lignes", lineCount, Self.maxLines))
                         .font(.tText(11, weight: .semibold))
                         .foregroundColor(lineCount >= Self.maxLines ? .tRose : .tTextMute)
                         .monospacedDigit()
@@ -74,7 +74,7 @@ struct NotesScreen: View {
 
                 ZStack(alignment: .topLeading) {
                     if text.isEmpty {
-                        Text("Écris tes notes pour ce voyage : adresses, idées, rappels…")
+                        Text(L("Écris tes notes pour ce voyage : adresses, idées, rappels…"))
                             .font(.tText(14))
                             .foregroundColor(.tTextMute)
                             .padding(.top, 8)
@@ -92,7 +92,7 @@ struct NotesScreen: View {
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                Button("Terminé") { focused = false }
+                Button(L("Terminé")) { focused = false }
                     .font(.tText(15, weight: .bold))
                     .foregroundColor(.tAccent2)
             }
@@ -101,10 +101,10 @@ struct NotesScreen: View {
 
     private var missingTripState: some View {
         VStack(spacing: 0) {
-            TripSubpageTopBar(title: "Notes", subtitle: "Voyage introuvable", onBack: onBack)
+            TripSubpageTopBar(title: "Notes", subtitle: L("Voyage introuvable"), onBack: onBack)
             Spacer()
             TIcon(glyph: .edit, size: 36, stroke: .tAccent2)
-            Text("Impossible de charger ce voyage.")
+            Text(L("Impossible de charger ce voyage."))
                 .font(.tText(15, weight: .semibold))
                 .padding(.top, 12)
             Spacer()

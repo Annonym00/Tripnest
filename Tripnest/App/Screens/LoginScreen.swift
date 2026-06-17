@@ -10,10 +10,10 @@ struct LoginScreen: View {
                 VStack(spacing: 18) {
                     TripnestLogo(size: 108)
                         .padding(.top, 28)
-                    Text("Tripnest")
+                    Text(L("Tripnest"))
                         .font(.tDisplay(38))
                         .tracking(-1.2)
-                    Text("Bon retour !")
+                    Text(L("Bon retour !"))
                         .font(.tText(17))
                         .foregroundColor(.tTextMute)
                         .padding(.top, -16)
@@ -30,7 +30,7 @@ struct LoginScreen: View {
 
                             HStack {
                                 Spacer()
-                                Text("Mot de passe oublié")
+                                Text(L("Mot de passe oublié"))
                                     .font(.tText(13, weight: .semibold))
                                     .foregroundColor(.tText)
                             }
@@ -40,7 +40,7 @@ struct LoginScreen: View {
                                 .padding(.top, 18)
 
                             Button(action: onLogin) {
-                                Text("Création de compte")
+                                Text(L("Création de compte"))
                                     .font(.tText(15, weight: .bold))
                                     .foregroundColor(.tAccent2)
                                     .frame(maxWidth: .infinity)

@@ -100,13 +100,13 @@ struct TripPlanningScreen: View {
                 )
             }
         }
-        .alert("Notifications désactivées", isPresented: $showNotificationPermissionAlert) {
-            Button("Ouvrir Réglages") {
+        .alert(L("Notifications désactivées"), isPresented: $showNotificationPermissionAlert) {
+            Button(L("Ouvrir Réglages")) {
                 Task { await TripnestNotifications.activate() }
             }
-            Button("Annuler", role: .cancel) {}
+            Button(L("Annuler"), role: .cancel) {}
         } message: {
-            Text("Active les notifications dans Réglages iOS pour recevoir tes rappels de planification.")
+            Text(L("Active les notifications dans Réglages iOS pour recevoir tes rappels de planification."))
         }
         .sheet(isPresented: $showPlanSheet) {
             if let trip, !selectedDayKey.isEmpty {
@@ -129,7 +129,7 @@ struct TripPlanningScreen: View {
     private func baseCalendarCard(trip: Trip) -> some View {
         TCard(padding: 14) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Mon calendrier")
+                Text(L("Mon calendrier"))
                     .font(.tText(15, weight: .bold))
 
                 PlanMonthCalendar(
@@ -161,7 +161,7 @@ struct TripPlanningScreen: View {
             HStack(spacing: 12) {
                 Image(systemName: "plus.circle.fill")
                     .font(.system(size: 22, weight: .semibold))
-                Text("Planifie ton programme")
+                Text(L("Planifie ton programme"))
                     .font(.tText(16, weight: .bold))
                 Spacer()
             }
@@ -184,12 +184,12 @@ struct TripPlanningScreen: View {
     private var selectedDayProgramSection: some View {
         if !selectedDayKey.isEmpty {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Programme du \(selectedDayLabel)")
+            Text(L("Programme du %@", selectedDayLabel))
                 .font(.tText(14, weight: .bold))
 
             if selectedDayItems.isEmpty {
                 TCard(padding: 18) {
-                    Text("Aucune activité ce jour-là.\nAppuie sur « Planifie ton programme » pour en ajouter une.")
+                    Text(L("Aucune activité ce jour-là.\nAppuie sur « Planifie ton programme » pour en ajouter une."))
                         .font(.tText(13))
                         .foregroundColor(.tTextMute)
                         .multilineTextAlignment(.center)
@@ -208,7 +208,7 @@ struct TripPlanningScreen: View {
                     .padding(.vertical, 4)
                 }
 
-                Text("Modifier ou supprimer une activité avec les icônes à droite.")
+                Text(L("Modifier ou supprimer une activité avec les icônes à droite."))
                     .font(.tText(11))
                     .foregroundColor(.tTextMute)
             }
@@ -292,10 +292,10 @@ struct TripPlanningScreen: View {
 
     private var missingTripState: some View {
         VStack(spacing: 0) {
-            TripSubpageTopBar(title: "Planification", subtitle: "Voyage introuvable", onBack: onBack)
+            TripSubpageTopBar(title: "Planification", subtitle: L("Voyage introuvable"), onBack: onBack)
             Spacer()
             TIcon(glyph: .cal, size: 36, stroke: .tAccent2)
-            Text("Impossible de charger ce voyage.")
+            Text(L("Impossible de charger ce voyage."))
                 .font(.tText(15, weight: .semibold))
                 .padding(.top, 12)
             Spacer()
@@ -464,7 +464,7 @@ private struct PlanActivitySheet: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Pour le \(dayLabel)")
+                    Text(L("Pour le %@", dayLabel))
                         .font(.tText(13))
                         .foregroundColor(.tTextMute)
 
@@ -490,11 +490,11 @@ private struct PlanActivitySheet: View {
                 .padding(18)
             }
             .background(Color.tBg0.ignoresSafeArea())
-            .navigationTitle(isEditing ? "Modifier l’activité" : "Nouvelle activité")
+            .navigationTitle(isEditing ? L("Modifier l’activité") : L("Nouvelle activité"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") { close() }
+                    Button(L("Annuler")) { close() }
                 }
             }
             .onAppear { loadEditingIfNeeded() }
@@ -508,7 +508,7 @@ private struct PlanActivitySheet: View {
 
     private var timeSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Heure")
+            Text(L("Heure"))
                 .font(.tText(11, weight: .semibold))
                 .foregroundColor(.tTextMute)
             HStack {
@@ -527,10 +527,10 @@ private struct PlanActivitySheet: View {
 
     private var titleSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Nom de l’activité")
+            Text(L("Nom de l’activité"))
                 .font(.tText(11, weight: .semibold))
                 .foregroundColor(.tTextMute)
-            TextField("Ex : Musée, Déjeuner…", text: $draftTitle)
+            TextField(L("Ex : Musée, Déjeuner…"), text: $draftTitle)
                 .font(.tText(15))
                 .padding(12)
                 .background(fieldBackground)
@@ -539,10 +539,10 @@ private struct PlanActivitySheet: View {
 
     private var locationSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Lieu (facultatif)")
+            Text(L("Lieu (facultatif)"))
                 .font(.tText(11, weight: .semibold))
                 .foregroundColor(.tTextMute)
-            TextField("Ex : Centre-ville, Hôtel…", text: $draftLocation)
+            TextField(L("Ex : Centre-ville, Hôtel…"), text: $draftLocation)
                 .font(.tText(14))
                 .padding(12)
                 .background(fieldBackground)
@@ -552,15 +552,15 @@ private struct PlanActivitySheet: View {
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("Note (facultatif)")
+                Text(L("Note (facultatif)"))
                     .font(.tText(11, weight: .semibold))
                     .foregroundColor(.tTextMute)
                 Spacer()
-                Text("\(TripPhotoMemory.lineCount(for: draftNotes))/\(TripPhotoMemory.maxCaptionLines) lignes")
+                Text(L("%d/%d lignes", TripPhotoMemory.lineCount(for: draftNotes), TripPhotoMemory.maxCaptionLines))
                     .font(.tText(11, weight: .semibold))
                     .foregroundColor(.tTextMute)
             }
-            TextField("Détails, adresse, rappels…", text: $draftNotes, axis: .vertical)
+            TextField(L("Détails, adresse, rappels…"), text: $draftNotes, axis: .vertical)
                 .font(.tText(14))
                 .lineLimit(6...TripPhotoMemory.maxCaptionLines)
                 .padding(12)
@@ -678,21 +678,21 @@ struct PlanificationNotificationSettingsSheet: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Rappels liés à ce voyage uniquement. Tu seras prévenu 1 h à l’avance.")
+                    Text(L("Rappels liés à ce voyage uniquement. Tu seras prévenu 1 h à l’avance."))
                         .font(.tText(13))
                         .foregroundColor(.tTextMute)
 
                     if !notificationStatus.isEnabled {
                         TCard(padding: 14) {
                             VStack(alignment: .leading, spacing: 10) {
-                                Label("Notifications iOS désactivées", systemImage: "bell.slash")
+                                Label(L("Notifications iOS désactivées"), systemImage: "bell.slash")
                                     .font(.tText(14, weight: .semibold))
                                     .foregroundColor(.tRose)
-                                Text("Autorise les notifications pour activer les rappels ci-dessous.")
+                                Text(L("Autorise les notifications pour activer les rappels ci-dessous."))
                                     .font(.tText(12))
                                     .foregroundColor(.tTextMute)
                                 Button(action: onActivateSystemNotifications) {
-                                    Text("Activer les notifications")
+                                    Text(L("Activer les notifications"))
                                         .font(.tText(13, weight: .bold))
                                         .foregroundColor(.white)
                                         .frame(maxWidth: .infinity)
@@ -707,8 +707,8 @@ struct PlanificationNotificationSettingsSheet: View {
                     TCard(padding: 0) {
                         VStack(spacing: 0) {
                             toggleRow(
-                                title: "1 h avant chaque activité",
-                                subtitle: "Pour chaque heure planifiée dans ton calendrier",
+                                title: L("1 h avant chaque activité"),
+                                subtitle: L("Pour chaque heure planifiée dans ton calendrier"),
                                 isOn: $remindActivities
                             ) {
                                 TripPlanNotificationPrefs.setActivitiesEnabled(remindActivities, tripId: trip.id)
@@ -718,7 +718,7 @@ struct PlanificationNotificationSettingsSheet: View {
                             Divider().padding(.leading, 16)
 
                             toggleRow(
-                                title: "1 h avant le départ",
+                                title: L("1 h avant le départ"),
                                 subtitle: departureSubtitle,
                                 isOn: $remindDeparture,
                                 disabled: !hasDepartureDate
@@ -731,7 +731,7 @@ struct PlanificationNotificationSettingsSheet: View {
 
                     if remindActivities || remindDeparture {
                         Label(
-                            "Les rappels sont mis à jour quand tu ajoutes ou modifies une activité.",
+                            L("Les rappels sont mis à jour quand tu ajoutes ou modifies une activité."),
                             systemImage: "info.circle"
                         )
                         .font(.tText(11))
@@ -741,11 +741,11 @@ struct PlanificationNotificationSettingsSheet: View {
                 .padding(18)
             }
             .background(Color.tBg0.ignoresSafeArea())
-            .navigationTitle("Rappels")
+            .navigationTitle(L("Rappels"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Fermer") { dismiss() }.fontWeight(.semibold)
+                    Button(L("Fermer")) { dismiss() }.fontWeight(.semibold)
                 }
             }
         }
@@ -755,9 +755,9 @@ struct PlanificationNotificationSettingsSheet: View {
     private var departureSubtitle: String {
         if let dep = trip.departureDate {
             let label = dep.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "fr_FR")))
-            return "Départ le \(label.capitalized)"
+            return L("Départ le %@", label.capitalized)
         }
-        return "Ajoute une date de départ au voyage pour activer ce rappel"
+        return L("Ajoute une date de départ au voyage pour activer ce rappel")
     }
 
     private func toggleRow(

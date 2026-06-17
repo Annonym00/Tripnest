@@ -7,42 +7,42 @@ struct HomeTabsInfoSheet: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
-                    Text("Petit rappel sur les onglets de Tripnest.")
+                    Text(L("Petit rappel sur les onglets de Tripnest."))
                         .font(.tText(14))
                         .foregroundColor(.tTextMute)
 
                     infoCard(
                         title: "Accueil",
                         icon: .home,
-                        description: "Vue d’ensemble de ton voyage en cours : carte, résumé du trajet et accès rapide aux billets."
+                        description: L("Vue d’ensemble de ton voyage en cours : carte, résumé du trajet et accès rapide aux billets.")
                     )
 
                     infoCard(
                         title: "Voyages",
                         icon: .globe,
-                        description: "Tous tes voyages planifiés ou réalisés. Crée, modifie, archive et invite des amis pour qu’ils puissent voir et gérer le voyage avec toi."
+                        description: L("Tous tes voyages planifiés ou réalisés. Crée, modifie, archive et invite des amis pour qu’ils puissent voir et gérer le voyage avec toi.")
                     )
 
                     infoCard(
                         title: "Spots",
                         icon: .spot,
-                        description: "Tes lieux importants pour le voyage sélectionné : restaurants, hôtels, activités… Chaque spot est relié à un voyage."
+                        description: L("Tes lieux importants pour le voyage sélectionné : restaurants, hôtels, activités… Chaque spot est relié à un voyage.")
                     )
 
                     infoCard(
                         title: "Budget",
                         icon: .wallet,
-                        description: "Choisis un voyage en cours, définis ton budget puis suis tes dépenses par catégorie."
+                        description: L("Choisis un voyage en cours, définis ton budget puis suis tes dépenses par catégorie.")
                     )
                 }
                 .padding(18)
             }
             .background(Color.tBg0.ignoresSafeArea())
-            .navigationTitle("Comment fonctionne Tripnest ?")
+            .navigationTitle(L("Comment fonctionne Tripnest ?"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Fermer") { dismiss() }
+                    Button(L("Fermer")) { dismiss() }
                         .fontWeight(.semibold)
                 }
             }

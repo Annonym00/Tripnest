@@ -23,10 +23,10 @@ struct FlightsScreen: View {
                 HStack {
                     Button(action: onBack) { IconBtn(glyph: .back) }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Retour")
+                        .accessibilityLabel(L("Revenir"))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(transportMode.ticketDetailScreenTitle).font(.tDisplay(24)).tracking(-0.5)
-                        Text("\(tripTickets.count) billet(s) · \(activeTrip?.dest ?? "—")")
+                        Text(L("%d billet(s) · %@", tripTickets.count, activeTrip?.dest ?? "—"))
                             .font(.tText(13)).foregroundColor(.tTextMute)
                     }
                     Spacer()
@@ -54,14 +54,14 @@ struct FlightsScreen: View {
                     VStack(alignment: .leading, spacing: 12) {
                         if store.activeTrip == nil {
                             emptyState(
-                                title: "Aucun voyage sélectionné",
-                                subtitle: "Choisis ou crée un voyage pour y rattacher tes vols."
+                                title: L("Aucun voyage sélectionné"),
+                                subtitle: L("Choisis ou crée un voyage pour y rattacher tes vols.")
                             )
                         } else if tripTickets.isEmpty {
                             emptyState(
-                                title: "Aucun billet enregistré",
-                                subtitle: "Ajoute ton \(transportMode.ticketNoun) pour retrouver horaires et détails ici.",
-                                actionLabel: "Ajouter un billet",
+                                title: L("Aucun billet enregistré"),
+                                subtitle: L("Ajoute ton %@ pour retrouver horaires et détails ici.", transportMode.ticketNoun),
+                                actionLabel: L("Ajouter un billet"),
                                 action: openTicketEditor
                             )
                         } else {
@@ -69,7 +69,7 @@ struct FlightsScreen: View {
                                 flightCard(flight)
                                     .contextMenu {
                                         Button(role: .destructive) { Haptics.impact(.medium); store.deleteFlight(id: flight.id) } label: {
-                                            Label("Supprimer", systemImage: "trash")
+                                            Label(L("Supprimer"), systemImage: "trash")
                                         }
                                     }
                             }

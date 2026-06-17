@@ -33,7 +33,7 @@ struct ProfileScreen: View {
     }
 
     private var displayName: String {
-        profileName.trimmingCharacters(in: .whitespaces).isEmpty ? "Mon profil" : profileName
+        profileName.trimmingCharacters(in: .whitespaces).isEmpty ? L("Mon profil") : profileName
     }
 
     private var handle: String {
@@ -50,13 +50,13 @@ struct ProfileScreen: View {
     private enum AccAction { case documents, support, logout }
     private struct Acc { let label: String; let glyph: TIcon.Glyph; let action: AccAction }
     private let accs: [Acc] = [
-        .init(label: "Documents · passeport, ID", glyph: .passport, action: .documents),
-        .init(label: "Aide & support",            glyph: .bell,     action: .support),
-        .init(label: "Se déconnecter",            glyph: .close,    action: .logout),
+        .init(label: L("Documents · passeport, ID"), glyph: .passport, action: .documents),
+        .init(label: L("Aide & support"),            glyph: .bell,     action: .support),
+        .init(label: L("Se déconnecter"),            glyph: .close,    action: .logout),
     ]
 
     var body: some View {
-        ScreenShell {
+        ScreenShell(motif: false) {
             VStack(spacing: 0) {
                 HStack {
                     Text(L("Profil")).font(.tDisplay(24)).tracking(-0.5)
@@ -132,7 +132,7 @@ struct ProfileScreen: View {
             get: { !showAddFriend && store.friendAcceptedNotice != nil },
             set: { if !$0 { store.friendAcceptedNotice = nil } }
         )) {
-            Button("OK", role: .cancel) {}
+            Button(L("OK"), role: .cancel) {}
         } message: {
             if let name = store.friendAcceptedNotice {
                 Text(L("%@ a accepté ton invitation.", name))
@@ -336,7 +336,7 @@ struct ProfileScreen: View {
                 VStack(spacing: 2) {
                     Text("@\(handle)")
                         .font(.tText(13, weight: .semibold)).foregroundColor(.tTextMute)
-                    Text("Membre depuis \(String(memberSinceYear == 0 ? Calendar.current.component(.year, from: Date()) : memberSinceYear))")
+                    Text(L("Membre depuis %@", String(memberSinceYear == 0 ? Calendar.current.component(.year, from: Date()) : memberSinceYear)))
                         .font(.tText(12)).foregroundColor(.tTextMute)
                 }
                 HStack(spacing: 6) {
@@ -473,7 +473,7 @@ struct EditProfileSheet: View {
                             Image(systemName: "clock.fill")
                                 .font(.system(size: 13))
                                 .foregroundColor(.tGold)
-                            Text("Prochain changement dans \(daysRemaining) jour\(daysRemaining > 1 ? "s" : "")")
+                            Text(daysRemaining > 1 ? L("Prochain changement dans %d jours", daysRemaining) : L("Prochain changement dans %d jour", daysRemaining))
                                 .font(.tText(13, weight: .semibold))
                                 .foregroundColor(.tGold)
                         }
@@ -492,7 +492,7 @@ struct EditProfileSheet: View {
                             Image(systemName: "info.circle")
                                 .font(.system(size: 12))
                                 .foregroundColor(.tTextMute)
-                            Text("Après confirmation, tu devras attendre 30 jours avant de pouvoir changer ton nom à nouveau.")
+                            Text(L("Après confirmation, tu devras attendre 30 jours avant de pouvoir changer ton nom à nouveau."))
                                 .font(.tText(12))
                                 .foregroundColor(.tTextMute)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -585,7 +585,7 @@ struct AddFriendSheet: View {
         }
         .tripnestPreferredColorScheme()
         .alert(L("Invitation acceptée"), isPresented: acceptedPopup) {
-            Button("OK", role: .cancel) {}
+            Button(L("OK"), role: .cancel) {}
         } message: {
             if let name = store.friendAcceptedNotice {
                 Text(L("%@ a accepté ton invitation.", name))
@@ -793,9 +793,9 @@ struct DocumentsSheet: View {
     }
     private let docs: [Doc] = [
         .init(key: "passeport", label: "Passeport", glyph: .passport),
-        .init(key: "carte-identite", label: "Carte d'identité", glyph: .passport),
-        .init(key: "visa", label: "Visa / autorisation", glyph: .globe),
-        .init(key: "assurance", label: "Assurance voyage", glyph: .check),
+        .init(key: "carte-identite", label: L("Carte d'identité"), glyph: .passport),
+        .init(key: "visa", label: L("Visa / autorisation"), glyph: .globe),
+        .init(key: "assurance", label: L("Assurance voyage"), glyph: .check),
     ]
 
     @State private var storedURLs: [String: URL] = [:]
@@ -911,13 +911,18 @@ struct DocumentsSheet: View {
     }
 
     private func reload() {
-        var map: [String: URL] = [:]
-        for doc in docs {
-            if let url = ProfileDocumentStore.existingURL(key: doc.key) {
-                map[doc.key] = url
+        let keys = docs.map(\.key)
+        // Scan disque unique, hors main thread → ouverture du sheet sans hitch.
+        Task {
+            let all = await Task.detached(priority: .userInitiated) {
+                ProfileDocumentStore.allExistingURLs()
+            }.value
+            var map: [String: URL] = [:]
+            for key in keys where all[key] != nil {
+                map[key] = all[key]
             }
+            storedURLs = map
         }
-        storedURLs = map
     }
 }
 
@@ -966,10 +971,12 @@ struct SupportSheet: View {
 /// Source de vérité partagée pour la photo de profil.
 /// Les écrans observent `image` (@Published) ⇒ toute modification se propage
 /// instantanément à l'Accueil, au Profil et à tout autre écran abonné.
+@MainActor
 final class ProfileImageStore: ObservableObject {
     static let shared = ProfileImageStore()
 
     @Published private(set) var image: UIImage?
+    private var generation = 0
 
     private var fileURL: URL {
         let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -977,33 +984,56 @@ final class ProfileImageStore: ObservableObject {
     }
 
     private init() {
-        image = loadFromDisk()
+        reload()
     }
 
     @discardableResult
     func save(_ newImage: UIImage) -> Bool {
-        let square = newImage.profile_orientedUp()
-            .profile_squareCropped()
-            .profile_resized(to: CGSize(width: 512, height: 512))
-        guard let data = square.jpegData(compressionQuality: 0.9),
-              (try? data.write(to: fileURL, options: .atomic)) != nil else { return false }
-        image = square
+        generation += 1
+        let token = generation
+        let url = fileURL
+        Task {
+            let prepared = await Task.detached(priority: .userInitiated) { () -> UIImage? in
+                let square = newImage.profile_orientedUp()
+                    .profile_squareCropped()
+                    .profile_resized(to: CGSize(width: 512, height: 512))
+                guard let data = square.jpegData(compressionQuality: 0.9),
+                      (try? data.write(to: url, options: .atomic)) != nil else { return nil }
+                return square.preparingForDisplay() ?? square
+            }.value
+            guard token == generation, let prepared else { return }
+            image = prepared
+        }
         return true
     }
 
     func delete() {
-        try? FileManager.default.removeItem(at: fileURL)
+        generation += 1
+        let url = fileURL
         image = nil
+        Task.detached(priority: .utility) {
+            try? FileManager.default.removeItem(at: url)
+        }
     }
 
     /// Recharge depuis le disque (utile si le fichier a pu changer hors de l'app).
     func reload() {
-        image = loadFromDisk()
+        generation += 1
+        let token = generation
+        let url = fileURL
+        Task {
+            let loaded = await Self.loadFromDisk(url: url)
+            guard token == generation else { return }
+            image = loaded
+        }
     }
 
-    private func loadFromDisk() -> UIImage? {
-        guard let data = try? Data(contentsOf: fileURL) else { return nil }
-        return UIImage(data: data)
+    private static func loadFromDisk(url: URL) async -> UIImage? {
+        await Task.detached(priority: .utility) {
+            guard let data = try? Data(contentsOf: url),
+                  let image = UIImage(data: data) else { return nil }
+            return image.preparingForDisplay() ?? image
+        }.value
     }
 }
 
@@ -1023,6 +1053,18 @@ enum ProfileDocumentStore {
         let items = (try? FileManager.default.contentsOfDirectory(
             at: directoryURL, includingPropertiesForKeys: nil)) ?? []
         return items.first { $0.deletingPathExtension().lastPathComponent == key }
+    }
+
+    /// Un SEUL scan du dossier → dictionnaire [clé: url]. Évite N scans disque
+    /// (un par document) lors du rechargement de la liste.
+    static func allExistingURLs() -> [String: URL] {
+        let items = (try? FileManager.default.contentsOfDirectory(
+            at: directoryURL, includingPropertiesForKeys: nil)) ?? []
+        var map: [String: URL] = [:]
+        for url in items {
+            map[url.deletingPathExtension().lastPathComponent] = url
+        }
+        return map
     }
 
     @discardableResult

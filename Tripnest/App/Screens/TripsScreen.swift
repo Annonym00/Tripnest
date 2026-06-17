@@ -49,19 +49,19 @@ struct TripsScreen: View {
         .onChange(of: store.trips.count) { _, _ in syncSelectedTrip() }
         .onChange(of: ongoingTrips.count) { _, _ in syncSelectedTrip() }
         .animation(.easeOut(duration: 0.2), value: selectedTripId)
-        .alert("Archiver ce voyage ?", isPresented: $showCompleteTripAlert) {
-            Button("Annuler", role: .cancel) { tripPendingCompletion = nil }
-            Button("Oui, archiver") { confirmTripCompletion() }
+        .alert(L("Archiver ce voyage ?"), isPresented: $showCompleteTripAlert) {
+            Button(L("Annuler"), role: .cancel) { tripPendingCompletion = nil }
+            Button(L("Oui, archiver")) { confirmTripCompletion() }
         } message: {
             if let trip = tripPendingCompletion {
-                Text("« \(trip.homeDestinationTitle) » sera déplacé dans Voyages passés.")
+                Text(L("« %@ » sera déplacé dans Voyages passés.", trip.homeDestinationTitle))
             }
         }
     }
 
     private var tripsHeader: some View {
         HStack(alignment: .top) {
-            Text("Voyages")
+            Text(L("Voyages"))
                 .font(.tDisplay(26))
                 .tracking(-0.6)
             Spacer(minLength: 12)
@@ -79,9 +79,9 @@ struct TripsScreen: View {
                 TCard(padding: 20) {
                     VStack(spacing: 10) {
                         TIcon(glyph: .plane, size: 28, stroke: .tAccent2)
-                        Text("Aucun voyage actif")
+                        Text(L("Aucun voyage actif"))
                             .font(.tText(16, weight: .bold))
-                        Text("Pour créer un voyage, utilise l'onglet Accueil.")
+                        Text(L("Pour créer un voyage, utilise l'onglet Accueil."))
                             .font(.tText(13))
                             .foregroundColor(.tTextMute)
                             .multilineTextAlignment(.center)
@@ -89,7 +89,7 @@ struct TripsScreen: View {
                     .frame(maxWidth: .infinity)
                 }
             } else {
-                Text("Appuie sur un voyage pour voir tous ses détails.")
+                Text(L("Appuie sur un voyage pour voir tous ses détails."))
                     .font(.tText(11))
                     .foregroundColor(.tTextMute)
 
@@ -110,7 +110,7 @@ struct TripsScreen: View {
 
     private var pastTripsEntry: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionLabel("TERMINÉS")
+            sectionLabel(L("TERMINÉS"))
 
             Button(action: { onNav(.completedTrips) }) {
                 HStack(spacing: 14) {
@@ -122,12 +122,12 @@ struct TripsScreen: View {
                         )
 
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Voyages passés")
+                        Text(L("Voyages passés"))
                             .font(.tText(16, weight: .bold))
                             .foregroundColor(.tText)
                         Text(completedCount == 0
-                             ? "Souvenirs, spots, budget et planning"
-                             : "\(completedCount) voyage\(completedCount > 1 ? "s" : "") terminé\(completedCount > 1 ? "s" : "")")
+                             ? L("Souvenirs, spots, budget et planning")
+                             : (completedCount > 1 ? L("%d voyages terminés", completedCount) : L("%d voyage terminé", completedCount)))
                             .font(.tText(12))
                             .foregroundColor(.tTextMute)
                             .multilineTextAlignment(.leading)
@@ -233,7 +233,7 @@ struct TripRow: View {
                             .overlay(Circle().stroke(Color.tBorder, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Fermer")
+                    .accessibilityLabel(L("Fermer"))
                 }
                 .padding(.bottom, 4)
             }
@@ -251,7 +251,7 @@ struct TripRow: View {
                                 Button(action: onModify) {
                                     HStack(spacing: 6) {
                                         TIcon(glyph: .edit, size: 14, stroke: .tAccent2)
-                                        Text("Modifier")
+                                        Text(L("Modifier"))
                                             .font(.tText(13, weight: .semibold))
                                     }
                                     .foregroundColor(.tAccent2)
@@ -269,7 +269,7 @@ struct TripRow: View {
                                     HStack(spacing: 6) {
                                         Image(systemName: "trash")
                                             .font(.system(size: 14, weight: .semibold))
-                                        Text("Supprimer")
+                                        Text(L("Supprimer"))
                                             .font(.tText(13, weight: .semibold))
                                     }
                                     .foregroundColor(.tRose)
@@ -318,7 +318,7 @@ struct TripRow: View {
                             .padding(8)
                     }
                 }
-                .accessibilityLabel(isSelected ? "\(t.homeDestinationTitle), sélectionné" : t.homeDestinationTitle)
+                .accessibilityLabel(isSelected ? L("%@, sélectionné", t.homeDestinationTitle) : t.homeDestinationTitle)
 
                 if let onGoToDestination {
                     Button(action: onGoToDestination) {
@@ -332,7 +332,7 @@ struct TripRow: View {
                             )
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Voir sur la planète")
+                    .accessibilityLabel(L("Voir sur la planète"))
                 }
             }
         }
@@ -368,7 +368,7 @@ struct TripRow: View {
         Menu {
             if let onEdit {
                 Button(action: onEdit) {
-                    Label("Modifier", systemImage: "pencil")
+                    Label(L("Modifier"), systemImage: "pencil")
                 }
             }
             if onEdit != nil {
@@ -376,7 +376,7 @@ struct TripRow: View {
             }
             if let onDelete {
                 Button(role: .destructive, action: onDelete) {
-                    Label("Supprimer", systemImage: "trash")
+                    Label(L("Supprimer"), systemImage: "trash")
                 }
             }
         } label: {
@@ -487,7 +487,7 @@ struct TripRow: View {
         .frame(width: 24, height: 24)
         .background(Circle().fill(Color.tSurface.opacity(0.95)))
         .overlay(Circle().stroke(Color.tBorder, lineWidth: 1))
-        .accessibilityLabel("0 personne regarde ce voyage")
+        .accessibilityLabel(L("0 personne regarde ce voyage"))
     }
 
 
@@ -499,7 +499,7 @@ struct TripRow: View {
             HStack(spacing: 4) {
                 Image(systemName: "archivebox")
                     .font(.system(size: 9, weight: .bold))
-                Text("Archiver")
+                Text(L("Archiver"))
                     .font(.tText(10, weight: .bold))
             }
             .foregroundColor(.white.opacity(0.92))
@@ -510,7 +510,7 @@ struct TripRow: View {
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Archiver dans les voyages passés")
+        .accessibilityLabel(L("Archiver dans les voyages passés"))
     }
 
     /// Bouton « Revenir » : renvoie le voyage dans les voyages en cours.
@@ -519,7 +519,7 @@ struct TripRow: View {
             HStack(spacing: 5) {
                 Image(systemName: "arrow.uturn.backward")
                     .font(.system(size: 11, weight: .bold))
-                Text("Revenir")
+                Text(L("Revenir"))
                     .font(.tText(12, weight: .bold))
             }
             .foregroundColor(.tAccent2)
@@ -530,13 +530,13 @@ struct TripRow: View {
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Remettre dans les voyages en cours")
+        .accessibilityLabel(L("Remettre dans les voyages en cours"))
     }
 
     private var favoriteTag: some View {
         HStack(spacing: 4) {
             Text("❤️").font(.system(size: 9))
-            Text("Coup de cœur")
+            Text(L("Coup de cœur"))
                 .font(.tText(11, weight: .bold))
                 .foregroundColor(.tRose)
         }
@@ -563,10 +563,10 @@ struct TripRow: View {
     /// Petit mot de statut : « En cours », « Terminé » ou « Dans X jours ».
     private var rowStatus: (text: String, color: Color) {
         let active = Color(hex: 0x4CD964)
-        if t.status == .done { return ("Terminé", .tTextMute) }
+        if t.status == .done { return (L("Terminé"), .tTextMute) }
 
         let total = max(1, t.planDayCount)
-        guard let dep = t.departureDate else { return ("En préparation", .tGold) }
+        guard let dep = t.departureDate else { return (L("En préparation"), .tGold) }
 
         let cal = Calendar.current
         let now = cal.startOfDay(for: Date())
@@ -578,14 +578,14 @@ struct TripRow: View {
 
         if now < start {
             let days = cal.dateComponents([.day], from: now, to: start).day ?? 0
-            if days <= 0 { return ("Départ aujourd'hui", active) }
-            if days == 1 { return ("Dans 1 jour", .tGold) }
-            return ("Dans \(days) jours", .tGold)
+            if days <= 0 { return (L("Départ aujourd'hui"), active) }
+            if days == 1 { return (L("Dans 1 jour"), .tGold) }
+            return (L("Dans %d jours", days), .tGold)
         }
-        if now > end { return ("Terminé", .tTextMute) }
+        if now > end { return (L("Terminé"), .tTextMute) }
         let elapsed = (cal.dateComponents([.day], from: start, to: now).day ?? 0) + 1
         let dayN = min(max(1, elapsed), total)
-        return ("En cours · Jour \(dayN)/\(total)", active)
+        return (L("En cours · Jour %d/%d", dayN, total), active)
     }
 
     private var compactDateRange: String? {
@@ -687,6 +687,12 @@ struct TripRowAmbilight: View {
         .blendMode(isLight ? .normal : .plusLighter)
         .task(id: imageSampleKey) {
             await refreshImageColor()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .tripCoverImageDidChange)) { notification in
+            guard notification.userInfo?["tripId"] as? String == trip.id else { return }
+            Task {
+                await refreshImageColor()
+            }
         }
     }
 

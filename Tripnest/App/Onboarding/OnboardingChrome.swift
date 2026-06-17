@@ -28,19 +28,19 @@ final class OnboardingNavigator: ObservableObject {
 enum OnboardingLabels {
     static func label(for step: Int) -> String? {
         switch step {
-        case 4: return "Tu n'es pas seul·e"
-        case 16: return "Tu as ce qu'il faut"
-        case 17: return "Fonctions clés"
-        case 18: return "Ton espace"
+        case 4: return L("Tu n'es pas seul·e")
+        case 16: return L("Tu as ce qu'il faut")
+        case 17: return L("Fonctions clés")
+        case 18: return L("Ton espace")
         case 19: return "On y est presque"
-        case 20: return "Construction · 1/4"
-        case 21: return "Construction · 2/4"
-        case 22: return "Ton profil voyageur"
-        case 23: return "Ton plan"
+        case 20: return L("Construction · 1/4")
+        case 21: return L("Construction · 2/4")
+        case 22: return L("Ton profil voyageur")
+        case 23: return L("Ton plan")
         case 24: return "Projection"
         case 25: return "Notifications"
         case 26: return "Sauvegarde"
-        case 27: return "Récapitulatif"
+        case 27: return L("Récapitulatif")
         default: return nil
         }
     }

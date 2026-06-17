@@ -48,13 +48,13 @@ struct MainApp: View {
             if needsProfileName {
                 ProfileNameGate()
                     .zIndex(10)
-                    .transition(.opacity)
+                    .transition(.identity)
             }
         }
         .environment(\.tripnestSkipShellMotion, true)
-        .alert("Supprimer ce voyage ?", isPresented: deleteAlertBinding) {
-            Button("Annuler", role: .cancel) { pendingDeleteId = nil }
-            Button("Supprimer", role: .destructive) {
+        .alert(L("Supprimer ce voyage ?"), isPresented: deleteAlertBinding) {
+            Button(L("Annuler"), role: .cancel) { pendingDeleteId = nil }
+            Button(L("Supprimer"), role: .destructive) {
                 if let id = pendingDeleteId {
                     store.deleteTrip(id: id)
                     Haptics.success()
@@ -68,7 +68,7 @@ struct MainApp: View {
             }
         } message: {
             if let id = pendingDeleteId, let trip = store.trips.first(where: { $0.id == id }) {
-                Text("« \(trip.dest) » et toutes ses dépenses, vols et spots seront effacés.")
+                Text(L("« %@ » et toutes ses dépenses, vols et spots seront effacés.", trip.dest))
             }
         }
     }
@@ -82,9 +82,7 @@ struct MainApp: View {
 
     private func openEditTrip(_ id: String) {
         formTripId = id
-        withAnimation(TripnestAnimation.modal) {
-            modalRoute = .editTrip
-        }
+        modalRoute = .editTrip
         DispatchQueue.main.async {
             store.selectTrip(id: id)
         }
@@ -118,7 +116,6 @@ struct MainApp: View {
             .opacity(isVisible ? 1 : 0)
             .allowsHitTesting(isVisible)
             .accessibilityHidden(!isVisible)
-            // Pause FlyingPlanesLayer sur les onglets non visibles → 1 seul Canvas actif à la fois.
             .environment(\.tripnestScreenActive, isVisible)
     }
 
@@ -214,17 +211,13 @@ struct MainApp: View {
             motion = nextMotion
             baseRoute = target
         } else {
-            withAnimation(animation(for: nextMotion)) {
-                motion = nextMotion
-                baseRoute = target
-            }
+            motion = nextMotion
+            baseRoute = target
         }
     }
 
     private func presentModal(_ target: AppRoute) {
-        withAnimation(TripnestAnimation.modal) {
-            modalRoute = target
-        }
+        modalRoute = target
     }
 
     private func dismissModal(animated: Bool = true) {
@@ -233,11 +226,7 @@ struct MainApp: View {
             formTripId = nil
             formExpenseId = nil
         }
-        if animated {
-            withAnimation(TripnestAnimation.modal, clear)
-        } else {
-            clear()
-        }
+        clear()
     }
 
     private func goBack() {
@@ -247,18 +236,8 @@ struct MainApp: View {
         }
 
         let destination = routeHistory.popLast() ?? fallbackBack(for: baseRoute)
-        withAnimation(TripnestAnimation.page) {
-            motion = .pop
-            baseRoute = destination
-        }
-    }
-
-    private func animation(for motion: NavMotion) -> Animation {
-        switch motion {
-        case .tab: return TripnestAnimation.tab
-        case .modal: return TripnestAnimation.modal
-        case .push, .pop: return TripnestAnimation.page
-        }
+        motion = .pop
+        baseRoute = destination
     }
 
     private func fallbackBack(for route: AppRoute) -> AppRoute {
@@ -381,7 +360,7 @@ struct TripFormScreen: View {
                 VStack(spacing: 12) {
                     ProgressView()
                         .tint(.tAccent2)
-                    Text("Chargement du voyage…")
+                    Text(L("Chargement du voyage…"))
                         .font(.tText(14))
                         .foregroundColor(.tTextMute)
                 }
@@ -490,8 +469,7 @@ struct TripFormScreen: View {
             TripCoverCropSheet(
                 sourceImage: payload.image,
                 onConfirm: { cropped in
-                    draftCoverImage = cropped
-                    coverKind = .custom
+                    applyCoverImageDirectly(cropped)
                     pendingCoverCrop = nil
                 },
                 onCancel: { pendingCoverCrop = nil }
@@ -505,7 +483,7 @@ struct TripFormScreen: View {
                 Button(action: onClose) { IconBtn(glyph: .close) }
                     .buttonStyle(TripnestPressStyle())
                 Spacer()
-                Text(isEditing ? "Modifier le voyage" : "Nouveau voyage")
+                Text(isEditing ? L("Modifier le voyage") : L("Nouveau voyage"))
                     .font(.tText(16, weight: .bold))
                 Spacer()
                 Button(action: save) {
@@ -543,16 +521,16 @@ struct TripFormScreen: View {
                         travelCompanionsSection
 
                         FormField(
-                            label: "Titre du voyage",
+                            label: L("Titre du voyage"),
                             text: $tripTitle,
-                            placeholder: "Titre du voyage",
+                            placeholder: L("Titre du voyage"),
                             showsClearButton: true
                         )
 
                         tripCoverSection
 
                         FormLocationField(
-                            label: "Lieu de départ",
+                            label: L("Lieu de départ"),
                             placeholder: activeMode.originPlaceholder,
                             text: $origin,
                             validation: $originValidation,
@@ -567,8 +545,8 @@ struct TripFormScreen: View {
                         )
 
                         FormOptionalDateField(
-                            label: "Date et heure de départ",
-                            placeholder: "Ajouter le départ",
+                            label: L("Date et heure de départ"),
+                            placeholder: L("Ajouter le départ"),
                             date: $departureDate,
                             minimumDate: todayStart,
                             includesTime: true
@@ -577,14 +555,14 @@ struct TripFormScreen: View {
                         TCard(padding: 4) {
                             VStack(spacing: 0) {
                                 TripCheckboxRow(
-                                    label: "Aller sans retour",
-                                    subtitle: "Voyage aller simple",
+                                    label: L("Aller sans retour"),
+                                    subtitle: L("Voyage aller simple"),
                                     isOn: $oneWay
                                 )
                                 Divider().background(Color.tBorder).padding(.horizontal, 14)
                                 TripCheckboxRow(
-                                    label: "Rajouter le retour",
-                                    subtitle: "Indique où tu repars au retour",
+                                    label: L("Rajouter le retour"),
+                                    subtitle: L("Indique où tu repars au retour"),
                                     isOn: $addReturn
                                 )
                             }
@@ -600,7 +578,7 @@ struct TripFormScreen: View {
                             )
                             FormOptionalDateField(
                                 label: "Date et heure de retour",
-                                placeholder: "Ajouter le retour",
+                                placeholder: L("Ajouter le retour"),
                                 date: $returnDate,
                                 minimumDate: returnMinimumDate,
                                 includesTime: true,
@@ -625,7 +603,7 @@ struct TripFormScreen: View {
                                 HStack(spacing: 10) {
                                     Image(systemName: "trash.fill")
                                         .font(.system(size: 14, weight: .bold))
-                                    Text("Supprimer ce voyage")
+                                    Text(L("Supprimer ce voyage"))
                                         .font(.tText(14, weight: .bold))
                                     Spacer()
                                 }
@@ -669,7 +647,7 @@ struct TripFormScreen: View {
 
     private var tripCoverSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("IMAGE DE FOND")
+            Text(L("IMAGE DE FOND"))
                 .font(.tText(12, weight: .bold))
                 .tracking(1.5)
                 .foregroundColor(.tTextMute)
@@ -737,7 +715,7 @@ struct TripFormScreen: View {
         let columns = [GridItem](repeating: GridItem(.flexible(), spacing: 10), count: 6)
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Choisis une couleur")
+                Text(L("Choisis une couleur"))
                     .font(.tText(12, weight: .bold))
                     .tracking(1.2)
                     .foregroundColor(.tTextMute)
@@ -800,10 +778,18 @@ struct TripFormScreen: View {
         )
     }
 
+    private func applyCoverImageDirectly(_ image: UIImage) {
+        coverKind = .custom
+        draftCoverImage = image
+        guard let tripId else { return }
+        if TripCoverImageStore.save(image, tripId: tripId) {
+            TripCoverImagePalette.invalidate(tripId: tripId)
+            store.updateTripCover(id: tripId, coverKind: .custom, coverColor: coverColor)
+            store.saveImmediately()
+        }
+    }
+
     private func presentCoverCrop(with image: UIImage) {
-        // On attend la fin de la fermeture du picker avant de présenter le recadrage.
-        // Sans ce délai, SwiftUI tente de présenter le 2ᵉ écran pendant que le 1ᵉ se
-        // ferme → présentation qui « rame » / saute (le bug du choix d'image de fond).
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
             pendingCoverCrop = PendingCoverCrop(image: image)
         }
@@ -835,7 +821,7 @@ struct TripFormScreen: View {
                 HStack(spacing: 10) {
                     transportModeIcon(activeMode)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Transport")
+                        Text(L("Transport"))
                             .font(.tText(11, weight: .semibold))
                             .foregroundColor(.tTextMute)
                         Text(activeMode.label)
@@ -850,7 +836,7 @@ struct TripFormScreen: View {
                     isChoosingTransport = true
                 }
             } label: {
-                Text("Changer")
+                Text(L("Changer"))
                     .font(.tText(12, weight: .semibold))
                     .foregroundColor(.tAccent2)
                     .padding(.horizontal, 12)
@@ -870,7 +856,7 @@ struct TripFormScreen: View {
 
     private var travelCompanionsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("AVEC QUI TU VAS VOYAGER ?")
+            Text(L("AVEC QUI TU VAS VOYAGER ?"))
                 .font(.tText(12, weight: .bold))
                 .tracking(1.5)
                 .foregroundColor(.tTextMute)
@@ -881,7 +867,7 @@ struct TripFormScreen: View {
                         ForEach(store.friends) { friend in
                             travelFriendRow(
                                 name: friend.name,
-                                subtitle: friend.status == .accepted ? "Ami Tripnest" : "Invitation en attente",
+                                subtitle: friend.status == .accepted ? L("Ami Tripnest") : "Invitation en attente",
                                 isSelected: selectedTravelFriendIds.contains(friend.id),
                                 action: { toggleTravelFriend(friend.id) }
                             )
@@ -893,7 +879,7 @@ struct TripFormScreen: View {
                         ForEach(pendingTravelFriendNames, id: \.self) { name in
                             travelFriendRow(
                                 name: name,
-                                subtitle: "Sera invité après l'enregistrement",
+                                subtitle: L("Sera invité après l'enregistrement"),
                                 isSelected: true,
                                 action: { removePendingTravelFriend(name) }
                             )
@@ -914,15 +900,15 @@ struct TripFormScreen: View {
 
                         VStack(spacing: 0) {
                             travelPermissionRow(
-                                title: "Peut modifier",
-                                subtitle: "Ton ami pourra ajouter ou changer le voyage.",
+                                title: L("Peut modifier"),
+                                subtitle: L("Ton ami pourra ajouter ou changer le voyage."),
                                 isSelected: travelFriendsCanEdit,
                                 action: { travelFriendsCanEdit = true }
                             )
                             Divider().background(Color.tBorder).padding(.horizontal, 14)
                             travelPermissionRow(
                                 title: "Regarder seulement",
-                                subtitle: "Ton ami verra le voyage en direct sans modifier.",
+                                subtitle: L("Ton ami verra le voyage en direct sans modifier."),
                                 isSelected: !travelFriendsCanEdit,
                                 action: { travelFriendsCanEdit = false }
                             )
@@ -932,7 +918,7 @@ struct TripFormScreen: View {
 
                         VStack(alignment: .leading, spacing: 10) {
                             HStack(spacing: 10) {
-                                TextField("Nom de l'ami Tripnest", text: $travelFriendInviteName)
+                                TextField(L("Nom de l'ami Tripnest"), text: $travelFriendInviteName)
                                     .font(.tText(14))
                                     .foregroundColor(.tText)
                                     .textInputAutocapitalization(.words)
@@ -951,7 +937,7 @@ struct TripFormScreen: View {
                                     HStack(spacing: 6) {
                                         Image(systemName: "person.badge.plus")
                                             .font(.system(size: 13, weight: .bold))
-                                        Text("Inviter")
+                                        Text(L("Inviter"))
                                             .font(.tText(12, weight: .bold))
                                     }
                                     .foregroundColor(.white)
@@ -994,10 +980,10 @@ struct TripFormScreen: View {
                     .frame(width: 34, height: 34)
                     .background(Circle().fill(Color.tAccent2.opacity(0.12)))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Invite un ami qui a Tripnest")
+                    Text(L("Invite un ami qui a Tripnest"))
                         .font(.tText(14, weight: .bold))
                         .foregroundColor(.tText)
-                    Text("Appuie ici seulement si tu veux inviter quelqu'un.")
+                    Text(L("Appuie ici seulement si tu veux inviter quelqu'un."))
                         .font(.tText(12))
                         .foregroundColor(.tTextMute)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1110,19 +1096,19 @@ struct TripFormScreen: View {
         }
         if let existing = store.friends.first(where: { $0.name.caseInsensitiveCompare(canonical) == .orderedSame }) {
             selectedTravelFriendIds.insert(existing.id)
-            travelFriendInviteFeedback = "\(existing.name) sera ajouté au voyage en mode \(travelPermissionLabel)."
+            travelFriendInviteFeedback = L("%@ sera ajouté au voyage en mode %@.", existing.name, travelPermissionLabel)
         } else if pendingTravelFriendNames.contains(where: { $0.caseInsensitiveCompare(canonical) == .orderedSame }) {
-            travelFriendInviteFeedback = "\(canonical) est déjà prêt à être invité."
+            travelFriendInviteFeedback = L("%@ est déjà prêt à être invité.", canonical)
         } else {
             pendingTravelFriendNames.append(canonical)
-            travelFriendInviteFeedback = "\(canonical) recevra l'invitation après l'enregistrement en mode \(travelPermissionLabel)."
+            travelFriendInviteFeedback = L("%@ recevra l'invitation après l'enregistrement en mode %@.", canonical, travelPermissionLabel)
         }
         travelFriendInviteName = ""
         Haptics.success()
     }
 
     private var travelPermissionLabel: String {
-        travelFriendsCanEdit ? "modification" : "lecture seule"
+        travelFriendsCanEdit ? L("modification") : L("lecture seule")
     }
 
     private func openTicketEditor() {
@@ -1302,6 +1288,7 @@ struct TripFormScreen: View {
             )
             persistTicket(for: id)
             store.setTripCompanions(tripId: id, friendIds: companionIds, canEdit: travelFriendsCanEdit)
+            store.saveImmediately()
         } else {
             let newId = UUID().uuidString
             persistCover(for: newId)
@@ -1319,6 +1306,7 @@ struct TripFormScreen: View {
             )
             persistTicket(for: newId)
             store.setTripCompanions(tripId: newId, friendIds: companionIds, canEdit: travelFriendsCanEdit)
+            store.saveImmediately()
         }
         Haptics.success()
         onSave()
@@ -1380,7 +1368,7 @@ struct FormField: View {
 
 struct FormOptionalDateField: View {
     let label: String
-    var placeholder: String = "Ajouter une date"
+    var placeholder: String = L("Ajouter une date")
     @Binding var date: Date?
     var minimumDate: Date = Calendar.current.startOfDay(for: Date())
     var includesTime: Bool = false
@@ -1469,7 +1457,7 @@ struct FormOptionalDateField: View {
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer()
-                    Text("Modifier")
+                    Text(L("Modifier"))
                         .font(.tText(12, weight: .semibold))
                         .foregroundColor(.tAccent2)
                 }
@@ -1530,7 +1518,7 @@ struct FormOptionalDateField: View {
                     isPicking = false
                     Haptics.selection()
                 } label: {
-                    Text("Annuler")
+                    Text(L("Annuler"))
                         .font(.tText(14, weight: .semibold))
                         .foregroundColor(.tTextMute)
                         .frame(maxWidth: .infinity)
@@ -1547,7 +1535,7 @@ struct FormOptionalDateField: View {
                     isPicking = false
                     Haptics.success()
                 } label: {
-                    Text("Confirmer")
+                    Text(L("Confirmer"))
                         .font(.tText(14, weight: .bold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -1671,19 +1659,19 @@ private struct ProfileNameGate: View {
                     TripnestLogo(size: 84)
 
                     VStack(spacing: 10) {
-                        Text("DERNIÈRE ÉTAPE")
+                        Text(L("DERNIÈRE ÉTAPE"))
                             .font(.tText(11, weight: .bold)).tracking(2.5)
                             .foregroundColor(.tAccent2)
-                        (Text("Comment doit-on\nt'appeler ").font(.tDisplay(30)).tracking(-0.9)
+                        (Text(L("Comment doit-on\nt'appeler ")).font(.tDisplay(30)).tracking(-0.9)
                          + Text("?").font(.tDisplay(30)).tracking(-0.9).foregroundColor(.tAccent2))
                             .multilineTextAlignment(.center)
-                        Text("Ton nom s'affichera sur ton accueil et ton profil.")
+                        Text(L("Ton nom s'affichera sur ton accueil et ton profil."))
                             .font(.tText(14)).foregroundColor(.tTextMute)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 16)
                     }
 
-                    FormField(label: "Nom affiché", text: $nameInput, placeholder: "Ex. Lucas Martin")
+                    FormField(label: L("Nom affiché"), text: $nameInput, placeholder: L("Ex. Lucas Martin"))
                         .focused($focused)
                         .submitLabel(.done)
                         .onSubmit(save)

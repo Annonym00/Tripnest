@@ -11,13 +11,8 @@ struct HomeScreen: View {
     @AppStorage("tripnest.currency") private var defaultCurrency: String = "EUR"
     @AppStorage("tripnest.home.tileOrder") private var tileOrderRaw = "budget,spots,memories,plan"
     @AppStorage("tripnest.home.sectionOrder") private var sectionOrderRaw = "stats,ticket"
-    @State private var activeDragTile: HomeTile? = nil
-    @State private var dragTileOffset: CGSize = .zero
-    @State private var dragTileStartFrame: CGRect? = nil
-    @State private var tileFrames: [HomeTile: CGRect] = [:]
-    @State private var lastSwappedWith: HomeTile? = nil
-    @State private var activeDragSection: HomeSection? = nil
-    @State private var dragSectionOffset: CGSize = .zero
+    @State private var pressedTile: HomeTile? = nil
+    @State private var pendingTileNavigation: Task<Void, Never>? = nil
     @State private var showTicketScanner = false
     @State private var showTicketEditor = false
     @State private var showTripsPicker = false
@@ -29,20 +24,19 @@ struct HomeScreen: View {
     @State private var showNotificationSettingsAlert = false
     @State private var showHomeInfoSheet = false
     @State private var showFriendsSheet = false
-    @State private var heroCardFrame: CGRect = .zero
     @EnvironmentObject private var avatarStore: ProfileImageStore
 
     private var profileFirstName: String {
         let trimmed = profileName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let first = trimmed.split(separator: " ").first, !first.isEmpty else { return "" }
-        return String(first)
+        return String(String(first).prefix(10))
     }
 
     private var timeGreeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
         switch hour {
         case 5..<12:  return "Bonjour"
-        case 12..<18: return "Bon après-midi"
+        case 12..<18: return L("Bon après-midi")
         default:      return "Bonsoir"
         }
     }
@@ -86,29 +80,6 @@ struct HomeScreen: View {
     var body: some View {
         ScreenShell(motif: false) {
             ZStack(alignment: .topLeading) {
-                if let trip = displayedTrip, !heroCardFrame.isEmpty {
-                    let ambientHeight = heroCardFrame.height + 260
-                    let ambientCenterY = heroCardFrame.midY - 54
-                    let ambientTop = ambientCenterY - ambientHeight / 2
-                    let visibleTopInset = max(0, heroCardFrame.minY - 18 - ambientTop)
-
-                    HomeHeroAmbilightBackdrop(trip: trip)
-                        .frame(width: heroCardFrame.width + 140, height: heroCardFrame.height + 260)
-                        .position(x: heroCardFrame.midX, y: heroCardFrame.midY - 54)
-                        // Pas de .blendMode(.plusLighter) : la fusion additive forçait le GPU
-                        // à re-fusionner toute la zone du hero à chaque frame d'animation
-                        // (retour de bouton, glissement de sheet) → saccade à chaque tap.
-                        // Le halo est déjà aplati en une texture via .drawingGroup() interne.
-                        .mask(alignment: .top) {
-                            VStack(spacing: 0) {
-                                Color.clear.frame(height: visibleTopInset)
-                                Rectangle().fill(Color.white)
-                            }
-                        }
-                        .allowsHitTesting(false)
-                        .zIndex(0)
-                }
-
                 VStack(spacing: 10) {
                         header
                             .padding(.horizontal, 22)
@@ -127,24 +98,11 @@ struct HomeScreen: View {
                                             tripStatus: tripStatusLabel(for: t),
                                             onTap: { onEditTrip(t.id) }
                                         )
-                                        .background {
-                                            GeometryReader { geo in
-                                                Color.clear.preference(
-                                                    key: HomeHeroFrameKey.self,
-                                                    value: geo.frame(in: .named("homeScreenContent"))
-                                                )
-                                            }
-                                        }
                                         tripCardTransportBadge(t).padding(12)
                                     }
 
                                     ForEach(sectionOrder, id: \.self) { section in
                                         sectionView(section, trip: t)
-                                            .offset(y: activeDragSection == section ? dragSectionOffset.height : 0)
-                                            .scaleEffect(activeDragSection == section ? 1.02 : 1.0, anchor: .center)
-                                            .shadow(color: activeDragSection == section ? Color(hex: 0x8A5CFC).opacity(0.45) : .clear, radius: 14, x: 0, y: 8)
-                                            .zIndex(activeDragSection == section ? 1 : 0)
-                                            .animation(.spring(response: 0.3), value: activeDragSection)
                                     }
                                 }
                             }
@@ -154,11 +112,8 @@ struct HomeScreen: View {
                     }
                     .tripnestTabBarScrollPadding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .compositingGroup()
                 .zIndex(1)
             }
-            .coordinateSpace(name: "homeScreenContent")
-            .onPreferenceChange(HomeHeroFrameKey.self) { heroCardFrame = $0 }
             .overlay(alignment: .bottom) {
                 TabBar(active: .home, onChange: onNav)
                     .ignoresSafeArea(edges: .bottom)
@@ -168,6 +123,11 @@ struct HomeScreen: View {
         .onAppear {
             syncOngoingTripSelection()
         }
+        .onDisappear {
+            pendingTileNavigation?.cancel()
+            pendingTileNavigation = nil
+            pressedTile = nil
+        }
         .onChange(of: store.trips.count) { _, _ in syncOngoingTripSelection() }
         .onChange(of: ongoingTrips.count) { _, _ in syncOngoingTripSelection() }
         .onChange(of: scenePhase) { _, phase in
@@ -176,11 +136,11 @@ struct HomeScreen: View {
                 Task { await refreshNotificationStatus() }
             }
         }
-        .alert("Notifications désactivées", isPresented: $showNotificationSettingsAlert) {
-            Button("Ouvrir Réglages") { Task { await TripnestNotifications.activate() } }
-            Button("Annuler", role: .cancel) {}
+        .alert(L("Notifications désactivées"), isPresented: $showNotificationSettingsAlert) {
+            Button(L("Ouvrir Réglages")) { Task { await TripnestNotifications.activate() } }
+            Button(L("Annuler"), role: .cancel) {}
         } message: {
-            Text("Active les notifications Tripnest dans Réglages pour recevoir tes rappels de voyage.")
+            Text(L("Active les notifications Tripnest dans Réglages pour recevoir tes rappels de voyage."))
         }
         .sheet(isPresented: $showHomeInfoSheet) { HomeTabsInfoSheet() }
         .sheet(isPresented: $showFriendsSheet) {
@@ -207,11 +167,11 @@ struct HomeScreen: View {
                     .padding(18)
                 }
                 .background(Color.tBg0.ignoresSafeArea())
-                .navigationTitle("Voyages en cours")
+                .navigationTitle(L("Voyages en cours"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("Fermer") { showTripsPicker = false }
+                        Button(L("Fermer")) { showTripsPicker = false }
                             .fontWeight(.semibold)
                     }
                 }
@@ -256,21 +216,22 @@ struct HomeScreen: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(Date.now.formatted(date: .abbreviated, time: .omitted))
                         .font(.tText(13))
-                        .foregroundColor(.tTextMute)
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(profileFirstName.isEmpty ? timeGreeting : "\(timeGreeting),")
+                        .foregroundColor(.white)
+                    // Salutation sur une ligne, prénom sur la ligne suivante
+                    // → évite la troncature quand la salutation est longue (L("Bon après-midi")).
+                    Text(timeGreeting)
+                        .font(.tDisplay(24, weight: .bold))
+                        .tracking(-0.5)
+                        .lineLimit(1)
+                    if !profileFirstName.isEmpty {
+                        Text(profileFirstName)
                             .font(.tDisplay(24, weight: .bold))
                             .tracking(-0.5)
-                        if !profileFirstName.isEmpty {
-                            Text(profileFirstName)
-                                .font(.tDisplay(24, weight: .bold))
-                                .tracking(-0.5)
-                                .foregroundColor(.tAccent2)
-                                .lineLimit(1)
-                        }
+                            .foregroundColor(.tAccent2)
+                            .lineLimit(1)
                     }
                 }
-                .offset(y: 4)
+                .offset(y: 12)
                 Spacer(minLength: 8)
                 VStack(alignment: .trailing, spacing: 6) {
                     HStack(spacing: 8) {
@@ -298,7 +259,7 @@ struct HomeScreen: View {
                                 }
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Mes amis (\(store.friendsCount))")
+                        .accessibilityLabel(L("Mes amis (%d)", store.friendsCount))
 
                         Button {
                             showHomeInfoSheet = true
@@ -312,7 +273,7 @@ struct HomeScreen: View {
                                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Color.tBorder, lineWidth: 1))
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("À quoi servent les onglets")
+                        .accessibilityLabel(L("À quoi servent les onglets"))
 
                         Button(action: activateNotifications) {
                             IconBtn(
@@ -323,7 +284,7 @@ struct HomeScreen: View {
                             )
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel(notificationStatus.isEnabled ? "Notifications activées" : "Activer les notifications")
+                        .accessibilityLabel(notificationStatus.isEnabled ? L("Notifications activées") : L("Activer les notifications"))
 
                         Avatar(initials: initials, image: avatarStore.image)
                     }
@@ -335,7 +296,7 @@ struct HomeScreen: View {
                         HStack(spacing: 5) {
                             Image(systemName: "suitcase.fill")
                                 .font(.system(size: 10, weight: .semibold))
-                            Text("Voyage total (\(ongoingTrips.count))")
+                            Text(L("Voyage total (%d)", ongoingTrips.count))
                                 .font(.tText(10, weight: .bold))
                                 .lineLimit(1)
                         }
@@ -343,8 +304,7 @@ struct HomeScreen: View {
                         .padding(.horizontal, 8)
                         .frame(height: 24)
                         .background(Capsule().fill(Color.tSurface))
-                        .tripnestBubbleChrome(radius: 12)
-                        .compositingGroup()
+                        .overlay(Capsule().stroke(Color.tBubbleBorder, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
                     .opacity(ongoingTrips.isEmpty ? 0 : 1)
@@ -358,7 +318,7 @@ struct HomeScreen: View {
 
     private var ongoingTripsHeader: some View {
         HStack {
-            Text("Voyages en cours")
+            Text(L("Voyages en cours"))
                 .font(.tText(12, weight: .bold))
                 .tracking(0.6)
                 .foregroundColor(.tTextMute)
@@ -411,7 +371,7 @@ struct HomeScreen: View {
     private func tripStatusLabel(for t: Trip) -> HomeHeroStatus {
         let total = max(1, t.planDayCount)
         guard let dep = t.departureDate else {
-            return HomeHeroStatus(text: "EN PRÉPARATION", tone: .planned)
+            return HomeHeroStatus(text: L("EN PRÉPARATION"), tone: .planned)
         }
         let now   = Calendar.current.startOfDay(for: Date())
         let start = Calendar.current.startOfDay(for: dep)
@@ -421,14 +381,14 @@ struct HomeScreen: View {
         }()
         if now < start {
             let days = Calendar.current.dateComponents([.day], from: now, to: start).day ?? 0
-            if days <= 0 { return HomeHeroStatus(text: "DÉPART AUJOURD'HUI", tone: .active) }
-            if days == 1 { return HomeHeroStatus(text: "DÉPART DEMAIN", tone: .planned) }
+            if days <= 0 { return HomeHeroStatus(text: L("DÉPART AUJOURD'HUI"), tone: .active) }
+            if days == 1 { return HomeHeroStatus(text: L("DÉPART DEMAIN"), tone: .planned) }
             return HomeHeroStatus(text: "DANS \(days) JOURS", tone: .planned)
         }
         if now > end { return HomeHeroStatus(text: "TERMINÉ", tone: .done) }
         let elapsed = (Calendar.current.dateComponents([.day], from: start, to: now).day ?? 0) + 1
         let dayN = min(max(1, elapsed), total)
-        return HomeHeroStatus(text: "EN COURS · JOUR \(dayN)/\(total)", tone: .active)
+        return HomeHeroStatus(text: L("EN COURS · JOUR %d/%d", dayN, total), tone: .active)
     }
 
     // MARK: - Stats grid 2×2
@@ -439,10 +399,6 @@ struct HomeScreen: View {
         return saved + missing
     }
 
-    private func saveTileOrder(_ order: [HomeTile]) {
-        tileOrderRaw = order.map(\.rawValue).joined(separator: ",")
-    }
-
     private func statsGrid(_ t: Trip) -> some View {
         let allSpots  = store.spots(for: t.id)
         let saved     = allSpots.filter { $0.saved }
@@ -450,81 +406,21 @@ struct HomeScreen: View {
         let total     = max(allSpots.count, saved.count)
         let order     = tileOrder
 
-        return ZStack(alignment: .topLeading) {
-            // Grille fixe — les tuiles sont invisibles pendant le drag de leur tile
-            LazyVGrid(
-                columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
-                spacing: 12
-            ) {
-                ForEach(order, id: \.self) { tile in
-                    tileView(tile, trip: t, saved: saved, allSpots: allSpots, total: total, planCount: planCount)
-                        .opacity(activeDragTile == tile ? 0.01 : 1.0)
-                        .background(
-                            GeometryReader { geo in
-                                Color.clear.preference(
-                                    key: TileFrameKey.self,
-                                    value: [tile: geo.frame(in: .named("tileGrid"))]
-                                )
-                            }
-                        )
-                        .onTapGesture {
-                            guard activeDragTile == nil else { return }
-                            tileAction(for: tile, trip: t)
-                        }
-                }
-            }
-
-            // Tuile flottante pendant le drag
-            if let tile = activeDragTile, let startFrame = dragTileStartFrame {
+        return LazyVGrid(
+            columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
+            spacing: 12
+        ) {
+            ForEach(order, id: \.self) { tile in
+                let isPressed = pressedTile == tile
                 tileView(tile, trip: t, saved: saved, allSpots: allSpots, total: total, planCount: planCount)
-                    .frame(width: startFrame.width, height: startFrame.height)
-                    .scaleEffect(1.07)
-                    .shadow(color: Color(hex: 0x8A5CFC).opacity(0.55), radius: 18, x: 0, y: 10)
-                    .position(
-                        x: startFrame.midX + dragTileOffset.width,
-                        y: startFrame.midY + dragTileOffset.height
-                    )
-                    .gesture(
-                        DragGesture(minimumDistance: 0, coordinateSpace: .named("tileGrid"))
-                            .onChanged { value in
-                                dragTileOffset = value.translation
-                                let center = CGPoint(
-                                    x: startFrame.midX + value.translation.width,
-                                    y: startFrame.midY + value.translation.height
-                                )
-                                var overAny = false
-                                for (other, otherFrame) in tileFrames where other != tile {
-                                    if otherFrame.contains(center) {
-                                        overAny = true
-                                        guard other != lastSwappedWith else { break }
-                                        var newOrder = tileOrder
-                                        if let fi = newOrder.firstIndex(of: tile),
-                                           let ti = newOrder.firstIndex(of: other), fi != ti {
-                                            withAnimation(.spring(response: 0.25)) {
-                                                newOrder.swapAt(fi, ti)
-                                                saveTileOrder(newOrder)
-                                            }
-                                            lastSwappedWith = other
-                                            Haptics.selection()
-                                        }
-                                        break
-                                    }
-                                }
-                                if !overAny { lastSwappedWith = nil }
-                            }
-                            .onEnded { _ in
-                                withAnimation(.spring(response: 0.3)) {
-                                    activeDragTile = nil
-                                    dragTileOffset = .zero
-                                    dragTileStartFrame = nil
-                                }
-                                lastSwappedWith = nil
-                            }
-                    )
+                    .scaleEffect(isPressed ? 0.985 : 1)
+                    .opacity(isPressed ? 0.92 : 1)
+                    .animation(.easeOut(duration: 0.07), value: pressedTile)
+                    .onTapGesture {
+                        tileAction(for: tile, trip: t)
+                    }
             }
         }
-        .coordinateSpace(name: "tileGrid")
-        .onPreferenceChange(TileFrameKey.self) { tileFrames = $0 }
     }
 
     @ViewBuilder
@@ -538,13 +434,40 @@ struct HomeScreen: View {
     }
 
     private func tileAction(for tile: HomeTile, trip t: Trip) {
-        Haptics.selection()
-        store.selectTrip(id: t.id)
+        pendingTileNavigation?.cancel()
+        let tripId = t.id
+        let target = route(for: tile)
+
+        withAnimation(.easeOut(duration: 0.06)) {
+            pressedTile = tile
+        }
+
+        pendingTileNavigation = Task { @MainActor in
+            do {
+                try await Task.sleep(nanoseconds: 55_000_000)
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                store.selectTrip(id: tripId)
+            }
+
+            onNav(target)
+            pressedTile = nil
+            pendingTileNavigation = nil
+        }
+    }
+
+    private func route(for tile: HomeTile) -> AppRoute {
         switch tile {
-        case .budget:   onNav(.tripBudget)
-        case .spots:    onNav(.spots)
-        case .memories: onNav(.tripSouvenirs)
-        case .plan:     onNav(.tripPlanning)
+        case .budget:   return .tripBudget
+        case .spots:    return .spots
+        case .memories: return .tripSouvenirs
+        case .plan:     return .tripPlanning
         }
     }
 
@@ -552,10 +475,6 @@ struct HomeScreen: View {
         let saved = sectionOrderRaw.split(separator: ",").compactMap { HomeSection(rawValue: String($0)) }
         let missing = HomeSection.allCases.filter { !saved.contains($0) }
         return saved + missing
-    }
-
-    private func saveSectionOrder(_ order: [HomeSection]) {
-        sectionOrderRaw = order.map(\.rawValue).joined(separator: ",")
     }
 
     @ViewBuilder
@@ -672,7 +591,7 @@ struct HomeScreen: View {
             return Int(Double(t.spent) / Double(t.budget) * 100)
         }()
         let overBudget = pct > 100
-        return StatTile(title: "BUDGET\nRESTANT", glyph: .wallet, accent: overBudget ? .tRose : .tBlue) {
+        return StatTile(title: L("BUDGET\nRESTANT"), glyph: .wallet, accent: overBudget ? .tRose : .tBlue) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .center, spacing: 8) {
                     Text("\(remaining)\(currencySymbol)")
@@ -701,14 +620,6 @@ struct HomeScreen: View {
                     }
                 }
                 .frame(height: 3)
-
-                Text(t.budget > 0
-                     ? "\(pct)% utilisé · \(t.spent)\(currencySymbol) / \(t.budget)\(currencySymbol)"
-                     : "Définis ton budget")
-                    .font(.tText(10))
-                    .foregroundColor(.tTextMute)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
             }
         }
     }
@@ -758,7 +669,7 @@ struct HomeScreen: View {
         let previewSpots = Array(allSpots.prefix(4))
         let extra = max(0, allSpots.count - previewSpots.count)
         let emptyPreviewColors: [Color] = [.tRose, .tBlue, .tMint, .tGold]
-        return StatTile(title: "SPOTS\nSAUVÉS", glyph: .spot, accent: .tGold) {
+        return StatTile(title: L("SPOTS\nSAUVÉS"), glyph: .spot, accent: .tGold) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .center, spacing: 8) {
                     Text("\(allSpots.count)")
@@ -790,10 +701,6 @@ struct HomeScreen: View {
                     }
                     .padding(.leading, 6)
                 }
-                Text(allSpots.isEmpty ? "Aucun spot" : allSpots.count == 1 ? "spot enregistré" : "spots enregistrés")
-                    .font(.tText(10))
-                    .foregroundColor(.tTextMute)
-                    .lineLimit(1)
             }
         }
     }
@@ -810,22 +717,12 @@ struct HomeScreen: View {
                     photoStackPreview(active: t.photoCount > 0)
                         .padding(.leading, 12)
                 }
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(t.photoCount <= 1 ? "photo" : "photos")
-                        .font(.tText(11, weight: .semibold))
-                        .foregroundColor(.tTextMute)
-                    Text(t.photoCount == 0 ? "à ajouter" : "en galerie")
-                        .font(.tText(10))
-                        .foregroundColor(.tTextMute)
-                        .lineLimit(1)
-                }
             }
         }
     }
 
     private func planTile(trip t: Trip, count: Int) -> some View {
-        let days = max(1, t.planDayCount)
-        return StatTile(title: "PLANIFIER\nÉTAPES", glyph: .cal, accent: .tMint) {
+        StatTile(title: L("PLANIFIER\nÉTAPES"), glyph: .cal, accent: .tMint) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .center, spacing: 8) {
                     Text("\(count)")
@@ -835,15 +732,6 @@ struct HomeScreen: View {
                         .monospacedDigit()
                     routeStepsPreview(activeCount: min(max(count, 0), 3))
                         .padding(.leading, 6)
-                }
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(count <= 1 ? "étape" : "étapes")
-                        .font(.tText(11, weight: .semibold))
-                        .foregroundColor(.tTextMute)
-                    Text("sur \(days) jour\(days > 1 ? "s" : "")")
-                        .font(.tText(10))
-                        .foregroundColor(.tTextMute)
-                        .lineLimit(1)
                 }
             }
         }
@@ -1002,11 +890,11 @@ struct HomeScreen: View {
         TCard(padding: 22, glow: true) {
             VStack(spacing: 14) {
                 TripnestLogo(size: 72, glow: false)
-                Text("Aucun voyage pour le moment")
+                Text(L("Aucun voyage pour le moment"))
                     .font(.tDisplay(24)).tracking(-0.5).multilineTextAlignment(.center)
-                Text("Planifie ton premier trajet en quelques étapes.")
+                Text(L("Planifie ton premier trajet en quelques étapes."))
                     .font(.tText(14)).foregroundColor(.tTextMute).multilineTextAlignment(.center)
-                CTA(label: "Créer un voyage", action: { onNav(.newTrip) }).padding(.top, 6)
+                CTA(label: L("Créer un voyage"), action: { onNav(.newTrip) }).padding(.top, 6)
             }
             .frame(maxWidth: .infinity)
         }
@@ -1016,11 +904,11 @@ struct HomeScreen: View {
         TCard(padding: 20) {
             VStack(spacing: 12) {
                 TIcon(glyph: .globe, size: 28, stroke: .tGold)
-                Text("Tous tes voyages sont archivés").font(.tText(16, weight: .bold))
-                Text("Retrouve-les dans l'onglet Voyages → Voyages passés, ou crée un nouveau voyage.")
+                Text(L("Tous tes voyages sont archivés")).font(.tText(16, weight: .bold))
+                Text(L("Retrouve-les dans l'onglet Voyages → Voyages passés, ou crée un nouveau voyage."))
                     .font(.tText(13)).foregroundColor(.tTextMute).multilineTextAlignment(.center)
-                CTA(label: "Voir l'onglet Voyages", secondary: true, action: { onNav(.trips) })
-                CTA(label: "Créer un voyage", action: { onNav(.newTrip) })
+                CTA(label: L("Voir l'onglet Voyages"), secondary: true, action: { onNav(.trips) })
+                CTA(label: L("Créer un voyage"), action: { onNav(.newTrip) })
             }
             .frame(maxWidth: .infinity)
         }
@@ -1071,37 +959,6 @@ private struct HomeHeroCard: View {
     private let height: CGFloat = 184
     private let radius: CGFloat = 24
 
-    @State private var sampledImageColor: Color?
-    @State private var sampledAmbilightColors: TripCoverAmbilightColors?
-    @State private var galleryColor: Color?
-
-    private var hasCustomCoverColor: Bool {
-        TripCoverPalette.color(fromHex: trip.coverColor) != nil
-    }
-    private var hasCustomImage: Bool { trip.coverKind == .custom }
-
-    private var leadingFlag: String {
-        TripRouteFlagResolver.flag(for: trip.origin, mode: trip.transportMode)
-    }
-    private var trailingFlag: String {
-        TripRouteFlagResolver.flag(
-            for: trip.dest,
-            mode: trip.transportMode,
-            fallbackCountry: trip.country,
-            fallbackFlag: trip.flag
-        )
-    }
-    private var leadingShadowColor: Color {
-        if hasCustomImage, let sampledAmbilightColors { return sampledAmbilightColors.leading }
-        if hasCustomImage, let sampledImageColor { return sampledImageColor }
-        return trip.resolvedCoverColor
-    }
-    private var trailingShadowColor: Color {
-        if hasCustomImage, let sampledAmbilightColors { return sampledAmbilightColors.trailing }
-        if hasCustomImage, let sampledImageColor { return sampledImageColor }
-        return trip.resolvedCoverColor
-    }
-
     var body: some View {
         heroCardContent
         .frame(maxWidth: .infinity)
@@ -1109,40 +966,6 @@ private struct HomeHeroCard: View {
         .contentShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
         .onTapGesture(perform: onTap)
         .accessibilityLabel("\(trip.homeDestinationTitle), \(tripStatus.text)")
-        .task(id: imageSampleKey) {
-            await refreshImageColor()
-        }
-    }
-
-    private var imageSampleKey: String {
-        let coverToken = trip.coverKind == .custom ? TripCoverImageStore.modificationToken(tripId: trip.id) : "none"
-        return "\(trip.id)|\(trip.coverKind.rawValue)|\(coverToken)|\(trip.photoCount)"
-    }
-
-    @MainActor
-    private func refreshImageColor() async {
-        let tripId = trip.id
-        guard !tripId.isEmpty else {
-            sampledImageColor = nil
-            sampledAmbilightColors = nil
-            galleryColor = nil
-            return
-        }
-
-        // 1. L'image de fond personnalisée est prioritaire pour que l'ambilight
-        // suive exactement le fond choisi dans la galerie.
-        if hasCustomImage {
-            let colors = await TripCoverImagePalette.ambilightColors(forTripId: tripId)
-            if tripId == trip.id {
-                sampledAmbilightColors = colors
-                sampledImageColor = colors?.combined
-                galleryColor = nil
-            }
-            return
-        }
-        if tripId == trip.id { sampledImageColor = nil; sampledAmbilightColors = nil }
-
-        if tripId == trip.id { galleryColor = nil }
     }
 
     private var heroCardContent: some View {
@@ -1198,7 +1021,7 @@ private struct HomeHeroCard: View {
 
                 // Bottom block
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("PROCHAINE ESCALE")
+                    Text(L("PROCHAINE ESCALE"))
                         .font(.tText(10, weight: .bold))
                         .tracking(1.5)
                         .foregroundColor(.white.opacity(0.78))
@@ -1218,7 +1041,7 @@ private struct HomeHeroCard: View {
                             .minimumScaleFactor(0.85)
                         Spacer(minLength: 8)
                         HStack(spacing: 4) {
-                            Text("Détails").font(.tText(12, weight: .bold))
+                            Text(L("Détails")).font(.tText(12, weight: .bold))
                             Image(systemName: "arrow.right").font(.system(size: 11, weight: .bold))
                         }
                         .foregroundColor(.white)
@@ -1232,13 +1055,7 @@ private struct HomeHeroCard: View {
         .frame(height: height)
         .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).stroke(Color.tBorderStrong, lineWidth: 1))
-        .compositingGroup()
-        // 3 ombres au lieu de 5 : chaque .shadow est une passe de flou GPU séparée,
-        // re-composée à chaque frame d'animation. On garde les 2 halos colorés (signature
-        // ambilight) + 1 ombre portée sombre ; les 2 ombres quasi-invisibles sont retirées.
-        .shadow(color: leadingShadowColor.opacity(0.28), radius: 26, x: -12, y: -2)
-        .shadow(color: trailingShadowColor.opacity(0.24), radius: 28, x: 12, y: -2)
-        .shadow(color: Color.black.opacity(0.30), radius: 22, x: 0, y: 16)
+        .shadow(color: Color.black.opacity(0.24), radius: 14, x: 0, y: 10)
     }
 
     private var statusPill: some View {
@@ -1265,140 +1082,13 @@ private struct HomeHeroCard: View {
         if let dep = trip.departureDate {
             let start = fmt.string(from: dep)
             if let ret = trip.returnDate {
-                return "\(start) — \(fmt.string(from: ret)) · \(total) jour\(total > 1 ? "s" : "")"
+                return "\(start) — \(fmt.string(from: ret)) · " + (total > 1 ? L("%d jours", total) : L("%d jour", total))
             }
-            return "\(start) · \(total) jour\(total > 1 ? "s" : "")"
+            return "\(start) · " + (total > 1 ? L("%d jours", total) : L("%d jour", total))
         }
         return trip.homeDateLine
     }
 
-    private func ambientColor(for flag: String, fallbackHue: Double) -> Color {
-        TripAmbilightColor.color(for: flag, fallbackHue: fallbackHue)
-    }
-}
-
-private struct HomeHeroAmbilightBackdrop: View {
-    let trip: Trip
-    private let radius: CGFloat = 26
-
-    @State private var sampledImageColor: Color?
-    @State private var sampledAmbilightColors: TripCoverAmbilightColors?
-    @State private var galleryColor: Color?
-    @Environment(\.colorScheme) private var colorScheme
-
-    /// En clair, les halos colorés se diluent sur fond blanc : on renforce.
-    private var glowBoost: Double { colorScheme == .light ? 2.0 : 1.0 }
-
-    private var hasCustomCoverColor: Bool {
-        TripCoverPalette.color(fromHex: trip.coverColor) != nil
-    }
-    private var hasCustomImage: Bool { trip.coverKind == .custom }
-
-    private var leadingFlag: String {
-        TripRouteFlagResolver.flag(for: trip.origin, mode: trip.transportMode)
-    }
-    private var trailingFlag: String {
-        TripRouteFlagResolver.flag(
-            for: trip.dest,
-            mode: trip.transportMode,
-            fallbackCountry: trip.country,
-            fallbackFlag: trip.flag
-        )
-    }
-
-    private var leadingColor: Color {
-        if hasCustomImage, let sampledAmbilightColors { return sampledAmbilightColors.leading }
-        if hasCustomImage, let sampledImageColor { return sampledImageColor }
-        return trip.resolvedCoverColor
-    }
-    private var trailingColor: Color {
-        if hasCustomImage, let sampledAmbilightColors { return sampledAmbilightColors.trailing }
-        if hasCustomImage, let sampledImageColor { return sampledImageColor }
-        return trip.resolvedCoverColor
-    }
-
-    var body: some View {
-        GeometryReader { geo in
-            let cardWidth = max(180, geo.size.width - 140)
-            let cardHeight = max(120, geo.size.height - 260)
-            let cardCenterY = geo.size.height / 2 + 54
-            let topGlowY = cardCenterY - (cardHeight / 2) - 38
-
-            ZStack {
-                Ellipse()
-                    .fill(leadingColor.opacity(min(0.85, 0.28 * glowBoost)))
-                    .frame(width: cardWidth + 130, height: 190)
-                    .blur(radius: 48)
-                    .position(x: geo.size.width / 2 - 38, y: topGlowY)
-
-                Ellipse()
-                    .fill(trailingColor.opacity(min(0.85, 0.25 * glowBoost)))
-                    .frame(width: cardWidth + 130, height: 190)
-                    .blur(radius: 50)
-                    .position(x: geo.size.width / 2 + 38, y: topGlowY)
-
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(leadingColor.opacity(min(0.85, 0.30 * glowBoost)))
-                    .frame(width: cardWidth, height: cardHeight)
-                    .blur(radius: 28)
-                    .position(x: geo.size.width / 2 - 12, y: cardCenterY - 2)
-
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(trailingColor.opacity(min(0.85, 0.26 * glowBoost)))
-                    .frame(width: cardWidth, height: cardHeight)
-                    .blur(radius: 30)
-                    .position(x: geo.size.width / 2 + 12, y: cardCenterY - 2)
-
-                Ellipse()
-                    .fill(Color.white.opacity(0.07))
-                    .frame(width: cardWidth * 0.92, height: 92)
-                    .blur(radius: 24)
-                    .position(x: geo.size.width / 2, y: topGlowY + 10)
-            }
-            // Aplatit les 5 halos flous en UNE seule texture Metal rendue une fois.
-            // Pendant le scroll, iOS ne fait que repositionner cette texture au lieu de
-            // re-calculer 5 gros blurs par frame → supprime la saccade au scroll de l'accueil.
-            .drawingGroup()
-        }
-        .task(id: imageSampleKey) {
-            await refreshImageColor()
-        }
-    }
-
-    private var imageSampleKey: String {
-        let coverToken = trip.coverKind == .custom ? TripCoverImageStore.modificationToken(tripId: trip.id) : "none"
-        return "\(trip.id)|\(trip.coverKind.rawValue)|\(coverToken)|\(trip.photoCount)"
-    }
-
-    @MainActor
-    private func refreshImageColor() async {
-        let tripId = trip.id
-        guard !tripId.isEmpty else {
-            sampledImageColor = nil
-            sampledAmbilightColors = nil
-            galleryColor = nil
-            return
-        }
-
-        // 1. L'image de fond personnalisée est prioritaire pour que l'ambilight
-        // suive exactement le fond choisi dans la galerie.
-        if hasCustomImage {
-            let colors = await TripCoverImagePalette.ambilightColors(forTripId: tripId)
-            if tripId == trip.id {
-                sampledAmbilightColors = colors
-                sampledImageColor = colors?.combined
-                galleryColor = nil
-            }
-            return
-        }
-        if tripId == trip.id { sampledImageColor = nil; sampledAmbilightColors = nil }
-
-        if tripId == trip.id { galleryColor = nil }
-    }
-
-    private func ambientColor(for flag: String, fallbackHue: Double) -> Color {
-        TripAmbilightColor.color(for: flag, fallbackHue: fallbackHue)
-    }
 }
 
 /// Couleurs « ambilight » par drapeau (utilisé par Accueil + Voyages).
@@ -1624,7 +1314,6 @@ private struct StatTile<Content: View>: View {
                         .frame(width: 26, height: 26)
                     TIcon(glyph: glyph, size: 13, stroke: accent, strokeWidth: 1.8)
                 }
-                .shadow(color: accent.opacity(0.75), radius: 7, x: 0, y: 0)
             }
             content()
         }
@@ -1633,7 +1322,7 @@ private struct StatTile<Content: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 102, alignment: .topLeading)
         .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color.tSurface))
-        .tripnestBubbleChrome(radius: 20)
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.tBubbleBorder, lineWidth: 1))
         .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
@@ -1659,21 +1348,21 @@ struct HomeTabsInfoSheet: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
-                    Text("Petit rappel sur les onglets de Tripnest.")
+                    Text(L("Petit rappel sur les onglets de Tripnest."))
                         .font(.tText(14)).foregroundColor(.tTextMute)
-                    infoCard(title: "Accueil",  icon: .home,   description: "Vue d'ensemble de ton voyage en cours : statut, budget, spots, souvenirs et planning.")
-                    infoCard(title: "Voyages",  icon: .globe,  description: "Tous tes voyages planifiés ou réalisés. Crée, modifie, archive et invite des amis pour qu’ils puissent voir et gérer le voyage avec toi.")
-                    infoCard(title: "Spots",    icon: .spot,   description: "Tes lieux importants : restaurants, hôtels, activités… reliés à un voyage.")
-                    infoCard(title: "Budget",   icon: .wallet, description: "Suivi des dépenses du voyage sélectionné : catégories, total dépensé et budget restant.")
+                    infoCard(title: "Accueil",  icon: .home,   description: L("Vue d'ensemble de ton voyage en cours : statut, budget, spots, souvenirs et planning."))
+                    infoCard(title: "Voyages",  icon: .globe,  description: L("Tous tes voyages planifiés ou réalisés. Crée, modifie, archive et invite des amis pour qu’ils puissent voir et gérer le voyage avec toi."))
+                    infoCard(title: "Spots",    icon: .spot,   description: L("Tes lieux importants : restaurants, hôtels, activités… reliés à un voyage."))
+                    infoCard(title: "Budget",   icon: .wallet, description: L("Suivi des dépenses du voyage sélectionné : catégories, total dépensé et budget restant."))
                 }
                 .padding(18)
             }
             .background(Color.tBg0.ignoresSafeArea())
-            .navigationTitle("Comment fonctionne Tripnest ?")
+            .navigationTitle(L("Comment fonctionne Tripnest ?"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Fermer") { dismiss() }.fontWeight(.semibold)
+                    Button(L("Fermer")) { dismiss() }.fontWeight(.semibold)
                 }
             }
         }
@@ -1698,20 +1387,6 @@ struct HomeTabsInfoSheet: View {
 
 private enum HomeTile: String, CaseIterable, Hashable {
     case budget, spots, memories, plan
-}
-
-private struct HomeHeroFrameKey: PreferenceKey {
-    static var defaultValue: CGRect = .zero
-    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
-        value = nextValue()
-    }
-}
-
-private struct TileFrameKey: PreferenceKey {
-    static var defaultValue: [HomeTile: CGRect] = [:]
-    static func reduce(value: inout [HomeTile: CGRect], nextValue: () -> [HomeTile: CGRect]) {
-        value.merge(nextValue()) { $1 }
-    }
 }
 
 // MARK: - Section ordering

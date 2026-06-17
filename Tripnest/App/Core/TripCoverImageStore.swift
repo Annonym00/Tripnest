@@ -21,9 +21,16 @@ struct PendingCoverCrop: Identifiable {
     let image: UIImage
 }
 
+extension Notification.Name {
+    static let tripCoverImageDidChange = Notification.Name("tripnest.tripCoverImageDidChange")
+}
+
 enum TripCoverImageStore {
     private static let imageCacheQueue = DispatchQueue(label: "tripnest.coverImage.cache")
     nonisolated(unsafe) private static var imageCache: [String: UIImage] = [:]
+    /// Version de couverture par voyage — bumpée à chaque save/delete pour invalider
+    /// les `.task(id:)` sans toucher au disque. Voir `modificationToken`.
+    nonisolated(unsafe) private static var coverVersions: [String: Int] = [:]
 
     private static var directoryURL: URL {
         let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -38,13 +45,24 @@ enum TripCoverImageStore {
         directoryURL.appendingPathComponent("\(tripId).jpg")
     }
 
+    /// Jeton d'invalidation pour les `.task(id:)` des couvertures.
+    ///
+    /// Auparavant ce jeton faisait un `attributesOfItem` (stat disque SYNCHRONE) à
+    /// chaque appel. Or SwiftUI réévalue l'`id` d'un `.task(id:)` à chaque mise à jour
+    /// de vue, sur le main thread → au scroll de la liste des voyages, chaque cellule
+    /// à couverture custom déclenchait un appel disque par frame = micro-freezes.
+    ///
+    /// On utilise désormais un compteur en mémoire, incrémenté uniquement quand la
+    /// couverture change réellement (save/delete). Lecture = simple accès dictionnaire,
+    /// zéro I/O. Le compteur repart de 0 à chaque lancement, mais le `.task` se relance
+    /// de toute façon à l'apparition de la vue, donc l'image est bien (re)chargée.
     static func modificationToken(tripId: String) -> String {
-        let url = fileURL(tripId: tripId)
-        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
-              let modifiedAt = attributes[.modificationDate] as? Date else {
-            return "missing"
-        }
-        return String(modifiedAt.timeIntervalSince1970)
+        let version = imageCacheQueue.sync { coverVersions[tripId] ?? 0 }
+        return String(version)
+    }
+
+    private static func bumpCoverVersion(tripId: String) {
+        imageCacheQueue.sync { coverVersions[tripId, default: 0] += 1 }
     }
 
     @discardableResult
@@ -54,6 +72,8 @@ enum TripCoverImageStore {
         do {
             try data.write(to: fileURL(tripId: tripId), options: .atomic)
             storeCachedImage(normalized, tripId: tripId)
+            bumpCoverVersion(tripId: tripId)
+            notifyCoverChanged(tripId: tripId)
             return true
         } catch {
             removeCachedImage(tripId: tripId)
@@ -67,14 +87,20 @@ enum TripCoverImageStore {
         guard FileManager.default.fileExists(atPath: url.path),
               let data = try? Data(contentsOf: url),
               let image = UIImage(data: data) else { return nil }
-        storeCachedImage(image, tripId: tripId)
-        return image
+        // Force le décodage MAINTENANT (sur le thread appelant, généralement background)
+        // plutôt qu'au premier dessin sur le main thread → supprime le hitch à
+        // l'apparition d'une couverture. L'image décodée est mise en cache.
+        let decoded = image.preparingForDisplay() ?? image
+        storeCachedImage(decoded, tripId: tripId)
+        return decoded
     }
 
     static func delete(tripId: String) {
         removeCachedImage(tripId: tripId)
+        bumpCoverVersion(tripId: tripId)
         let url = fileURL(tripId: tripId)
         try? FileManager.default.removeItem(at: url)
+        notifyCoverChanged(tripId: tripId)
     }
 
     /// Recadre au format carte puis redimensionne pour un rendu identique partout.
@@ -138,6 +164,16 @@ enum TripCoverImageStore {
 
     private static func removeCachedImage(tripId: String) {
         imageCacheQueue.sync { _ = imageCache.removeValue(forKey: tripId) }
+    }
+
+    private static func notifyCoverChanged(tripId: String) {
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(
+                name: .tripCoverImageDidChange,
+                object: nil,
+                userInfo: ["tripId": tripId]
+            )
+        }
     }
 }
 
@@ -351,7 +387,8 @@ struct TripCoverAmbilightColors {
 // MARK: - Recadrage couverture
 
 struct TripCoverCropSheet: View {
-    let sourceImage: UIImage
+    private let sourceImage: UIImage
+    private let previewImage: UIImage
     let onConfirm: (UIImage) -> Void
     let onCancel: () -> Void
 
@@ -361,12 +398,18 @@ struct TripCoverCropSheet: View {
     @State private var lastOffset: CGSize = .zero
     @State private var cropSizePoints: CGSize = .zero
 
-    private var oriented: UIImage { sourceImage.trip_coverOrientedUp() }
+    init(sourceImage: UIImage, onConfirm: @escaping (UIImage) -> Void, onCancel: @escaping () -> Void) {
+        let oriented = sourceImage.trip_coverOrientedUp()
+        self.sourceImage = oriented
+        self.previewImage = oriented.trip_coverDownscaled(maxDimension: 1400).preparingForDisplay() ?? oriented
+        self.onConfirm = onConfirm
+        self.onCancel = onCancel
+    }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 14) {
-                Text("Pince pour zoomer, glisse pour repositionner.")
+                Text(L("Pince pour zoomer, glisse pour repositionner."))
                     .font(.tText(12))
                     .foregroundColor(.tTextMute)
                     .multilineTextAlignment(.center)
@@ -385,7 +428,7 @@ struct TripCoverCropSheet: View {
                 }
 
                 HStack(spacing: 12) {
-                    Button("Annuler", action: onCancel)
+                    Button(L("Annuler"), action: onCancel)
                         .font(.tText(15, weight: .semibold))
                         .foregroundColor(.tTextMute)
                         .frame(maxWidth: .infinity)
@@ -393,14 +436,14 @@ struct TripCoverCropSheet: View {
 
                     Button {
                         let exported = TripCoverImageStore.exportCroppedImage(
-                            oriented,
+                            sourceImage,
                             cropSizePoints: cropSizePoints,
                             userScale: userScale,
                             offset: offset
                         )
                         onConfirm(exported)
                     } label: {
-                        Text("Utiliser")
+                        Text(L("Utiliser"))
                             .font(.tText(15, weight: .bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -415,15 +458,15 @@ struct TripCoverCropSheet: View {
                 .padding(.bottom, 12)
             }
             .background(Color.tBg0.ignoresSafeArea())
-            .navigationTitle("Recadrer la couverture")
+            .navigationTitle(L("Recadrer la couverture"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.tBg0, for: .navigationBar)
         }
     }
 
     private func cropEditor(cropSize: CGSize) -> some View {
-        let iw = oriented.size.width
-        let ih = oriented.size.height
+        let iw = previewImage.size.width
+        let ih = previewImage.size.height
         let base = max(cropSize.width / iw, cropSize.height / ih)
         let total = base * userScale
         let dw = iw * total
@@ -431,7 +474,7 @@ struct TripCoverCropSheet: View {
         let clamped = clampedOffset(offset, crop: cropSize, displayW: dw, displayH: dh)
 
         return ZStack {
-            Image(uiImage: oriented)
+            Image(uiImage: previewImage)
                 .resizable()
                 .frame(width: dw, height: dh)
                 .offset(clamped)
@@ -443,7 +486,7 @@ struct TripCoverCropSheet: View {
                 .frame(width: cropSize.width, height: cropSize.height)
 
             VStack {
-                Text("Format carte")
+                Text(L("Format carte"))
                     .font(.tText(10, weight: .bold))
                     .tracking(1)
                     .foregroundColor(.white.opacity(0.9))
@@ -545,6 +588,16 @@ private extension UIImage {
         return UIGraphicsImageRenderer(size: target, format: format).image { _ in
             draw(in: CGRect(origin: .zero, size: target))
         }
+    }
+
+    func trip_coverDownscaled(maxDimension: CGFloat) -> UIImage {
+        let w = size.width
+        let h = size.height
+        guard w > 0, h > 0, maxDimension > 0 else { return self }
+        let longest = max(w, h)
+        guard longest > maxDimension else { return self }
+        let ratio = maxDimension / longest
+        return trip_coverResized(to: CGSize(width: w * ratio, height: h * ratio))
     }
 }
 
@@ -668,8 +721,10 @@ enum TripPhotoStore {
     static func load(tripId: String, index: Int) -> UIImage? {
         let url = fileURL(tripId: tripId, index: index)
         guard FileManager.default.fileExists(atPath: url.path),
-              let data = try? Data(contentsOf: url) else { return nil }
-        return UIImage(data: data)
+              let data = try? Data(contentsOf: url),
+              let image = UIImage(data: data) else { return nil }
+        // Décodage forcé hors dessin (cf. couvertures) — évite le hitch d'affichage.
+        return image.preparingForDisplay() ?? image
     }
 
     static func loadAll(tripId: String, count: Int) -> [UIImage] {
@@ -739,8 +794,10 @@ enum SpotImageStore {
     static func load(spotId: String, index: Int) -> UIImage? {
         let url = fileURL(spotId: spotId, index: index)
         guard FileManager.default.fileExists(atPath: url.path),
-              let data = try? Data(contentsOf: url) else { return nil }
-        return UIImage(data: data)
+              let data = try? Data(contentsOf: url),
+              let image = UIImage(data: data) else { return nil }
+        // Décodage forcé hors dessin (cf. couvertures) — évite le hitch d'affichage.
+        return image.preparingForDisplay() ?? image
     }
 
     static func loadAll(spotId: String, count: Int) -> [UIImage] {
@@ -827,7 +884,7 @@ struct ImageCropSheet: View {
     var aspectRatio: CGFloat = 1          // largeur / hauteur de la zone de recadrage
     var isCircle: Bool = false            // aperçu masqué en cercle (photo de profil)
     var title: String = "Recadrer"
-    var hint: String = "Pince pour zoomer, glisse pour repositionner."
+    var hint: String = L("Pince pour zoomer, glisse pour repositionner.")
     var badge: String? = nil             // petit libellé en haut de la zone
     var outputMaxPixel: CGFloat = 1024
     let onConfirm: (UIImage) -> Void
@@ -865,7 +922,7 @@ struct ImageCropSheet: View {
                 }
 
                 HStack(spacing: 12) {
-                    Button("Annuler", action: onCancel)
+                    Button(L("Annuler"), action: onCancel)
                         .font(.tText(15, weight: .semibold))
                         .foregroundColor(.tTextMute)
                         .frame(maxWidth: .infinity)
@@ -881,7 +938,7 @@ struct ImageCropSheet: View {
                         )
                         onConfirm(exported)
                     } label: {
-                        Text("Utiliser")
+                        Text(L("Utiliser"))
                             .font(.tText(15, weight: .bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)

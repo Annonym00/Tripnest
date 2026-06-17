@@ -46,28 +46,28 @@ struct AddExpenseScreen: View {
 
                     ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 0) {
-                            sectionLabel("CATÉGORIE").padding(.bottom, 10)
+                            sectionLabel(L("CATÉGORIE")).padding(.bottom, 10)
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
                                 ForEach(cats, id: \.id) { c in
                                     catButton(c)
                                 }
                             }
 
-                            sectionLabel("STATUT").padding(.top, 22).padding(.bottom, 10)
+                            sectionLabel(L("STATUT")).padding(.top, 22).padding(.bottom, 10)
                             statusCheckboxes
 
-                            sectionLabel("DÉTAILS").padding(.top, 22).padding(.bottom, 10)
+                            sectionLabel(L("DÉTAILS")).padding(.top, 22).padding(.bottom, 10)
                             TCard(padding: 4) {
                                 VStack(spacing: 0) {
-                                    editableRow("Titre", text: $label, placeholder: "Ex. déjeuner, hôtel, taxi")
+                                    editableRow("Titre", text: $label, placeholder: L("Ex. déjeuner, hôtel, taxi"))
                                     divider
-                                    FormField(label: "Lieu", text: $location, placeholder: "Ex. Le Marais, gare…")
+                                    FormField(label: "Lieu", text: $location, placeholder: L("Ex. Le Marais, gare…"))
                                         .padding(.horizontal, 10)
                                         .padding(.vertical, 6)
                                     divider
                                     dateRow
                                     divider
-                                    editableRow("Payé avec", text: $paidWith, placeholder: "Carte, espèces…")
+                                    editableRow(L("Payé avec"), text: $paidWith, placeholder: L("Carte, espèces…"))
                                 }
                             }
 
@@ -75,14 +75,14 @@ struct AddExpenseScreen: View {
 
                             ratingSection.padding(.top, 22)
 
-                            CTA(label: isEditing ? "Enregistrer les modifications" : "Enregistrer la dépense", action: save)
+                            CTA(label: isEditing ? L("Enregistrer les modifications") : L("Enregistrer la dépense"), action: save)
                                 .opacity(amountValue > 0 ? 1 : 0.45)
                                 .disabled(amountValue <= 0)
                                 .padding(.top, 22)
 
                             if isEditing {
                                 Button(role: .destructive, action: { showDeleteAlert = true }) {
-                                    Text("Supprimer cette dépense")
+                                    Text(L("Supprimer cette dépense"))
                                         .font(.tText(14, weight: .semibold))
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 14)
@@ -99,9 +99,9 @@ struct AddExpenseScreen: View {
             }
         }
         .onAppear { loadIfNeeded() }
-        .alert("Supprimer cette dépense ?", isPresented: $showDeleteAlert) {
-            Button("Annuler", role: .cancel) {}
-            Button("Supprimer", role: .destructive) {
+        .alert(L("Supprimer cette dépense ?"), isPresented: $showDeleteAlert) {
+            Button(L("Annuler"), role: .cancel) {}
+            Button(L("Supprimer"), role: .destructive) {
                 if let id = expenseId {
                     store.deleteExpense(id: id)
                     Haptics.success()
@@ -109,7 +109,7 @@ struct AddExpenseScreen: View {
                 }
             }
         } message: {
-            Text("Cette action est définitive.")
+            Text(L("Cette action est définitive."))
         }
         .sheet(isPresented: $showCurrencyPicker) {
             CurrencyPickerSheet(selected: $currency, allCurrencies: CurrencyConverterSheet.allCurrencies)
@@ -120,9 +120,9 @@ struct AddExpenseScreen: View {
         HStack {
             Button(action: onClose) { IconBtn(glyph: .close) }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Fermer")
+                .accessibilityLabel(L("Fermer"))
             Spacer()
-            Text(isEditing ? "Modifier la dépense" : "Nouvelle dépense")
+            Text(isEditing ? L("Modifier la dépense") : L("Nouvelle dépense"))
                 .font(.tText(16, weight: .bold))
             Spacer()
             Color.clear.frame(width: 40, height: 40)
@@ -136,14 +136,14 @@ struct AddExpenseScreen: View {
             TCard(padding: 22) {
                 VStack(spacing: 12) {
                     TIcon(glyph: .wallet, size: 36, stroke: .tAccent2)
-                    Text("Crée d'abord un voyage")
+                    Text(L("Crée d'abord un voyage"))
                         .font(.tDisplay(24))
                         .multilineTextAlignment(.center)
-                    Text("Une dépense doit être rattachée à un voyage réel.")
+                    Text(L("Une dépense doit être rattachée à un voyage réel."))
                         .font(.tText(14))
                         .foregroundColor(.tTextMute)
                         .multilineTextAlignment(.center)
-                    CTA(label: "Retour", action: onClose)
+                    CTA(label: L("Revenir"), action: onClose)
                         .padding(.top, 6)
                 }
                 .frame(maxWidth: .infinity)
@@ -157,8 +157,8 @@ struct AddExpenseScreen: View {
         TCard(padding: 4) {
             VStack(spacing: 0) {
                 ExpenseStatusCheckboxRow(
-                    title: "Dépense à venir",
-                    subtitle: "Prévue, pas encore payée",
+                    title: L("Dépense à venir"),
+                    subtitle: L("Prévue, pas encore payée"),
                     isChecked: status == .upcoming,
                     tint: .tGold
                 ) {
@@ -167,8 +167,8 @@ struct AddExpenseScreen: View {
                 }
                 Divider().background(Color.tBorder).padding(.horizontal, 14)
                 ExpenseStatusCheckboxRow(
-                    title: "Dépense effectuée",
-                    subtitle: "Déjà payée, compte dans le budget",
+                    title: L("Dépense effectuée"),
+                    subtitle: L("Déjà payée, compte dans le budget"),
                     isChecked: status == .completed,
                     tint: .tMint
                 ) {
@@ -181,7 +181,7 @@ struct AddExpenseScreen: View {
 
     private var dateRow: some View {
         HStack {
-            Text("Date").font(.tText(13)).foregroundColor(.tTextMute)
+            Text(L("Date")).font(.tText(13)).foregroundColor(.tTextMute)
             Spacer()
             DatePicker("", selection: $expenseDate, displayedComponents: [.date, .hourAndMinute])
                 .labelsHidden()
@@ -193,19 +193,19 @@ struct AddExpenseScreen: View {
     private var descriptionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("DESCRIPTION")
+                Text(L("DESCRIPTION"))
                     .font(.tText(12, weight: .bold))
                     .tracking(1.5)
                     .foregroundColor(.tTextMute)
                 Spacer()
-                Text("\(descriptionLineCount)/\(maxDescriptionLines) lignes")
+                Text(L("%d/%d lignes", descriptionLineCount, maxDescriptionLines))
                     .font(.tText(11))
                     .foregroundColor(descriptionLineCount >= maxDescriptionLines ? Color(hex: 0xff3b30) : .tTextMute)
             }
 
             ZStack(alignment: .topLeading) {
                 if notes.isEmpty {
-                    Text("Détails, reçu, anecdote…")
+                    Text(L("Détails, reçu, anecdote…"))
                         .font(.tText(15))
                         .foregroundColor(.tTextMute.opacity(0.5))
                         .padding(.top, 14)
@@ -239,7 +239,7 @@ struct AddExpenseScreen: View {
         TCard(padding: 4) {
             Stepper(value: $rating, in: 1...5, step: 0.5) {
                 HStack {
-                    Text("Note").font(.tText(14, weight: .semibold))
+                    Text(L("Note")).font(.tText(14, weight: .semibold))
                     Spacer()
                     HStack(spacing: 4) {
                         let sc = starColor(rating)
@@ -256,7 +256,7 @@ struct AddExpenseScreen: View {
 
     private var amountSection: some View {
         VStack(spacing: 8) {
-            Text("MONTANT").font(.tText(11, weight: .bold)).tracking(1.5).foregroundColor(.tTextMute)
+            Text(L("MONTANT")).font(.tText(11, weight: .bold)).tracking(1.5).foregroundColor(.tTextMute)
             HStack(alignment: .lastTextBaseline, spacing: 4) {
                 TextField("0", text: $amountText)
                     .keyboardType(.numberPad)

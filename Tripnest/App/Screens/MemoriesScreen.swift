@@ -25,8 +25,8 @@ struct MemoriesScreen: View {
             VStack(spacing: 0) {
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("SOUVENIRS").font(.tText(11, weight: .bold)).tracking(1.5).foregroundColor(.tTextMute)
-                    Text("Mon carnet de voyages").font(.tDisplay(26)).tracking(-0.6)
+                    Text(L("SOUVENIRS")).font(.tText(11, weight: .bold)).tracking(1.5).foregroundColor(.tTextMute)
+                    Text(L("Mon carnet de voyages")).font(.tDisplay(26)).tracking(-0.6)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 22).padding(.top, 6).padding(.bottom, 14)
@@ -43,7 +43,7 @@ struct MemoriesScreen: View {
                         }
                     }
                     Spacer()
-                    Text("Plus récents ⌄").font(.tText(12, weight: .semibold)).foregroundColor(.tTextMute)
+                    Text(L("Plus récents ⌄")).font(.tText(12, weight: .semibold)).foregroundColor(.tTextMute)
                 }
                 .padding(.horizontal, 18).padding(.bottom, 4)
 
@@ -82,7 +82,7 @@ struct MemoriesScreen: View {
             statItem("Pays", countries > 0 ? "\(countries)" : "—", .tAccent2)
             statItem("Voyages", "\(store.pastTrips.count)", .tRose)
             statItem("Jours", totalDays > 0 ? "\(totalDays)" : "—", .tGold)
-            statItem("Dépensé", totalSpent > 0 ? "\(totalSpent)\(defaultCurrency.currencySymbol)" : "—", .tBlue)
+            statItem(L("Dépensé"), totalSpent > 0 ? "\(totalSpent)\(defaultCurrency.currencySymbol)" : "—", .tBlue)
         }
     }
 
@@ -154,8 +154,8 @@ struct MemoriesScreen: View {
         TCard(padding: 22) {
             VStack(spacing: 12) {
                 TIcon(glyph: .star, size: 36, stroke: .tGold)
-                Text("Aucun souvenir pour le moment").font(.tDisplay(23))
-                Text("Tes voyages terminés apparaîtront ici avec leurs vraies photos et notes.")
+                Text(L("Aucun souvenir pour le moment")).font(.tDisplay(23))
+                Text(L("Tes voyages terminés apparaîtront ici avec leurs vraies photos et notes."))
                     .font(.tText(14))
                     .foregroundColor(.tTextMute)
                     .multilineTextAlignment(.center)

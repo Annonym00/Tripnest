@@ -9,7 +9,7 @@ extension View {
         toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                Button("OK") {
+                Button(L("OK")) {
                     UIApplication.shared.sendAction(
                         #selector(UIResponder.resignFirstResponder),
                         to: nil, from: nil, for: nil
@@ -25,165 +25,54 @@ extension View {
 // MARK: - Background gradient & motif ──────────────────────────────────────
 
 struct ScreenBackground: View {
-    var body: some View {
-        ZStack {
-            Color.tBg0
-            RadialGradient(
-                gradient: Gradient(stops: [
-                    .init(color: .tBg2, location: 0.0),
-                    .init(color: .tBg1, location: 0.35),
-                    .init(color: .tBg0, location: 1.0),
-                ]),
-                center: UnitPoint(x: 0.5, y: -0.1),
-                startRadius: 0, endRadius: 600
-            )
-        }
-    }
-}
-
-// Flying paper-plane background — port du composant RN PaperPlanesBackground.tsx
-// Rendu via SF Symbol "paperplane.fill" (équivalent iOS d'Ionicons "paper-plane"),
-// dessiné dans un Canvas pour les perfs (30 fps, allocations minimales).
-enum PaperPlaneVariant { case dark, light }
-
-private struct PlaneFlightConfig {
-    let sx, sy, ex, ey: CGFloat
-    let dur: Double
-    let phase: Double
-    let size: CGFloat
-    let opacity: Double
-    let w1Amp: CGFloat; let w1Freq: Double
-    let w2Amp: CGFloat; let w2Freq: Double
-    let darkColor: Color
-    let lightColor: Color
-}
-
-// Tous les avions partagent la même couleur violette.
-private let planePurple      = Color(red: 138/255, green: 92/255, blue: 252/255) // 0x8A5CFC
-private let planePurpleLight = Color(red: 90/255,  green: 55/255, blue: 130/255).opacity(0.38)
-
-// Ombre discrète : l'opacité du RN (0.3) noyait la couleur sur des glyphes <24pt.
-private let planeShadowColor = Color.tAccent2.opacity(0.12)
-
-private let allPlaneConfigs: [PlaneFlightConfig] = [
-    .init(sx:-0.15,sy:0.12,ex:1.15,ey:0.08, dur:18,phase:0.00, size:10, opacity:0.78, w1Amp:20,w1Freq:0.6, w2Amp:0, w2Freq:0,  darkColor: planePurple, lightColor: planePurpleLight),
-    .init(sx:-0.15,sy:0.55,ex:1.15,ey:0.53, dur:24,phase:0.30, size:13, opacity:0.62, w1Amp:26,w1Freq:0.5, w2Amp:0, w2Freq:0,  darkColor: planePurple, lightColor: planePurpleLight),
-    .init(sx:-0.15,sy:0.30,ex:1.15,ey:0.28, dur:15,phase:0.62, size: 9, opacity:0.72, w1Amp:14,w1Freq:0.9, w2Amp:6, w2Freq:3.5,darkColor: planePurple, lightColor: planePurpleLight),
-    .init(sx:1.15,sy:0.22,ex:-0.15,ey:0.18, dur:21,phase:0.15, size:11, opacity:0.68, w1Amp:18,w1Freq:0.7, w2Amp:0, w2Freq:0,  darkColor: planePurple, lightColor: planePurpleLight),
-    .init(sx:1.15,sy:0.78,ex:-0.15,ey:0.74, dur:17,phase:0.55, size:10, opacity:0.74, w1Amp:16,w1Freq:0.8, w2Amp:6, w2Freq:3.2,darkColor: planePurple, lightColor: planePurpleLight),
-    .init(sx:0.25,sy:-0.15,ex:0.32,ey:1.15, dur:20,phase:0.08, size:11, opacity:0.66, w1Amp:18,w1Freq:0.7, w2Amp:0, w2Freq:0,  darkColor: planePurple, lightColor: planePurpleLight),
-    .init(sx:0.72,sy:1.15,ex:0.65,ey:-0.15, dur:22,phase:0.38, size: 9, opacity:0.70, w1Amp:14,w1Freq:0.7, w2Amp:5, w2Freq:3.0,darkColor: planePurple, lightColor: planePurpleLight),
-    .init(sx:-0.12,sy:0.08,ex:1.12,ey:0.62, dur:26,phase:0.20, size:12, opacity:0.66, w1Amp:18,w1Freq:0.6, w2Amp:0, w2Freq:0,  darkColor: planePurple, lightColor: planePurpleLight),
-]
-
-// SF Symbol "paperplane.fill" pointe naturellement vers le coin haut-droit (~45°).
-// On compense pour que le nez s'aligne sur la tangente de trajectoire.
-private let planeIconOrientationOffset: CGFloat = .pi / 4
-
-struct FlyingPlanesLayer: View {
-    /// Si nil, la variante suit l'apparence courante (sombre/clair).
-    var variant: PaperPlaneVariant? = nil
-    var dimmed: Bool = false
-    var active: Bool = true
-
-    @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.tripnestScreenActive) private var screenActive
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pulse = false
 
-    private var effectiveVariant: PaperPlaneVariant {
-        variant ?? (colorScheme == .light ? .light : .dark)
-    }
-
-    var body: some View {
-        if !active {
-            EmptyView()
-        } else {
-            // Pausé si : app en background, OU onglet invisible (tripnestScreenActive = false).
-            // Résultat : 1 seul Canvas actif à la fois au lieu de 4–6 en parallèle.
-            let paused = scenePhase != .active || !screenActive
-            // 30 fps suffit : les avions dérivent sur 15–26 s, donc le mouvement reste
-            // parfaitement lisse à l'œil tout en divisant par deux le coût de rendu.
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: paused)) { tl in
-                Canvas(opaque: false, colorMode: .nonLinear, rendersAsynchronously: false) { ctx, canvasSize in
-                    let t = tl.date.timeIntervalSinceReferenceDate
-                    let baseTransform = ctx.transform
-
-                    for (index, cfg) in allPlaneConfigs.enumerated() {
-                        let phase = (t / cfg.dur + cfg.phase).truncatingRemainder(dividingBy: 1)
-
-                        let sx = canvasSize.width  * cfg.sx, sy = canvasSize.height * cfg.sy
-                        let ex = canvasSize.width  * cfg.ex, ey = canvasSize.height * cfg.ey
-                        let dx = ex - sx, dy = ey - sy
-                        let fwd = max(1, sqrt(dx * dx + dy * dy))
-                        let px = -dy / fwd, py = dx / fwd
-
-                        let w = cfg.w1Amp * CGFloat(sin(phase * .pi * 2 * cfg.w1Freq))
-                              + cfg.w2Amp * CGFloat(sin(phase * .pi * 2 * cfg.w2Freq))
-                        let x = sx + dx * CGFloat(phase) + px * w
-                        let y = sy + dy * CGFloat(phase) + py * w
-
-                        let ph2 = (phase + 0.015).truncatingRemainder(dividingBy: 1)
-                        let w2  = cfg.w1Amp * CGFloat(sin(ph2 * .pi * 2 * cfg.w1Freq))
-                                + cfg.w2Amp * CGFloat(sin(ph2 * .pi * 2 * cfg.w2Freq))
-                        let nx  = sx + dx * CGFloat(ph2) + px * w2
-                        let ny  = sy + dy * CGFloat(ph2) + py * w2
-                        let angle = CGFloat(atan2(Double(ny - y), Double(nx - x))) + planeIconOrientationOffset
-
-                        guard let symbol = ctx.resolveSymbol(id: index) else { continue }
-
-                        ctx.transform = baseTransform
-                        ctx.translateBy(x: x, y: y)
-                        ctx.rotate(by: .radians(angle))
-                        ctx.opacity = cfg.opacity * (dimmed ? 0.22 : 1.0)
-                        ctx.draw(symbol, at: .zero, anchor: .center)
-                    }
-
-                    ctx.transform = baseTransform
-                    ctx.opacity = 1
-                } symbols: {
-                    ForEach(Array(allPlaneConfigs.enumerated()), id: \.offset) { index, cfg in
-                        PaperPlaneGlyph(
-                            size: cfg.size,
-                            color: effectiveVariant == .light ? cfg.lightColor : cfg.darkColor
-                        )
-                        .tag(index)
-                    }
-                }
-            }
-            .allowsHitTesting(false)
-        }
-    }
-}
-
-private struct PaperPlaneGlyph: View {
-    let size: CGFloat
-    let color: Color
-    var body: some View {
-        Image(systemName: "paperplane.fill")
-            .resizable()
-            .scaledToFit()
-            .frame(width: size, height: size)
-            .foregroundStyle(color)
-            // Effet lumineux baked une seule fois dans le bitmap du symbol (zéro coût par frame).
-            // Halo interne serré + bloom extérieur diffus → lueur violette néon.
-            .shadow(color: planePurple.opacity(0.95), radius: size * 0.55, x: 0, y: 0)
-            .shadow(color: planePurple.opacity(0.40), radius: size * 1.40, x: 0, y: 0)
-    }
-}
-
-/// Avion en papier statique — partage le même glyphe que la couche animée.
-struct PaperPlaneSilhouette: View {
-    var fill: Color = .tAccent2
     var body: some View {
         GeometryReader { geo in
-            let s = min(geo.size.width, geo.size.height)
-            Image(systemName: "paperplane.fill")
-                .resizable()
-                .scaledToFit()
-                .frame(width: s, height: s)
-                .foregroundStyle(fill)
-                .shadow(color: planeShadowColor, radius: 3, x: 0, y: 1)
-                .position(x: geo.size.width / 2, y: geo.size.height / 2)
+            let w = geo.size.width
+            let h = geo.size.height
+            let glow = colorScheme == .light ? 0.24 : 1.0
+            let pulseScale = pulse && !reduceMotion ? 1.065 : 1.0
+            let pulseGlow = pulse && !reduceMotion ? 1.14 : 0.88
+
+            ZStack {
+                Color.tBg0
+                RadialGradient(
+                    gradient: Gradient(stops: [
+                        .init(color: Color(hex: 0x321463), location: 0.0),
+                        .init(color: Color(hex: 0x241044), location: 0.38),
+                        .init(color: .tBg0, location: 1.0),
+                    ]),
+                    center: UnitPoint(x: 0.5, y: -0.1),
+                    startRadius: 0, endRadius: 680
+                )
+                Ellipse()
+                    .fill(Color(hex: 0xb35cff).opacity(0.44 * glow * pulseGlow))
+                    .frame(width: w * 1.08, height: h * 0.48)
+                    .blur(radius: 84)
+                    .scaleEffect(pulseScale)
+                    .position(x: w * 0.14, y: h * 0.08)
+                Ellipse()
+                    .fill(Color(hex: 0xff3fb4).opacity(0.35 * glow * pulseGlow))
+                    .frame(width: w * 1.04, height: h * 0.46)
+                    .blur(radius: 90)
+                    .scaleEffect(pulseScale)
+                    .position(x: w * 0.88, y: h * 0.86)
+                Ellipse()
+                    .fill(Color(hex: 0x36d7ff).opacity(0.15 * glow * pulseGlow))
+                    .frame(width: w * 0.78, height: h * 0.36)
+                    .blur(radius: 88)
+                    .scaleEffect(pulse && !reduceMotion ? 1.04 : 1.0)
+                    .position(x: w * 0.96, y: h * 0.20)
+            }
+        }
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 1.45).repeatForever(autoreverses: true)) {
+                pulse = true
+            }
         }
     }
 }
@@ -205,7 +94,6 @@ struct ScreenShell<Content: View>: View {
             } else {
                 ZStack {
                     ScreenBackground().ignoresSafeArea()
-                    FlyingPlanesLayer().ignoresSafeArea()
                     content()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .opacity(appeared || skipShellMotion ? 1 : 0.94)
@@ -240,16 +128,7 @@ enum TripnestAnimation {
 
 enum OnboardingScreenTransition {
     static func push(forward: Bool) -> AnyTransition {
-        .asymmetric(
-            insertion: .modifier(
-                active: PageMotionModifier(offsetX: forward ? 18 : -18, opacity: 0),
-                identity: PageMotionModifier()
-            ),
-            removal: .modifier(
-                active: PageMotionModifier(offsetX: forward ? -10 : 10, opacity: 0),
-                identity: PageMotionModifier()
-            )
-        )
+        .identity
     }
 }
 
@@ -267,16 +146,7 @@ private struct PageMotionModifier: ViewModifier {
 
 enum TripnestPageTransition {
     static func horizontal(forward: Bool) -> AnyTransition {
-        .asymmetric(
-            insertion: .modifier(
-                active: PageMotionModifier(offsetX: forward ? 10 : -10, opacity: 0),
-                identity: PageMotionModifier()
-            ),
-            removal: .modifier(
-                active: PageMotionModifier(offsetX: forward ? -6 : 6, opacity: 0),
-                identity: PageMotionModifier()
-            )
-        )
+        .identity
     }
 
     static var tab: AnyTransition {
@@ -284,16 +154,7 @@ enum TripnestPageTransition {
     }
 
     static var modal: AnyTransition {
-        .asymmetric(
-            insertion: .modifier(
-                active: PageMotionModifier(offsetY: 16, opacity: 0),
-                identity: PageMotionModifier()
-            ),
-            removal: .modifier(
-                active: PageMotionModifier(offsetY: 10, opacity: 0),
-                identity: PageMotionModifier()
-            )
-        )
+        .identity
     }
 }
 
@@ -310,7 +171,7 @@ struct TripDoneStatusControl: View {
     var style: TripDoneStatusStyle = .card
     var onChange: (Bool) -> Void
 
-    private var label: String { isDone ? "Voyage fait" : "En cours" }
+    private var label: String { isDone ? L("Voyage fait") : "En cours" }
     private var accent: Color { isDone ? .tGold : .tMint }
 
     var body: some View {
@@ -331,8 +192,8 @@ struct TripDoneStatusControl: View {
             .overlay(overlay)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(isDone ? "Voyage terminé" : "Voyage en cours")
-        .accessibilityValue(isDone ? "Coché" : "Non coché")
+        .accessibilityLabel(isDone ? L("Voyage terminé") : L("Voyage en cours"))
+        .accessibilityValue(isDone ? L("Coché") : L("Non coché"))
     }
 
     private var fontSize: CGFloat {
@@ -426,8 +287,7 @@ private struct TripnestUsesExternalChromeKey: EnvironmentKey {
     static let defaultValue = false
 }
 
-// Signale aux FlyingPlanesLayer que l'écran courant est actif.
-// Les onglets inactifs mettent cette clé à false → leur TimelineView est pausé.
+// Signale aux vues d'arrière-plan coûteuses que l'écran courant est actif.
 private struct TripnestScreenActiveKey: EnvironmentKey {
     static let defaultValue = true
 }
@@ -475,9 +335,16 @@ struct TCard<Content: View>: View {
     var body: some View {
         content()
             .padding(padding)
+            // L'ombre est portée par la SEULE forme de fond opaque, pas par toute la
+            // carte (contenu + texte inclus). SwiftUI ne rasterise plus que la
+            // silhouette du rectangle arrondi pour calculer le flou → ombre identique
+            // à l'œil mais bien plus légère pendant le scroll.
             .background(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .fill(bg)
+                    .shadow(color: Color.tAccent2.opacity(0.06), radius: 8, x: 0, y: 0)
+                    .shadow(color: glow ? Color(hex: 0x0f0523, opacity: 0.4) : .clear,
+                            radius: glow ? 18 : 0, x: 0, y: glow ? 18 : 0)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
@@ -488,9 +355,6 @@ struct TCard<Content: View>: View {
                     .stroke(Color.white.opacity(colorScheme == .light ? 0 : 0.03), lineWidth: 0.6)
                     .padding(1)
             )
-            .shadow(color: Color.tAccent2.opacity(0.06), radius: 8, x: 0, y: 0)
-            .shadow(color: glow ? Color(hex: 0x0f0523, opacity: 0.4) : .clear,
-                    radius: glow ? 18 : 0, x: 0, y: glow ? 18 : 0)
     }
 }
 
@@ -876,33 +740,10 @@ enum AppNavigator {
 struct SwipeBackModifier: ViewModifier {
     let enabled: Bool
     let onBack: () -> Void
-    @State private var dragX: CGFloat = 0
 
+    // Swipe-back désactivé globalement : le geste n'est plus attaché.
     func body(content: Content) -> some View {
-        let progress = min(1, max(0, dragX / 120))
         content
-            .offset(x: enabled ? dragX : 0)
-            .scaleEffect(enabled ? 1 - progress * 0.018 : 1, anchor: .leading)
-            .opacity(enabled ? 1 - Double(progress) * 0.12 : 1)
-            .gesture(
-                DragGesture(minimumDistance: 14, coordinateSpace: .local)
-                    .onChanged { value in
-                        guard enabled, value.translation.width > 0,
-                              abs(value.translation.width) > abs(value.translation.height) * 0.65 else { return }
-                        dragX = min(value.translation.width, 140)
-                    }
-                    .onEnded { value in
-                        guard enabled else { return }
-                        if value.translation.width > 80 || value.predictedEndTranslation.width > 150 {
-                            withAnimation(TripnestAnimation.page) {
-                                dragX = 0
-                                onBack()
-                            }
-                        } else {
-                            withAnimation(TripnestAnimation.page) { dragX = 0 }
-                        }
-                    }
-            )
     }
 }
 
@@ -926,7 +767,7 @@ struct TabBar: View {
     let active: AppRoute
     var centerRoute: AppRoute = .newTrip
     var centerLabel: String = ""
-    var centerAccessibilityLabel: String = "Nouveau voyage"
+    var centerAccessibilityLabel: String = L("Nouveau voyage")
     var onChange: (AppRoute) -> Void = { _ in }
 
     private struct Tab { let id: AppRoute; let label: String; let glyph: TIcon.Glyph }
@@ -1009,14 +850,18 @@ struct TabBar: View {
         .padding(.horizontal, 12)
         .padding(.top, 10)
         .padding(.bottom, 0)
-        .background(
+        .background(alignment: .bottom) {
             LinearGradient(stops: [
                 .init(color: Color.tBg0.opacity(0), location: 0),
-                .init(color: Color.tBg0.opacity(0.85), location: 0.4),
+                .init(color: Color.tBg0.opacity(0.44), location: 0.46),
+                .init(color: Color.tBg0.opacity(0.86), location: 0.78),
                 .init(color: Color.tBg0.opacity(0.98), location: 1),
             ], startPoint: .top, endPoint: .bottom)
-            .ignoresSafeArea()
-        )
+            .frame(height: 122)
+            .padding(.bottom, -42)
+            .ignoresSafeArea(edges: .bottom)
+            .allowsHitTesting(false)
+        }
     }
 }
 
@@ -1030,8 +875,8 @@ struct TripInfoSummaryCard: View {
     private var statusLabel: String {
         switch trip.status {
         case .active: return "En cours"
-        case .planned: return "Planifié"
-        case .done: return "Terminé"
+        case .planned: return L("Planifié")
+        case .done: return L("Terminé")
         }
     }
 
@@ -1068,11 +913,11 @@ struct TripInfoSummaryCard: View {
                 infoRow("Trajet", trip.origin.isEmpty ? trip.dest : trip.routeLine)
                 infoRow("Dates", trip.tripSubtitle)
                 if trip.hasReturn, let ret = trip.homeReturnLine {
-                    infoRow("Retour", ret)
+                    infoRow(L("Retour"), ret)
                 }
-                infoRow("Transport", trip.transportMode.label)
-                infoRow("Durée", "\(trip.days) jour\(trip.days > 1 ? "s" : "")")
-                infoRow("Budget", "\(trip.spent)\(defaultCurrency.currencySymbol) / \(trip.budget)\(defaultCurrency.currencySymbol)")
+                infoRow(L("Transport"), trip.transportMode.label)
+                infoRow(L("Durée"), (trip.days > 1 ? L("%d jours", trip.days) : L("%d jour", trip.days)))
+                infoRow(L("Budget"), "\(trip.spent)\(defaultCurrency.currencySymbol) / \(trip.budget)\(defaultCurrency.currencySymbol)")
                 infoRow("Photos", "\(trip.photoCount) souvenir\(trip.photoCount > 1 ? "s" : "")")
                 if !trip.country.isEmpty, trip.country != "À définir" {
                     infoRow("Pays", "\(trip.flag) \(trip.country)")
@@ -1132,11 +977,11 @@ struct TripSubpageTopBar: View {
                         )
                 }
                 .buttonStyle(TripnestPressStyle())
-                .accessibilityLabel("Réglages")
+                .accessibilityLabel(L("Réglages"))
             }
             Button(action: onBack) {
                 HStack(spacing: 6) {
-                    Text("Retour")
+                    Text(L("Revenir"))
                         .font(.tText(13, weight: .bold))
                     Image(systemName: "xmark")
                         .font(.system(size: 11, weight: .bold))
@@ -1154,7 +999,7 @@ struct TripSubpageTopBar: View {
                 )
             }
             .buttonStyle(TripnestPressStyle())
-            .accessibilityLabel("Retour")
+            .accessibilityLabel(L("Revenir"))
         }
         .padding(.horizontal, 22)
         .padding(.top, 8)
@@ -1355,7 +1200,7 @@ struct SocialBtn: View {
                             ],
                             center: .center
                         ))
-                        Text("G")
+                        Text(L("G"))
                             .font(.tText(11, weight: .black))
                             .foregroundColor(.white)
                     }

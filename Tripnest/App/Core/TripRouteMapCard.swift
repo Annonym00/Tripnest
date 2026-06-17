@@ -39,7 +39,7 @@ struct TripRouteMapCard: View {
                             preloadedLegMap(returnLeg, tab: .returnTrip, progress: returnProgress)
                         }
                     } else if model.isLoading {
-                        mapPlaceholder(message: "Chargement de la carte…", showsSpinner: true)
+                        mapPlaceholder(message: L("Chargement de la carte…"), showsSpinner: true)
                     } else {
                         mapPlaceholder(message: "Carte indisponible", showsSpinner: false)
                     }
@@ -130,7 +130,7 @@ struct TripRouteMapCard: View {
 
     private var header: some View {
         HStack {
-            Text("PLAN DU TRAJET")
+            Text(L("PLAN DU TRAJET"))
                 .font(.tText(11, weight: .bold))
                 .tracking(1.4)
                 .foregroundColor(.tTextMute)
@@ -179,18 +179,18 @@ struct TripRouteMapCard: View {
                     )
                 }()
                 return [
-                    ("Départ", placeLabel(trip.origin, empty: "—")),
+                    (L("Départ"), placeLabel(trip.origin, empty: "—")),
                     ("Destination", placeLabel(trip.dest, empty: "—")),
-                    ("Date de départ", dateValue),
-                    ("Retour vers", placeLabel(returnPlace, empty: "—")),
+                    (L("Date de départ"), dateValue),
+                    (L("Retour vers"), placeLabel(returnPlace, empty: "—")),
                     ("Date de retour", returnDateValue),
                 ]
             }
             return [
-                ("Départ", placeLabel(trip.origin, empty: "—")),
+                (L("Départ"), placeLabel(trip.origin, empty: "—")),
                 ("Destination", placeLabel(trip.dest, empty: "—")),
-                ("Date de départ", dateValue),
-                ("Type", "Aller simple"),
+                (L("Date de départ"), dateValue),
+                ("Type", L("Aller simple")),
             ]
 
         case .returnTrip:
@@ -202,8 +202,8 @@ struct TripRouteMapCard: View {
             }()
             let returnPlace = trip.returnLocation?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             return [
-                ("Départ", placeLabel(trip.dest, empty: "—")),
-                ("Retour vers", placeLabel(returnPlace, empty: "—")),
+                (L("Départ"), placeLabel(trip.dest, empty: "—")),
+                (L("Retour vers"), placeLabel(returnPlace, empty: "—")),
                 ("Date de retour", returnDateValue),
             ]
         }
@@ -217,9 +217,9 @@ struct TripRouteMapCard: View {
 
     private var legTabs: some View {
         HStack(spacing: 8) {
-            legTab(title: "Aller", tab: .outbound)
+            legTab(title: L("Aller"), tab: .outbound)
             if hasReturnLeg {
-                legTab(title: "Retour", tab: .returnTrip)
+                legTab(title: L("Retour"), tab: .returnTrip)
             }
         }
     }

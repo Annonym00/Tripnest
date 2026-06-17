@@ -1922,7 +1922,7 @@ enum EarthGlobeLocationFetcher {
 }
 
 @MainActor
-private final class OneShotLocationFetcher: NSObject, CLLocationManagerDelegate {
+private final class OneShotLocationFetcher: NSObject, @preconcurrency CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private var continuation: CheckedContinuation<CLLocationCoordinate2D?, Never>?
     private var didResume = false

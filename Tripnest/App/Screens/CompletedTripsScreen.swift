@@ -52,7 +52,7 @@ struct CompletedTripsScreen: View {
                 IconBtn(glyph: .back)
             }
             .buttonStyle(TripnestPressStyle())
-            Text("Voyages faits")
+            Text(L("Voyages faits"))
                 .font(.tDisplay(24))
                 .tracking(-0.6)
             Spacer(minLength: 12)
@@ -68,7 +68,7 @@ struct CompletedTripsScreen: View {
     private var completedSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                sectionLabel("VOYAGES FAITS", dotColor: .tGold, color: .tGold)
+                sectionLabel(L("VOYAGES FAITS"), dotColor: .tGold, color: .tGold)
                 Spacer()
                 Text("\(completedTrips.count)")
                     .font(.tText(12, weight: .bold))
@@ -96,9 +96,9 @@ struct CompletedTripsScreen: View {
         TCard(padding: 20) {
             VStack(spacing: 10) {
                 TIcon(glyph: .globe, size: 28, stroke: .tGold)
-                Text("Aucun voyage terminé")
+                Text(L("Aucun voyage terminé"))
                     .font(.tText(16, weight: .bold))
-                Text("Coche « Voyage fait » sur un voyage en cours pour le retrouver ici.")
+                Text(L("Coche « Voyage fait » sur un voyage en cours pour le retrouver ici."))
                     .font(.tText(13))
                     .foregroundColor(.tTextMute)
                     .multilineTextAlignment(.center)

@@ -14,7 +14,7 @@ struct TripPhotosSection: View {
         TCard(padding: 14) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("PHOTOS DU VOYAGE")
+                    Text(L("PHOTOS DU VOYAGE"))
                         .font(.tText(10, weight: .bold))
                         .tracking(1.1)
                         .foregroundColor(.tTextMute)
@@ -25,7 +25,7 @@ struct TripPhotosSection: View {
                 }
 
                 if photos.isEmpty {
-                    Text("Ajoute tes souvenirs : paysages, billets, moments…")
+                    Text(L("Ajoute tes souvenirs : paysages, billets, moments…"))
                         .font(.tText(13))
                         .foregroundColor(.tTextMute)
                 }
@@ -57,17 +57,17 @@ struct TripPhotosSection: View {
                                 Button {
                                     showGalleryPicker = true
                                 } label: {
-                                    Label("Galerie", systemImage: "photo.on.rectangle.angled")
+                                    Label(L("Galerie"), systemImage: "photo.on.rectangle.angled")
                                 }
                                 Button {
                                     showCameraPicker = true
                                 } label: {
-                                    Label("Appareil photo", systemImage: "camera.fill")
+                                    Label(L("Appareil photo"), systemImage: "camera.fill")
                                 }
                             } label: {
                                 VStack(spacing: 6) {
                                     TIcon(glyph: .plus, size: 20, stroke: .tAccent2)
-                                    Text("Ajouter")
+                                    Text(L("Ajouter"))
                                         .font(.tText(11, weight: .semibold))
                                         .foregroundColor(.tAccent2)
                                 }
@@ -110,7 +110,17 @@ struct TripPhotosSection: View {
     }
 
     private func reloadPhotos() {
-        photos = TripPhotoStore.loadAll(tripId: trip.id, count: trip.photoCount)
+        // Lecture + décodage disque hors main thread : ouvrir un voyage avec des photos
+        // ne doit jamais geler l'UI. Les images arrivent dès qu'elles sont prêtes.
+        let tripId = trip.id
+        let count = trip.photoCount
+        Task {
+            let loaded = await Task.detached(priority: .userInitiated) {
+                TripPhotoStore.loadAll(tripId: tripId, count: count)
+            }.value
+            guard tripId == trip.id else { return }
+            photos = loaded
+        }
     }
 
     private func appendPhoto(_ image: UIImage) {
@@ -121,10 +131,19 @@ struct TripPhotosSection: View {
     }
 
     private func persistPhotos() {
-        TripPhotoStore.deleteAll(tripId: trip.id, count: max(trip.photoCount, photos.count))
-        for (index, photo) in photos.enumerated() {
-            TripPhotoStore.save(photo, tripId: trip.id, index: index)
+        // Encodage JPEG + écritures disque hors main thread (sinon gel à chaque ajout).
+        let tripId = trip.id
+        let snapshot = photos
+        let oldCount = max(trip.photoCount, snapshot.count)
+        Task {
+            await Task.detached(priority: .utility) {
+                TripPhotoStore.deleteAll(tripId: tripId, count: oldCount)
+                for (index, photo) in snapshot.enumerated() {
+                    TripPhotoStore.save(photo, tripId: tripId, index: index)
+                }
+            }.value
+            guard tripId == trip.id else { return }
+            store.updateTripPhotoCount(tripId: tripId, count: snapshot.count)
         }
-        store.updateTripPhotoCount(tripId: trip.id, count: photos.count)
     }
 }

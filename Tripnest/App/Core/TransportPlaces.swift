@@ -56,7 +56,7 @@ enum TransportMode: String, Codable, CaseIterable, Identifiable {
 
     var subtitle: String {
         switch self {
-        case .plane: return "Aéroports du monde entier"
+        case .plane: return L("Aéroports du monde entier")
         case .boat: return "Ports du monde entier"
         case .train: return "Gares du monde entier"
         case .car: return "Adresses du monde entier"
@@ -79,25 +79,25 @@ enum TransportMode: String, Codable, CaseIterable, Identifiable {
     /// Titre section / éditeur : « Ton billet d'avion », etc.
     var ticketSectionHeading: String {
         switch self {
-        case .plane: return "Ton billet d'avion"
-        case .boat: return "Ton billet de ferry"
-        case .train: return "Ton billet de train"
+        case .plane: return L("Ton billet d'avion")
+        case .boat: return L("Ton billet de ferry")
+        case .train: return L("Ton billet de train")
         case .car: return ""
         }
     }
 
     var ticketCodeLabel: String {
         switch self {
-        case .plane: return "Numéro de vol"
-        case .boat: return "Numéro de traversée"
-        case .train: return "Numéro de train"
+        case .plane: return L("Numéro de vol")
+        case .boat: return L("Numéro de traversée")
+        case .train: return L("Numéro de train")
         case .car: return ""
         }
     }
 
     var ticketCompanyLabel: String {
         switch self {
-        case .plane: return "Compagnie aérienne"
+        case .plane: return L("Compagnie aérienne")
         case .boat: return "Compagnie maritime"
         case .train: return "Compagnie ferroviaire"
         case .car: return ""
@@ -115,9 +115,9 @@ enum TransportMode: String, Codable, CaseIterable, Identifiable {
 
     var ticketScreenTitle: String {
         switch self {
-        case .plane: return "Mes vols"
-        case .boat: return "Mes ferries"
-        case .train: return "Mes trains"
+        case .plane: return L("Mes vols")
+        case .boat: return L("Mes ferries")
+        case .train: return L("Mes trains")
         case .car: return ""
         }
     }
@@ -125,16 +125,16 @@ enum TransportMode: String, Codable, CaseIterable, Identifiable {
     /// Titre écran détail billet (depuis l’accueil).
     var ticketDetailScreenTitle: String {
         switch self {
-        case .plane: return "Mon billet d'avion"
-        case .boat: return "Mon billet de ferry"
-        case .train: return "Mon billet de train"
+        case .plane: return L("Mon billet d'avion")
+        case .boat: return L("Mon billet de ferry")
+        case .train: return L("Mon billet de train")
         case .car: return ""
         }
     }
 
     var originPlaceholder: String {
         switch self {
-        case .plane: return "Ex. Lyon-Saint Exupéry"
+        case .plane: return L("Ex. Lyon-Saint Exupéry")
         case .boat: return "Ex. Port de Shanghai"
         case .train: return "Ex. Tokyo Station"
         case .car: return "Ex. Paris"
@@ -260,17 +260,34 @@ enum TransportPlaceLocale {
 }
 
 enum TransportPlaceCatalog {
-    private static let indexedByMode: [TransportMode: [IndexedTransportPlace]] = loadIndexed()
-    private static let bucketsByMode: [TransportMode: [Character: [IndexedTransportPlace]]] = buildBuckets(from: indexedByMode)
+    private struct CatalogData {
+        let indexedByMode: [TransportMode: [IndexedTransportPlace]]
+        let bucketsByMode: [TransportMode: [Character: [IndexedTransportPlace]]]
+    }
+
+    private static let stateQueue = DispatchQueue(label: "tripnest.transportPlaceCatalog.state")
+    nonisolated(unsafe) private static var cachedData: CatalogData?
+    nonisolated(unsafe) private static var isLoading = false
     private static let searchLimit = 8
+
+    static func warmUp() {
+        guard shouldStartBackgroundLoad() else { return }
+        DispatchQueue.global(qos: .utility).async {
+            let loaded = loadData()
+            stateQueue.sync {
+                cachedData = loaded
+                isLoading = false
+            }
+        }
+    }
 
     static func search(mode: TransportMode, query: String, limit: Int = searchLimit) -> [TransportPlace] {
         guard mode != .car else { return [] }
         let terms = TransportPlaceLocale.expandedQueries(for: query)
         guard !terms.isEmpty else { return [] }
-        guard let pool = indexedByMode[mode], !pool.isEmpty else { return [] }
+        guard let data = data(), let pool = data.indexedByMode[mode], !pool.isEmpty else { return [] }
 
-        let candidates = candidatePool(mode: mode, queries: terms, fullPool: pool)
+        let candidates = candidatePool(mode: mode, queries: terms, fullPool: pool, bucketsByMode: data.bucketsByMode)
         var matches: [(TransportPlace, Int)] = []
         matches.reserveCapacity(searchLimit * 2)
 
@@ -298,7 +315,7 @@ enum TransportPlaceCatalog {
         guard mode != .car else { return nil }
         let q = normalize(query)
         guard q.count >= 2 else { return nil }
-        guard let pool = indexedByMode[mode] else { return nil }
+        guard let data = data(), let pool = data.indexedByMode[mode] else { return nil }
 
         if let exact = pool.first(where: { $0.normalizedName == q }) {
             return exact.place
@@ -340,7 +357,8 @@ enum TransportPlaceCatalog {
     private static func candidatePool(
         mode: TransportMode,
         queries: [String],
-        fullPool: [IndexedTransportPlace]
+        fullPool: [IndexedTransportPlace],
+        bucketsByMode: [TransportMode: [Character: [IndexedTransportPlace]]]
     ) -> [IndexedTransportPlace] {
         guard let buckets = bucketsByMode[mode] else { return fullPool }
         var seen = Set<String>()
@@ -357,6 +375,39 @@ enum TransportPlaceCatalog {
         }
         if !result.isEmpty { return result }
         return fullPool.count > 12_000 ? Array(fullPool.prefix(12_000)) : fullPool
+    }
+
+    private static func data() -> CatalogData? {
+        if let cached = stateQueue.sync(execute: { cachedData }) {
+            return cached
+        }
+        if Thread.isMainThread {
+            warmUp()
+            return nil
+        }
+        let loaded = loadData()
+        return stateQueue.sync {
+            if let cachedData { return cachedData }
+            cachedData = loaded
+            isLoading = false
+            return loaded
+        }
+    }
+
+    private static func shouldStartBackgroundLoad() -> Bool {
+        stateQueue.sync {
+            guard cachedData == nil, !isLoading else { return false }
+            isLoading = true
+            return true
+        }
+    }
+
+    private static func loadData() -> CatalogData {
+        let indexed = loadIndexed()
+        return CatalogData(
+            indexedByMode: indexed,
+            bucketsByMode: buildBuckets(from: indexed)
+        )
     }
 
     private static func buildBuckets(
@@ -520,7 +571,7 @@ struct TransportModePickerView: View {
                 Button(action: onClose) { IconBtn(glyph: .close) }
                     .buttonStyle(TripnestPressStyle())
                 Spacer()
-                Text("Mode de transport")
+                Text(L("Mode de transport"))
                     .font(.tText(16, weight: .bold))
                 Spacer()
                 Color.clear.frame(width: 40, height: 40)
@@ -529,10 +580,10 @@ struct TransportModePickerView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Comment voyages-tu ?")
+                    Text(L("Comment voyages-tu ?"))
                         .font(.tDisplay(24))
                         .tracking(-0.5)
-                    Text("On adaptera les suggestions de lieux selon ton choix.")
+                    Text(L("On adaptera les suggestions de lieux selon ton choix."))
                         .font(.tText(14))
                         .foregroundColor(.tTextMute)
 
@@ -832,9 +883,9 @@ struct FormLocationField: View {
     private var invalidLocationMessage: String {
         switch transportMode {
         case .car:
-            return "Adresse non reconnue. Choisis une suggestion ou une adresse complète."
+            return L("Adresse non reconnue. Choisis une suggestion ou une adresse complète.")
         default:
-            return "Lieu non reconnu. Choisis une suggestion dans la liste."
+            return L("Lieu non reconnu. Choisis une suggestion dans la liste.")
         }
     }
 
@@ -883,14 +934,13 @@ struct FormLocationField: View {
             validation = .unknown
             return
         }
-        if validation == .valid, TransportPlaceCatalog.bestMatch(mode: transportMode, query: trimmed) != nil {
-            return
-        }
-
         validateTask = Task {
             try? await Task.sleep(for: .milliseconds(350))
             guard !Task.isCancelled else { return }
-            if let match = TransportPlaceCatalog.bestMatch(mode: transportMode, query: trimmed) {
+            let hasCatalogMatch = await Task.detached(priority: .userInitiated) {
+                TransportPlaceCatalog.bestMatch(mode: transportMode, query: trimmed) != nil
+            }.value
+            if hasCatalogMatch {
                 await MainActor.run {
                     guard text.trimmingCharacters(in: .whitespacesAndNewlines) == trimmed else { return }
                     validation = .valid

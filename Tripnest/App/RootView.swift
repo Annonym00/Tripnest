@@ -12,9 +12,7 @@ struct RootView: View {
                 MainApp(onLogout: resetApp)
             } else {
                 OnboardingFlow {
-                    withAnimation(TripnestAnimation.page) {
-                        didFinishOnboarding = true
-                    }
+                    didFinishOnboarding = true
                 }
             }
         }
@@ -23,12 +21,13 @@ struct RootView: View {
         .environmentObject(avatarStore)
         .environment(\.locale, localizer.language.locale)
         .id(localizer.language)
+        .task {
+            TransportPlaceCatalog.warmUp()
+        }
     }
 
     private func resetApp() {
-        withAnimation(TripnestAnimation.page) {
-            didFinishOnboarding = false
-        }
+        didFinishOnboarding = false
     }
 }
 
@@ -41,9 +40,6 @@ struct OnboardingFlow: View {
     var body: some View {
         ZStack {
             ScreenBackground().ignoresSafeArea()
-            FlyingPlanesLayer()
-                .ignoresSafeArea()
-                .opacity(0.55)
 
             VStack(spacing: 0) {
                 OnboardingChromeBar()
@@ -51,11 +47,10 @@ struct OnboardingFlow: View {
                 ZStack {
                     screen(for: navigator.step)
                         .id(navigator.step)
-                        .transition(OnboardingScreenTransition.push(forward: navigator.direction > 0))
+                        .transition(.identity)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
-                .animation(TripnestAnimation.page, value: navigator.step)
             }
         }
         .environmentObject(navigator)
@@ -79,9 +74,7 @@ struct OnboardingFlow: View {
         withAnimation(TripnestAnimation.progress) {
             navigator.barProgress = CGFloat(next) / CGFloat(OB_TOTAL)
         }
-        withAnimation(TripnestAnimation.page) {
-            navigator.step = next
-        }
+        navigator.step = next
     }
 
     private func goBack() {
@@ -91,9 +84,7 @@ struct OnboardingFlow: View {
         withAnimation(TripnestAnimation.progress) {
             navigator.barProgress = CGFloat(previous) / CGFloat(OB_TOTAL)
         }
-        withAnimation(TripnestAnimation.page) {
-            navigator.step = previous
-        }
+        navigator.step = previous
     }
 
     private func createTripFromOnboardingIfNeeded() {

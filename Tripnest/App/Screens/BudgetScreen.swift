@@ -31,7 +31,7 @@ struct BudgetHubScreen: View {
                     VStack(alignment: .leading, spacing: 14) {
 
                         // ── Voyages en cours ──────────────────────
-                        sectionLabel("VOYAGES EN COURS", color: .tBlue)
+                        sectionLabel(L("VOYAGES EN COURS"), color: .tBlue)
                         if ongoingTrips.isEmpty {
                             emptyOngoingTrips
                         } else {
@@ -45,7 +45,7 @@ struct BudgetHubScreen: View {
 
                         // ── Voyages passés ────────────────────────
                         if !pastTrips.isEmpty {
-                            sectionLabel("VOYAGES PASSÉS", color: .tGold)
+                            sectionLabel(L("VOYAGES PASSÉS"), color: .tGold)
                                 .padding(.top, 6)
                             ForEach(pastTrips) { trip in
                                 Button(action: { openTrip(trip) }) {
@@ -77,7 +77,7 @@ struct BudgetHubScreen: View {
 
     private var hubHeader: some View {
         HStack(alignment: .center, spacing: 12) {
-            Text("Budget")
+            Text(L("Budget"))
                 .font(.tDisplay(24))
                 .tracking(-0.5)
             Spacer(minLength: 8)
@@ -85,10 +85,10 @@ struct BudgetHubScreen: View {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.left.arrow.right")
                         .font(.system(size: 13, weight: .semibold))
-                    Text("Convertisseur")
+                    Text(L("Convertisseur"))
                         .font(.tText(13, weight: .semibold))
                 }
-                .foregroundColor(.tTextMute)
+                .foregroundColor(.white)
                 .padding(.horizontal, 12)
                 .frame(height: 36)
                 .background(
@@ -101,7 +101,7 @@ struct BudgetHubScreen: View {
                 )
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Convertir les devises")
+            .accessibilityLabel(L("Convertir les devises"))
         }
         .padding(.horizontal, 22)
         .padding(.top, 8)
@@ -121,9 +121,9 @@ struct BudgetHubScreen: View {
         TCard(padding: 22) {
             VStack(spacing: 10) {
                 TIcon(glyph: .plane, size: 28, stroke: .tAccent2)
-                Text("Aucun voyage actif")
+                Text(L("Aucun voyage actif"))
                     .font(.tText(16, weight: .bold))
-                Text("Crée ou ouvre un voyage depuis l'onglet Voyages pour gérer son budget ici.")
+                Text(L("Crée ou ouvre un voyage depuis l'onglet Voyages pour gérer son budget ici."))
                     .font(.tText(13))
                     .foregroundColor(.tTextMute)
                     .multilineTextAlignment(.center)
@@ -152,7 +152,7 @@ struct BudgetHubScreen: View {
                 Spacer(minLength: 8)
 
                 HStack(spacing: 8) {
-                    Text(hasBudget ? "En cours" : "À définir")
+                    Text(hasBudget ? L("En cours") : L("À définir"))
                         .font(.tText(11, weight: .bold))
                         .foregroundColor(hasBudget ? .tMint : .tBlue)
                         .padding(.horizontal, 9)
@@ -226,16 +226,16 @@ struct BudgetHubScreen: View {
 
                 if hasBudget {
                     VStack(alignment: .trailing, spacing: 5) {
-                        Text("Terminé")
+                        Text(L("Terminé"))
                             .font(.tText(11, weight: .bold))
                             .foregroundColor(.tGold)
                             .padding(.horizontal, 9)
                             .padding(.vertical, 5)
                             .background(Capsule().fill(Color.tGold.opacity(0.12)))
-                        Text("\(trip.spent)\(sym) dépensé")
+                        Text(L("%@ dépensé", "\(trip.spent)\(sym)"))
                             .font(.tText(12, weight: .semibold))
                             .foregroundColor(.tText)
-                        Text(isOver ? "Dépassé" : "−\(remaining)\(sym) restant")
+                        Text(isOver ? L("Dépassé") : "−\(remaining)\(sym) restant")
                             .font(.tText(11, weight: .bold))
                             .foregroundColor(isOver ? .tRose : .tMint)
                         Image(systemName: "chevron.right")
@@ -244,7 +244,7 @@ struct BudgetHubScreen: View {
                     }
                 } else {
                     HStack(spacing: 8) {
-                        Text("Terminé")
+                        Text(L("Terminé"))
                             .font(.tText(11, weight: .bold))
                             .foregroundColor(.tGold)
                             .padding(.horizontal, 9)
@@ -340,7 +340,7 @@ struct BudgetScreen: View {
                                 emergencyFundCard(t).padding(.bottom, 14)
                                 txHeader.padding(.bottom, 10)
                                 expensesSections(tripId: t.id)
-                                CTA(label: "Ajouter une dépense", action: { onNav(.add) })
+                                CTA(label: L("Ajouter une dépense"), action: { onNav(.add) })
                                     .padding(.top, 14)
                             }
                         } else {
@@ -369,9 +369,9 @@ struct BudgetScreen: View {
                 .presentationDragIndicator(.hidden)
                 .interactiveDismissDisabled(true)
         }
-        .alert("Supprimer cette dépense ?", isPresented: expenseDeleteAlertBinding) {
-            Button("Annuler", role: .cancel) { expensePendingDelete = nil }
-            Button("Supprimer", role: .destructive) {
+        .alert(L("Supprimer cette dépense ?"), isPresented: expenseDeleteAlertBinding) {
+            Button(L("Annuler"), role: .cancel) { expensePendingDelete = nil }
+            Button(L("Supprimer"), role: .destructive) {
                 if let id = expensePendingDelete {
                     store.deleteExpense(id: id)
                     Haptics.success()
@@ -379,7 +379,7 @@ struct BudgetScreen: View {
                 expensePendingDelete = nil
             }
         } message: {
-            Text("Cette action est définitive.")
+            Text(L("Cette action est définitive."))
         }
         .onChange(of: store.activeTrip?.spent) { _, newValue in
             guard let newValue else { return }
@@ -412,10 +412,10 @@ struct BudgetScreen: View {
                     )
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Retour")
+            .accessibilityLabel(L("Revenir"))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Budget")
+                Text(L("Budget"))
                     .font(.tDisplay(22))
                     .tracking(-0.5)
                     .foregroundColor(.tText)
@@ -444,7 +444,7 @@ struct BudgetScreen: View {
                 HStack(spacing: 7) {
                     Image(systemName: "chart.pie")
                         .font(.system(size: 13, weight: .semibold))
-                    Text("Récap")
+                    Text(L("Récap"))
                         .font(.tText(14, weight: .semibold))
                 }
                 .foregroundColor(.tText)
@@ -470,7 +470,7 @@ struct BudgetScreen: View {
                 HStack(spacing: 7) {
                     Image(systemName: "plus")
                         .font(.system(size: 13, weight: .bold))
-                    Text("Modifier le budget")
+                    Text(L("Modifier le budget"))
                         .font(.tText(14, weight: .semibold))
                 }
                 .foregroundColor(.white)
@@ -491,13 +491,13 @@ struct BudgetScreen: View {
         TCard(padding: 22, glow: true) {
             VStack(spacing: 14) {
                 TIcon(glyph: .wallet, size: 36, stroke: .tAccent2)
-                Text("Définis ton budget")
+                Text(L("Définis ton budget"))
                     .font(.tDisplay(22))
-                Text("Ajoute un montant pour suivre tes dépenses pendant le voyage.")
+                Text(L("Ajoute un montant pour suivre tes dépenses pendant le voyage."))
                     .font(.tText(14))
                     .foregroundColor(.tTextMute)
                     .multilineTextAlignment(.center)
-                CTA(label: "Définir un budget", action: {
+                CTA(label: L("Définir un budget"), action: {
                     budgetInput = ""
                     budgetMode  = .define
                     showBudgetEditor = true
@@ -522,7 +522,7 @@ struct BudgetScreen: View {
                             VStack(alignment: .leading, spacing: 16) {
                                 HStack(alignment: .top) {
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text("Budget total")
+                                        Text(L("Budget total"))
                                             .font(.tText(12, weight: .semibold))
                                             .foregroundColor(.tTextMute)
                                         Text("\(t.budget)\(sym)")
@@ -532,7 +532,7 @@ struct BudgetScreen: View {
                                     }
                                     Spacer()
                                     VStack(alignment: .trailing, spacing: 4) {
-                                        Text(remaining < 0 ? "Dépassement" : "Reste")
+                                        Text(remaining < 0 ? L("Dépassement") : "Reste")
                                             .font(.tText(12, weight: .semibold))
                                             .foregroundColor(.tTextMute)
                                         Text("\(remaining)\(sym)")
@@ -554,9 +554,9 @@ struct BudgetScreen: View {
                                 .frame(height: 10)
 
                                 HStack {
-                                    Text("\(t.spent)\(sym) dépensés")
+                                    Text(L("%@ dépensés", "\(t.spent)\(sym)"))
                                     Spacer()
-                                    Text("\(Int(pct * 100))% utilisé")
+                                    Text(L("%d%% utilisé", Int(pct * 100)))
                                 }
                                 .font(.tText(12, weight: .semibold))
                                 .foregroundColor(.tTextMute)
@@ -564,7 +564,7 @@ struct BudgetScreen: View {
                         }
 
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("PAR CATÉGORIE")
+                            Text(L("PAR CATÉGORIE"))
                                 .font(.tText(13, weight: .bold))
                                 .tracking(0.9)
                                 .foregroundColor(.tTextMute)
@@ -589,11 +589,11 @@ struct BudgetScreen: View {
                     .padding(.bottom, 24)
                 }
             }
-            .navigationTitle("Récapitulatif")
+            .navigationTitle(L("Récapitulatif"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Fermer") { showBudgetVisibility = false }.foregroundColor(.tAccent2)
+                    Button(L("Fermer")) { showBudgetVisibility = false }.foregroundColor(.tAccent2)
                 }
             }
         }
@@ -615,7 +615,7 @@ struct BudgetScreen: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(item.title)
+                    Text(L(item.title))
                         .font(.tText(15, weight: .bold))
                         .foregroundColor(.tText)
                         .lineLimit(1)
@@ -689,7 +689,7 @@ struct BudgetScreen: View {
                     if let trip = store.activeTrip, trip.budget > 0 {
                         Picker("", selection: $budgetMode) {
                             ForEach(BudgetMode.allCases, id: \.self) { mode in
-                                Text(mode.rawValue).tag(mode)
+                                Text(L(mode.rawValue)).tag(mode)
                             }
                         }
                         .pickerStyle(.segmented)
@@ -699,7 +699,7 @@ struct BudgetScreen: View {
                     }
 
                     VStack(spacing: 6) {
-                        Text(budgetMode == .define ? "NOUVEAU BUDGET TOTAL" : "MONTANT À AJOUTER")
+                        Text(budgetMode == .define ? L("NOUVEAU BUDGET TOTAL") : L("MONTANT À AJOUTER"))
                             .font(.tText(12, weight: .bold))
                             .tracking(1.5)
                             .foregroundColor(.tTextMute)
@@ -720,7 +720,7 @@ struct BudgetScreen: View {
                         if budgetMode == .add,
                            let trip = store.activeTrip,
                            let added = Int(budgetInput), added > 0 {
-                            Text("→ Budget total : \(trip.budget + added)\(sym)")
+                            Text(L("→ Budget total : %@", "\(trip.budget + added)\(sym)"))
                                 .font(.tText(13))
                                 .foregroundColor(.tTextMute)
                         }
@@ -733,11 +733,11 @@ struct BudgetScreen: View {
                 }
                 .padding(28)
             }
-            .navigationTitle(budgetMode == .define ? "Modifier le budget" : "Ajouter au budget")
+            .navigationTitle(budgetMode == .define ? L("Modifier le budget") : L("Ajouter au budget"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Fermer") { showBudgetEditor = false }.foregroundColor(.tAccent2)
+                    Button(L("Fermer")) { showBudgetEditor = false }.foregroundColor(.tAccent2)
                 }
             }
         }
@@ -780,10 +780,10 @@ struct BudgetScreen: View {
                     }
 
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Fond d'urgence")
+                        Text(L("Fond d'urgence"))
                             .font(.tText(15, weight: .semibold))
                             .foregroundColor(.tText)
-                        Text("\(store.emergencyEntries(for: t.id).count) fond(s) stocké(s) · \(t.emergencyFund)\(sym)")
+                        Text(L("%d fond(s) stocké(s) · %@", store.emergencyEntries(for: t.id).count, "\(t.emergencyFund)\(sym)"))
                             .font(.tText(12))
                             .foregroundColor(.tTextMute)
                     }
@@ -810,7 +810,7 @@ struct BudgetScreen: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 22) {
                         VStack(spacing: 8) {
-                            Text("MONTANT")
+                            Text(L("MONTANT"))
                                 .font(.tText(11, weight: .bold))
                                 .tracking(1.5)
                                 .foregroundColor(.tTextMute)
@@ -833,11 +833,11 @@ struct BudgetScreen: View {
                         }
 
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("TITRE")
+                            Text(L("TITRE"))
                                 .font(.tText(11, weight: .bold))
                                 .tracking(1.5)
                                 .foregroundColor(.tTextMute)
-                            TextField("Ex. réparation, médicament, taxi…", text: $emergencyCause)
+                            TextField(L("Ex. réparation, médicament, taxi…"), text: $emergencyCause)
                                 .font(.tText(15))
                                 .foregroundColor(.tText)
                                 .padding(.horizontal, 16)
@@ -860,7 +860,7 @@ struct BudgetScreen: View {
                                     .opacity(canSaveEmergencyEntry ? 1 : 0.45)
                                     .disabled(!canSaveEmergencyEntry)
                                 Button(action: cancelEmergencyEdit) {
-                                    Text("Annuler")
+                                    Text(L("Annuler"))
                                         .font(.tText(14, weight: .bold))
                                         .foregroundColor(.tText)
                                         .frame(maxWidth: .infinity)
@@ -877,7 +877,7 @@ struct BudgetScreen: View {
                                 .buttonStyle(.plain)
                             }
                         } else {
-                            CTA(label: "Ajouter au fond", action: saveEmergencyEntry)
+                            CTA(label: L("Ajouter au fond"), action: saveEmergencyEntry)
                                 .opacity(canSaveEmergencyEntry ? 1 : 0.45)
                                 .disabled(!canSaveEmergencyEntry)
                         }
@@ -885,7 +885,7 @@ struct BudgetScreen: View {
                         if let trip = store.activeTrip {
                             let entries = store.emergencyEntries(for: trip.id)
                             if !entries.isEmpty {
-                                Text("DANS LE FOND")
+                                Text(L("DANS LE FOND"))
                                     .font(.tText(11, weight: .bold))
                                     .tracking(1.2)
                                     .foregroundColor(.tTextMute)
@@ -908,18 +908,18 @@ struct BudgetScreen: View {
                     .padding(.bottom, 20)
                 }
             }
-            .navigationTitle("Fond d'urgence")
+            .navigationTitle(L("Fond d'urgence"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Fermer") { showEmergencyFundSheet = false }.foregroundColor(.tAccent2)
+                    Button(L("Fermer")) { showEmergencyFundSheet = false }.foregroundColor(.tAccent2)
                 }
             }
         }
         .tripnestPreferredColorScheme()
-        .alert("Supprimer ce fond ?", isPresented: emergencyDeleteAlertBinding) {
-            Button("Annuler", role: .cancel) { emergencyPendingDelete = nil }
-            Button("Supprimer", role: .destructive) {
+        .alert(L("Supprimer ce fond ?"), isPresented: emergencyDeleteAlertBinding) {
+            Button(L("Annuler"), role: .cancel) { emergencyPendingDelete = nil }
+            Button(L("Supprimer"), role: .destructive) {
                 if let id = emergencyPendingDelete {
                     store.deleteEmergencyFundEntry(id: id)
                     Haptics.success()
@@ -927,7 +927,7 @@ struct BudgetScreen: View {
                 emergencyPendingDelete = nil
             }
         } message: {
-            Text("Ce fond sera retiré du portefeuille urgence.")
+            Text(L("Ce fond sera retiré du portefeuille urgence."))
         }
     }
 
@@ -949,19 +949,19 @@ struct BudgetScreen: View {
     private var emergencyDescriptionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("DESCRIPTION")
+                Text(L("DESCRIPTION"))
                     .font(.tText(11, weight: .bold))
                     .tracking(1.5)
                     .foregroundColor(.tTextMute)
                 Spacer()
-                Text("\(emergencyDescriptionLineCount)/\(maxEmergencyDescriptionLines) lignes")
+                Text(L("%d/%d lignes", emergencyDescriptionLineCount, maxEmergencyDescriptionLines))
                     .font(.tText(11))
                     .foregroundColor(emergencyDescriptionLineCount >= maxEmergencyDescriptionLines ? .tRose : .tTextMute)
             }
 
             ZStack(alignment: .topLeading) {
                 if emergencyNotes.isEmpty {
-                    Text("Détails de l'urgence…")
+                    Text(L("Détails de l'urgence…"))
                         .font(.tText(15))
                         .foregroundColor(.tTextMute.opacity(0.5))
                         .padding(.top, 14)
@@ -1013,7 +1013,7 @@ struct BudgetScreen: View {
                 .font(.tText(15, weight: .bold))
                 .foregroundColor(.tGold)
             Button(action: { withdrawEmergencyEntry(entry.id) }) {
-                Text("Retirer")
+                Text(L("Retirer"))
                     .font(.tText(12, weight: .bold))
                     .foregroundColor(.tMint)
                     .padding(.horizontal, 10)
@@ -1021,7 +1021,7 @@ struct BudgetScreen: View {
                     .background(Capsule().fill(Color.tMint.opacity(0.12)))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Retirer ce fond")
+            .accessibilityLabel(L("Retirer ce fond"))
             Button(action: { startEmergencyEdit(entry) }) {
                 Image(systemName: "pencil")
                     .font(.system(size: 13, weight: .bold))
@@ -1030,7 +1030,7 @@ struct BudgetScreen: View {
                     .background(Circle().fill(Color.tAccent2.opacity(0.12)))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Modifier ce fond")
+            .accessibilityLabel(L("Modifier ce fond"))
             Button(action: { emergencyPendingDelete = entry.id }) {
                 Image(systemName: "trash")
                     .font(.system(size: 13, weight: .bold))
@@ -1039,7 +1039,7 @@ struct BudgetScreen: View {
                     .background(Circle().fill(Color.tRose.opacity(0.12)))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Supprimer ce fond")
+            .accessibilityLabel(L("Supprimer ce fond"))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
@@ -1121,7 +1121,7 @@ struct BudgetScreen: View {
                         size: 130, stroke: 11, color: ringColor
                     ) {
                         VStack(spacing: 0) {
-                            Text("Dépensé").font(.tText(11)).foregroundColor(.tTextMute)
+                            Text(L("Dépensé")).font(.tText(11)).foregroundColor(.tTextMute)
                             AnimatedCurrencyAmount(value: t.spent, symbol: sym)
                             AnimatedCurrencyAmount(
                                 value: t.budget,
@@ -1135,7 +1135,7 @@ struct BudgetScreen: View {
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(isOver ? "Dépassement" : "Reste")
+                        Text(isOver ? L("Dépassement") : "Reste")
                             .font(.tText(12)).foregroundColor(.tTextMute)
                         AnimatedCurrencyAmount(
                             value: remaining,
@@ -1145,12 +1145,12 @@ struct BudgetScreen: View {
                             color: statusColor
                         )
                         if !isOver && t.days > 0 {
-                            Text("≈ \(remaining / t.days)\(sym)/jour")
+                            Text(L("≈ %@/jour", "\(remaining / t.days)\(sym)"))
                                 .font(.tText(12)).foregroundColor(.tTextMute)
                         }
                         HStack(spacing: 6) {
                             TIcon(glyph: isOver ? .close : .check, size: 14, stroke: statusColor)
-                            Text(isOver ? "Budget dépassé" : "Dans le budget")
+                            Text(isOver ? L("Budget dépassé") : L("Dans le budget"))
                                 .font(.tText(12, weight: .semibold)).foregroundColor(statusColor)
                         }
                         .padding(.horizontal, 12).padding(.vertical, 8)
@@ -1178,7 +1178,7 @@ struct BudgetScreen: View {
                             Image(systemName: "exclamationmark.shield.fill")
                                 .font(.system(size: 13))
                                 .foregroundColor(.tGold)
-                            Text("Fond d'urgence")
+                            Text(L("Fond d'urgence"))
                                 .font(.tText(13, weight: .semibold))
                                 .foregroundColor(.tTextMute)
                             Spacer()
@@ -1191,7 +1191,7 @@ struct BudgetScreen: View {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 13))
                                 .foregroundColor(available < 0 ? .tRose : .tMint)
-                            Text("Disponible réel")
+                            Text(L("Disponible réel"))
                                 .font(.tText(13, weight: .semibold))
                                 .foregroundColor(.tTextMute)
                             Spacer()
@@ -1208,7 +1208,7 @@ struct BudgetScreen: View {
     // MARK: - DÉPENSES header
 
     private var txHeader: some View {
-        Text("MES DÉPENSES")
+        Text(L("MES DÉPENSES"))
             .font(.tText(14, weight: .bold))
             .foregroundColor(.tText)
             .tracking(0.4)
@@ -1224,17 +1224,17 @@ struct BudgetScreen: View {
 
         VStack(alignment: .leading, spacing: 16) {
             expenseSection(
-                title: "DÉPENSES À VENIR",
+                title: L("DÉPENSES À VENIR"),
                 expenses: upcoming,
                 upcoming: true,
-                emptyHint: upcoming.isEmpty ? "Aucune dépense planifiée." : nil
+                emptyHint: upcoming.isEmpty ? L("Aucune dépense planifiée.") : nil
             )
 
             expenseSection(
-                title: "DÉPENSES EFFECTUÉES",
+                title: L("DÉPENSES EFFECTUÉES"),
                 expenses: completed,
                 upcoming: false,
-                emptyHint: completed.isEmpty ? "Tes dépenses payées apparaîtront ici." : nil
+                emptyHint: completed.isEmpty ? L("Tes dépenses payées apparaîtront ici.") : nil
             )
         }
         .padding(.bottom, 10)
@@ -1329,14 +1329,14 @@ struct BudgetScreen: View {
                         .background(Circle().fill(Color.tRose.opacity(0.12)))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Supprimer cette dépense")
+                .accessibilityLabel(L("Supprimer cette dépense"))
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .contentShape(Rectangle())
         .onTapGesture { onEditExpense(expense.id) }
-        .accessibilityLabel("Modifier \(expense.label)")
+        .accessibilityLabel(L("Modifier %@", expense.label))
     }
 
     private func expenseActionChip(
@@ -1388,7 +1388,7 @@ struct BudgetScreen: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(upcoming ? "Marquer comme effectuée" : "Marquer comme à venir")
+        .accessibilityLabel(upcoming ? L("Marquer comme effectuée") : L("Marquer comme à venir"))
     }
 
     // MARK: - Formatters & helpers
@@ -1416,7 +1416,7 @@ struct BudgetScreen: View {
             (
                 Text("\(date) · ")
                     .foregroundColor(.tTextMute)
-                + Text("Urgence")
+                + Text(L("Urgence"))
                     .foregroundColor(.tRose)
                 + Text(place.isEmpty ? "" : " · \(place)")
                     .foregroundColor(.tTextMute)
@@ -1441,8 +1441,8 @@ struct BudgetScreen: View {
         TCard(padding: 22) {
             VStack(spacing: 10) {
                 TIcon(glyph: .wallet, size: 34, stroke: .tAccent2)
-                Text("Aucune dépense enregistrée").font(.tDisplay(22))
-                Text("Ajoute tes dépenses réelles pour suivre ton budget.")
+                Text(L("Aucune dépense enregistrée")).font(.tDisplay(22))
+                Text(L("Ajoute tes dépenses réelles pour suivre ton budget."))
                     .font(.tText(14)).foregroundColor(.tTextMute).multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
@@ -1453,10 +1453,10 @@ struct BudgetScreen: View {
         TCard(padding: 22) {
             VStack(spacing: 10) {
                 TIcon(glyph: .wallet, size: 34, stroke: .tAccent2)
-                Text("Aucun voyage sélectionné").font(.tDisplay(22))
-                Text("Choisis un voyage pour gérer son budget.")
+                Text(L("Aucun voyage sélectionné")).font(.tDisplay(22))
+                Text(L("Choisis un voyage pour gérer son budget."))
                     .font(.tText(14)).foregroundColor(.tTextMute).multilineTextAlignment(.center)
-                CTA(label: "Retour", action: onBack).padding(.top, 6)
+                CTA(label: L("Revenir"), action: onBack).padding(.top, 6)
             }
             .frame(maxWidth: .infinity)
         }
@@ -1668,7 +1668,7 @@ struct CurrencyConverterSheet: View {
                         // Saved conversions
                         if !savedConversions.isEmpty {
                             VStack(alignment: .leading, spacing: 10) {
-                                Text("ENREGISTREMENTS")
+                                Text(L("ENREGISTREMENTS"))
                                     .font(.tText(11, weight: .bold))
                                     .tracking(1.4)
                                     .foregroundColor(.tTextMute)
@@ -1693,11 +1693,11 @@ struct CurrencyConverterSheet: View {
                     .animation(.easeInOut(duration: 0.22), value: savedConversions.count)
                 }
             }
-            .navigationTitle("Convertisseur de devises")
+            .navigationTitle(L("Convertisseur de devises"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Fermer") { dismiss() }.foregroundColor(.tAccent2)
+                    Button(L("Fermer")) { dismiss() }.foregroundColor(.tAccent2)
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button(action: saveConversion) {
@@ -1868,13 +1868,13 @@ struct CurrencyConverterSheet: View {
                     .font(.tText(12, weight: .semibold))
                     .foregroundColor(.tText)
             } else {
-                Text("Taux indisponible").font(.tText(12)).foregroundColor(.tTextMute)
+                Text(L("Taux indisponible")).font(.tText(12)).foregroundColor(.tTextMute)
             }
 
             Spacer()
 
             if service.isOffline {
-                Text(service.rateDate.isEmpty ? "Taux indicatifs" : "Hors-ligne · \(service.rateDate)")
+                Text(service.rateDate.isEmpty ? "Taux indicatifs" : L("Hors-ligne · %@", service.rateDate))
                     .font(.tText(10))
                     .foregroundColor(.tGold)
             } else if !service.rateDate.isEmpty {
@@ -1949,12 +1949,12 @@ struct CurrencyPickerSheet: View {
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
             }
-            .navigationTitle("Choisir une devise")
+            .navigationTitle(L("Choisir une devise"))
             .navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $query, prompt: "Rechercher une devise…")
+            .searchable(text: $query, prompt: L("Rechercher une devise…"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Fermer") { dismiss() }.foregroundColor(.tAccent2)
+                    Button(L("Fermer")) { dismiss() }.foregroundColor(.tAccent2)
                 }
             }
         }
