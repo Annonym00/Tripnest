@@ -18,7 +18,7 @@ struct V2_16: View {
 
                     VStack(spacing: 10) {
                         infoCard(.filter, title: L("Ton objectif"),
-                                 content: "Construire ", highlight: "ton budget", trailing: " de voyage",
+                                 content: L("Construire "), highlight: L("ton budget"), trailing: L(" de voyage"),
                                  highlightColor: .tMint, color: .tMint, bg: Color(hex: 0x2a194f))
                         infoCard(.user, title: L("Ton profil"),
                                  content: L("Profil voyageur à affiner"),
@@ -106,7 +106,7 @@ struct V2_17: View {
                         .padding(.top, 22)
                     }
 
-                    CTA(label: "Suivant →").padding(.top, 12)
+                    CTA(label: L("Suivant →")).padding(.top, 12)
                 }
                 .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
             }
@@ -246,14 +246,14 @@ struct V2_19: View {
     private let steps: [Step] = [
         .init(n: "01", label: L("Analyse de ton profil"),     detail: L("On croise tes 15 réponses"),        done: true),
         .init(n: "02", label: L("Calibrage de ton budget"),   detail: L("On ajuste avec tes réponses"),  done: true),
-        .init(n: "03", label: "Recommandations de spots",  detail: L("Sélection adaptée à ton style"),   busy: true),
+        .init(n: "03", label: L("Recommandations de spots"),  detail: L("Sélection adaptée à ton style"),   busy: true),
         .init(n: "04", label: L("Stratégie d'économie"),      detail: L("On prépare ton objectif"), wait: true),
     ]
 
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
-                OBHeader(step: 19, label: "On y est presque")
+                OBHeader(step: 19, label: L("On y est presque"))
                 VStack(alignment: .leading, spacing: 0) {
                     Text(L("DERNIÈRE LIGNE DROITE"))
                         .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
@@ -467,8 +467,6 @@ struct V2_21: View {
 
     private var barsChart: some View {
         ZStack {
-            RadialGradient(colors: [Color.tGold.opacity(0.18), .clear],
-                           center: .center, startRadius: 0, endRadius: 92)
             HStack(alignment: .bottom, spacing: 10) {
                 ForEach(Array(bars.enumerated()), id: \.offset) { _, b in
                     VStack(spacing: 5) {
@@ -492,6 +490,18 @@ struct V2_21: View {
                                 .stroke(b.isYou ? Color.tGold : Color.tBorder, lineWidth: 1))
                             .shadow(color: b.isYou ? Color.tGold.opacity(0.4) : .clear, radius: 8)
                     }
+                    .background {
+                        if b.isYou {
+                            RadialGradient(
+                                colors: [Color.tGold.opacity(0.30), Color.tGold.opacity(0.10), .clear],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 72
+                            )
+                            .frame(width: 132, height: 190)
+                            .allowsHitTesting(false)
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 12)
@@ -503,6 +513,15 @@ struct V2_21: View {
 // MARK: - 22 · IDENTITÉ ─────────────────────────────────────────────────────
 
 struct V2_22: View {
+    @State private var barsFilled = false
+
+    private let traits: [(label: String, value: Int)] = [
+        (L("Budget"), 78),
+        (L("Spots"), 64),
+        (L("Vols"), 55),
+        (L("Organisation"), 88),
+    ]
+
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
@@ -549,14 +568,18 @@ struct V2_22: View {
                     .padding(.top, 6).padding(.horizontal, 10)
 
                 VStack(spacing: 10) {
-                    trait("Budget", 0)
-                    trait("Spots", 0)
-                    trait("Vols", 0)
-                    trait("Organisation", 0)
+                    ForEach(traits, id: \.label) { t in
+                        trait(t.label, t.value)
+                    }
                 }
                 .padding(.top, 18)
             }
             .frame(maxWidth: .infinity)
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.85).delay(0.15)) {
+                barsFilled = true
+            }
         }
     }
 
@@ -572,7 +595,7 @@ struct V2_22: View {
                     Capsule().fill(Color(hex: 0x2b1d49)).frame(height: 4)
                     Capsule().fill(LinearGradient(colors: [.tAccent2, .tAccent],
                                                   startPoint: .leading, endPoint: .trailing))
-                        .frame(width: geo.size.width * CGFloat(v) / 100, height: 4)
+                        .frame(width: geo.size.width * CGFloat(barsFilled ? v : 0) / 100, height: 4)
                 }
             }
             .frame(height: 4)
@@ -616,7 +639,7 @@ struct V2_23: View {
                         }
                         .padding(.top, 8)
 
-                        CTA(label: "Continuer →").padding(.top, 18)
+                        CTA(label: L("Continuer →")).padding(.top, 18)
                     }
                     .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
                 }
@@ -626,24 +649,24 @@ struct V2_23: View {
 
     private var coverBlock: some View {
         ZStack(alignment: .topLeading) {
-            DestPhoto(label: L("Destination à définir"), hue: 340, radius: 0)
+            Image("JapanCoupleFuji")
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity)
                 .frame(height: 170)
+                .clipped()
             LinearGradient(stops: [
-                .init(color: Color.tBg0.opacity(0.1), location: 0),
-                .init(color: Color.tBg0.opacity(0.85), location: 0.9),
+                .init(color: Color.black.opacity(0.04), location: 0),
+                .init(color: Color.tBg0.opacity(0.18), location: 0.48),
+                .init(color: Color.tBg0.opacity(0.92), location: 1),
             ], startPoint: .top, endPoint: .bottom)
             .frame(height: 170)
-            Text(L("FAIT POUR TOI"))
-                .font(.tText(11, weight: .bold)).tracking(1).foregroundColor(.tGold)
-                .padding(.horizontal, 10).padding(.vertical, 4)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color.tGold.opacity(0.20)))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.tGold.opacity(0.4), lineWidth: 1))
-                .padding(14)
             VStack {
                 Spacer()
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(L("Ton voyage")).font(.tDisplay(26)).tracking(-0.8).foregroundColor(.white)
-                    Text(L("Dates à définir · durée à définir"))
+                    Text(L("Mon voyage au Japon I+M"))
+                        .font(.tDisplay(24)).tracking(-0.8).foregroundColor(.white)
+                    Text(L("12–22 avril 2027 · 11 jours"))
                         .font(.tText(12)).foregroundColor(.white.opacity(0.8))
                 }
                 .padding(14)
@@ -697,7 +720,7 @@ struct V2_24: View {
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
-                OBHeader(step: 24, label: "Projection")
+                OBHeader(step: 24, label: L("Projection"))
                 VStack(alignment: .leading, spacing: 0) {
                     Text(L("PROJECTION SUR 12 MOIS"))
                         .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tMint)
@@ -707,7 +730,7 @@ struct V2_24: View {
 
                     VStack(spacing: 6) {
                         Color.clear.frame(height: 26)
-                        GradientNumber(text: "0€", size: 90, colors: [.tMint, .tAccent2])
+                        GradientNumber(value: "0", suffix: "€", size: 90, colors: [.tMint, .tAccent2])
                             .shadow(color: Color.tMint.opacity(0.5), radius: 40)
                         Text(L("avant d'ajouter tes vraies dépenses"))
                             .font(.tText(13)).foregroundColor(.tTextMute)
@@ -805,7 +828,7 @@ struct V2_25: View {
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
-                OBHeader(step: 25, label: "Notifications")
+                OBHeader(step: 25, label: L("Notifications"))
                 VStack(alignment: .leading, spacing: 0) {
                     Text(L("RAPPELS INTELLIGENTS"))
                         .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
@@ -882,7 +905,7 @@ struct V2_26: View {
     var body: some View {
         ScreenShell {
             VStack(spacing: 0) {
-                OBHeader(step: 26, label: "Sauvegarde")
+                OBHeader(step: 26, label: L("Sauvegarde"))
                 VStack(alignment: .leading, spacing: 0) {
                     Text(L("SAUVEGARDE TON PROFIL"))
                         .font(.tText(11, weight: .bold)).tracking(2).foregroundColor(.tAccent2)
@@ -904,7 +927,7 @@ struct V2_26: View {
                     .padding(.top, 12)
 
                     Spacer(minLength: 0)
-                    CTA(label: "Continuer").padding(.top, 12)
+                    CTA(label: L("Continuer")).padding(.top, 12)
                     Text(L("Tu pourras ajouter tes voyages, dépenses et lieux dès l'écran d'accueil."))
                         .font(.tText(10))
                         .foregroundColor(.tTextDim)
@@ -984,7 +1007,7 @@ struct V2_27: View {
                         .padding(.top, 18)
                     }
 
-                    CTA(label: "Continuer →").padding(.top, 8)
+                    CTA(label: L("Continuer →")).padding(.top, 8)
                 }
                 .padding(.horizontal, 26).padding(.top, 20).padding(.bottom, 28)
             }
@@ -1011,6 +1034,14 @@ struct V2_27: View {
 
 struct V2_28: View {
     @Environment(\.tripnestDefaultCTAAction) private var defaultAction
+    @EnvironmentObject private var purchases: PurchasesManager
+
+    private var ctaLabel: String {
+        if let price = purchases.primaryPriceString {
+            return "\(L("Commencer")) · \(price)"
+        }
+        return L("Entrer dans Tripnest")
+    }
 
     var body: some View {
         ScreenShell {
@@ -1031,16 +1062,48 @@ struct V2_28: View {
                         titleBlock.padding(.top, 14)
                         valueCard.padding(.top, 16)
                         trialTimeline.padding(.top, 14)
-                        CTA(label: L("Entrer dans Tripnest"), height: 60, fontSize: 17)
+                        CTA(label: ctaLabel, height: 60, fontSize: 17, action: handlePrimaryCTA)
                             .padding(.top, 12)
-                        Text(L("Aucun paiement configuré dans cette version."))
-                            .font(.tText(10)).foregroundColor(.tTextDim)
-                            .multilineTextAlignment(.center)
-                            .padding(.top, 8)
+                            .opacity(purchases.purchaseInProgress ? 0.5 : 1)
+                            .disabled(purchases.purchaseInProgress)
+
+                        Button(action: handleRestore) {
+                            Text(L("Restaurer mes achats"))
+                                .font(.tText(13, weight: .bold))
+                                .foregroundColor(.tTextMute)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 12)
+                        .disabled(purchases.purchaseInProgress)
+
+                        if !purchases.isLive {
+                            Text(L("Aucun paiement configuré dans cette version."))
+                                .font(.tText(10)).foregroundColor(.tTextDim)
+                                .multilineTextAlignment(.center)
+                                .padding(.top, 8)
+                        }
                     }
                     .padding(.horizontal, 24).padding(.bottom, 26)
                 }
             }
+        }
+        .task { await purchases.loadOfferings() }
+    }
+
+    private func handlePrimaryCTA() {
+        guard purchases.isLive, purchases.primaryPriceString != nil else {
+            defaultAction()   // RevenueCat non configuré → on entre directement dans l'app
+            return
+        }
+        Task {
+            if await purchases.purchasePrimary() { defaultAction() }
+        }
+    }
+
+    private func handleRestore() {
+        guard purchases.isLive else { return }
+        Task {
+            if await purchases.restore() { defaultAction() }
         }
     }
 
@@ -1106,7 +1169,7 @@ struct V2_28: View {
                 }
                 .frame(width: 22, height: 22)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(L("Annuel · 7 jours offerts")).font(.tText(16, weight: .black))
+                    Text(L("Annuel · 4 jours offerts")).font(.tText(16, weight: .black))
                     Text(L("Tarif non configuré")).font(.tText(12)).foregroundColor(.tTextMute)
                     Text(L("OPTION À BRANCHER PLUS TARD"))
                         .font(.tText(10, weight: .bold)).tracking(0.5).foregroundColor(.tGold)
@@ -1250,5 +1313,234 @@ struct V2_29: View {
             }
             .padding(.horizontal, 28).padding(.bottom, 36)
         }
+    }
+}
+
+// MARK: - 30 · ACCÈS TRIPNEST ───────────────────────────────────────────────
+
+struct V2_30: View {
+    private enum Plan: String {
+        case annual, monthly
+    }
+
+    @State private var selectedPlan: Plan = .annual
+
+    var body: some View {
+        ScreenShell(motif: false) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    hero
+                    benefits
+                        .padding(.top, 12)
+                    plans
+                        .padding(.top, 12)
+                    CTA(label: L("Commencer mes 4 jours gratuits →"), height: 58, fontSize: 17)
+                        .padding(.top, 14)
+                    reassurance
+                        .padding(.top, 8)
+                    legalFooter
+                        .padding(.top, 9)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 2)
+                .padding(.bottom, 18)
+            }
+        }
+    }
+
+    private var hero: some View {
+        VStack(spacing: 8) {
+            ZStack {
+                RadialGradient(
+                    colors: [Color.tAccent.opacity(0.48), Color.tRose.opacity(0.10), .clear],
+                    center: .center,
+                    startRadius: 4,
+                    endRadius: 72
+                )
+                .frame(width: 166, height: 166)
+
+                Circle()
+                    .stroke(Color.tAccent2.opacity(0.16), lineWidth: 1)
+                    .frame(width: 150, height: 150)
+
+                TripnestLogo(size: 108)
+            }
+            .frame(width: 166, height: 166)
+
+            HStack(spacing: 6) {
+                TIcon(glyph: .gift, size: 12, stroke: .tGold, strokeWidth: 2.2)
+                Text(L("4 JOURS OFFERTS · INCLUS"))
+                    .font(.tText(10, weight: .black))
+                    .tracking(1.2)
+                    .foregroundColor(.tGold)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Capsule().fill(Color.tGold.opacity(0.10)))
+            .overlay(Capsule().stroke(Color.tGold.opacity(0.28), lineWidth: 1))
+
+            (Text(L("Voyage plus.\n")).font(.tDisplay(32))
+             + Text(L("Organise moins.")).font(.tDisplay(32)).foregroundColor(.tAccent2))
+                .tracking(-1.1)
+                .multilineTextAlignment(.center)
+                .padding(.top, 3)
+
+            Text(L("Ton copilote pour préparer, suivre et revivre chaque voyage."))
+                .font(.tText(13))
+                .foregroundColor(.tTextMute)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 14)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var benefits: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            Text(L("TOUT CE QU’IL TE FAUT"))
+                .font(.tText(10, weight: .bold))
+                .tracking(1.2)
+                .foregroundColor(.tTextMute)
+            benefit(.trips, L("Voyages et itinéraires illimités"), .tAccent2)
+            benefit(.wallet, L("Budgets et dépenses centralisés"), .tMint)
+            benefit(.gallery, L("Souvenirs, billets et spots réunis"), .tRose)
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.tSurface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.tBorder, lineWidth: 1)
+        )
+    }
+
+    private func benefit(_ glyph: TIcon.Glyph, _ label: String, _ color: Color) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle().fill(color.opacity(0.14))
+                TIcon(glyph: glyph, size: 16, stroke: color, strokeWidth: 2)
+            }
+            .frame(width: 34, height: 34)
+            Text(label)
+                .font(.tText(13, weight: .semibold))
+            Spacer(minLength: 0)
+            TIcon(glyph: .check, size: 13, stroke: .tMint, strokeWidth: 2.8)
+        }
+    }
+
+    private var plans: some View {
+        VStack(spacing: 10) {
+            planCard(
+                .annual,
+                title: L("Formule annuelle"),
+                price: L("39,99 € / an"),
+                equivalent: L("soit 0,77 € par semaine"),
+                badge: L("ÉCONOMISE 67 %")
+            )
+            planCard(
+                .monthly,
+                title: L("Formule mensuelle"),
+                price: L("9,99 € / mois"),
+                equivalent: L("facturation mensuelle"),
+                badge: nil
+            )
+        }
+    }
+
+    private func planCard(
+        _ plan: Plan,
+        title: String,
+        price: String,
+        equivalent: String,
+        badge: String?
+    ) -> some View {
+        let selected = selectedPlan == plan
+        return Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
+                selectedPlan = plan
+            }
+        } label: {
+            VStack(spacing: 0) {
+                if let badge {
+                    Text(badge)
+                        .font(.tText(10, weight: .black))
+                        .tracking(0.8)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 25)
+                        .background(
+                            LinearGradient(colors: [.tAccent2, .tAccentDeep], startPoint: .leading, endPoint: .trailing)
+                        )
+                }
+
+                HStack(spacing: 13) {
+                    ZStack {
+                        Circle().stroke(selected ? Color.tAccent2 : Color.tBorder, lineWidth: 2)
+                        if selected {
+                            Circle().fill(Color.tAccent2).frame(width: 10, height: 10)
+                        }
+                    }
+                    .frame(width: 22, height: 22)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(title).font(.tText(15, weight: .bold))
+                        Text(L("4 jours gratuits"))
+                            .font(.tText(10, weight: .bold))
+                            .foregroundColor(.tMint)
+                    }
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(price)
+                            .font(.tText(14, weight: .black))
+                            .foregroundColor(.tText)
+                        Text(equivalent)
+                            .font(.tText(9))
+                            .foregroundColor(.tTextMute)
+                    }
+                }
+                .padding(15)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(selected ? Color.tAccent.opacity(0.10) : Color.tSurface)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(selected ? Color.tAccent2 : Color.tBorder, lineWidth: selected ? 1.8 : 1)
+            )
+            .shadow(color: selected ? Color.tAccent.opacity(0.20) : .clear, radius: 12, y: 8)
+        }
+        .buttonStyle(TripnestPressStyle())
+    }
+
+    private var reassurance: some View {
+        HStack(spacing: 6) {
+            TIcon(glyph: .check, size: 11, stroke: .tMint, strokeWidth: 2.7)
+            Text(L("Aucun débit aujourd’hui · Annulable à tout moment"))
+                .font(.tText(10, weight: .semibold))
+                .foregroundColor(.tTextMute)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var legalFooter: some View {
+        VStack(spacing: 7) {
+            HStack(spacing: 14) {
+                Text(L("Restaurer"))
+                Text(L("Conditions"))
+                Text(L("Confidentialité"))
+            }
+            .font(.tText(10, weight: .semibold))
+            .foregroundColor(.tTextDim)
+
+            Text(L("Paiement sécurisé via l’App Store. L’abonnement se renouvelle automatiquement sauf annulation."))
+                .font(.tText(9))
+                .foregroundColor(.tTextDim)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
+        }
+        .frame(maxWidth: .infinity)
     }
 }

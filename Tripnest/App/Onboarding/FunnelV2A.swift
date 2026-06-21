@@ -76,9 +76,9 @@ struct V2_02: View {
             VStack(spacing: 10) {
                 OptCard(emoji: "wallet", label: L("Économiser sur mes voyages"),
                         detail: L("J'ai déjà dépassé mon budget une fois de trop"), active: true)
-                OptCard(emoji: "map", label: "Mieux m'organiser",
+                OptCard(emoji: "map", label: L("Mieux m'organiser"),
                         detail: L("Mes voyages sont chaotiques"), color: .tRose)
-                OptCard(emoji: "globe", label: "Voir plus du monde",
+                OptCard(emoji: "globe", label: L("Voir plus du monde"),
                         detail: L("J'ai des destinations en tête à concrétiser"), color: .tBlue)
                 OptCard(emoji: "camera", label: L("Garder mes souvenirs"),
                         detail: L("Mes voyages partent dans l'oubli"), color: .tGold)
@@ -103,8 +103,8 @@ struct V2_03: View {
                         detail: L("Je perds le contrôle vite"), active: true, color: .tGold)
                 OptCard(emoji: "list", label: L("Oublier les détails"),
                         detail: L("Réservations, horaires, documents"), color: .tRose)
-                OptCard(emoji: "mind", label: "Tout planifier en amont",
-                        detail: "Trop d'onglets, trop d'apps", color: .tBlue)
+                OptCard(emoji: "mind", label: L("Tout planifier en amont"),
+                        detail: L("Trop d'onglets, trop d'apps"), color: .tBlue)
                 OptCard(emoji: "camera", label: L("Garder une trace propre"),
                         detail: L("Mes photos s'éparpillent"), color: .tMint)
             }
@@ -187,15 +187,15 @@ struct V2_05: View {
     @EnvironmentObject private var onboarding: OnboardingState
     private struct Opt { let glyph: TIcon.Glyph; let label, detail: String; let active: Bool; let color: Color }
     private let opts: [Opt] = [
-        .init(glyph: .user, label: "Solo",        detail: L("Indépendant·e"), active: true,  color: .tAccent2),
-        .init(glyph: .heart, label: "En couple",   detail: L("Voyage à deux"), active: false, color: .tRose),
-        .init(glyph: .home, label: "En famille",  detail: L("Avec enfants"),  active: false, color: .tGold),
-        .init(glyph: .trips, label: "Entre amis",  detail: "Groupe",        active: false, color: .tMint),
+        .init(glyph: .user, label: L("Solo"),        detail: L("Indépendant·e"), active: true,  color: .tAccent2),
+        .init(glyph: .heart, label: L("En couple"),   detail: L("Voyage à deux"), active: false, color: .tRose),
+        .init(glyph: .home, label: L("En famille"),  detail: L("Avec enfants"),  active: false, color: .tGold),
+        .init(glyph: .trips, label: L("Entre amis"),  detail: L("Groupe"),        active: false, color: .tMint),
     ]
 
     var body: some View {
         OBQuestion(
-            step: 5, label: "Personnalisation",
+            step: 5, label: L("Personnalisation"),
             subtitle: L("Q1 · TON STYLE"),
             title: AnyView(Text(L("Avec qui voyages-tu\nle plus souvent ?")))
         ) {
@@ -245,15 +245,19 @@ struct V2_05: View {
 struct V2_06: View {
     var body: some View {
         OBQuestion(
-            step: 6, label: "Personnalisation",
+            step: 6, label: L("Personnalisation"),
             subtitle: L("Q2 · FRÉQUENCE"),
             title: AnyView(Text(L("À quelle fréquence\npars-tu en voyage ?")))
         ) {
             VStack(spacing: 8) {
-                OptCard(emoji: "plane", label: "Plusieurs fois par an", detail: L("4+ voyages"), active: true)
-                OptCard(emoji: "weather", label: L("Une à deux fois par an"), detail: L("1–2 voyages"))
-                OptCard(emoji: "globe", label: L("Un grand voyage par an"), detail: L("Long séjour"))
-                OptCard(emoji: "star", label: L("Plus rarement, mais je rêve"), detail: "")
+                OptCard(emoji: "plane", label: L("Plusieurs fois par an"),
+                        detail: L("4+ voyages"), active: true, color: .tAccent2)
+                OptCard(emoji: "weather", label: L("Une à deux fois par an"),
+                        detail: L("1–2 voyages"), color: .tBlue)
+                OptCard(emoji: "globe", label: L("Un grand voyage par an"),
+                        detail: L("Long séjour"), color: .tMint)
+                OptCard(emoji: "star", label: L("Plus rarement, mais je rêve"),
+                        detail: L("J’attends le bon moment pour repartir"), color: .tRose)
             }
         }
     }
@@ -271,14 +275,14 @@ struct V2_07: View {
         ) {
             VStack(spacing: 10) {
                 Color.clear.frame(height: 10)
-                OptCard(emoji: "wallet", label: "Oui, plusieurs fois",
+                OptCard(emoji: "wallet", label: L("Oui, plusieurs fois"),
                         detail: L("C'est même devenu une habitude"), active: true, color: .tGold)
-                OptCard(emoji: "user", label: L("Oui, une fois ou deux"),
-                        detail: L("Et c'est pour ça que je suis ici"))
-                OptCard(emoji: "unknown", label: "Je ne sais pas",
-                        detail: L("Je ne suis pas vraiment mon budget"))
-                OptCard(emoji: "calm", label: "Non, jamais",
-                        detail: L("Mais je veux optimiser quand même"))
+                OptCard(emoji: "ticket", label: L("Oui, une fois ou deux"),
+                        detail: L("Et c'est pour ça que je suis ici"), color: .tRose)
+                OptCard(emoji: "search", label: L("Je ne sais pas"),
+                        detail: L("Je ne suis pas vraiment mon budget"), color: .tBlue)
+                OptCard(emoji: "check", label: L("Non, jamais"),
+                        detail: L("Mais je veux optimiser quand même"), color: .tMint)
             }
         }
     }
@@ -291,6 +295,7 @@ struct V2_08: View {
     @Environment(\.tripnestOnboardingStep) private var step
     private var pct: Double { onboarding.slider(step: step, fallback: 23) }
     private var val: Int { Int(50 + pct / 100 * (1500 - 50)) }
+    @State private var numDown = false
 
     var body: some View {
         OBQuestion(
@@ -301,16 +306,18 @@ struct V2_08: View {
             VStack(spacing: 26) {
                 Color.clear.frame(height: 20)
                 VStack(spacing: 6) {
-                    GradientNumber(text: "~\(val)€", size: 84, colors: [.tGold, .tAccent])
+                    GradientNumber(prefix: "~", value: "\(val)", suffix: "€", size: 84, colors: [.tGold, .tAccent], countsDown: numDown)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.82), value: val)
                     Text(L("par voyage en moyenne"))
                         .font(.tText(13)).foregroundColor(.tTextMute)
                 }
                 .frame(maxWidth: .infinity)
+                .onChange(of: val) { old, new in numDown = new < old }
                 VStack(spacing: 14) {
                     OBSlider(pct: pct, trackColors: [.tGold, .tAccent], thumbBorder: .tAccent)
                     HStack {
                         Text(L("moins de 100€")); Spacer()
-                        Text("500€"); Spacer()
+                        Text("~750€"); Spacer()
                         Text("1500€+")
                     }
                     .font(.tText(11)).foregroundColor(.tTextMute)
@@ -318,7 +325,7 @@ struct V2_08: View {
                 .padding(.horizontal, 6)
                 TCard(padding: 12) {
                     (Text(L("Sur 4 voyages par an, ça fait ")).font(.tText(12))
-                     + Text(L("1 520€ par an")).font(.tText(12, weight: .bold)).foregroundColor(.tRose)
+                     + Text("\(val * 4)€ par an").font(.tText(12, weight: .bold)).foregroundColor(.tRose)
                      + Text(L(" de perte.")).font(.tText(12)))
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
@@ -336,17 +343,17 @@ struct V2_09: View {
             step: 9, label: L("État des lieux"),
             subtitle: L("Q5 · TES OUTILS"),
             title: AnyView(Text(L("Comment t'organises-tu\naujourd'hui ?"))),
-            hint: "Plusieurs choix possibles."
+            hint: L("Plusieurs choix possibles.")
         ) {
             VStack(spacing: 8) {
                 MultiCard(emoji: "sheet", label: L("Une feuille Excel / Google Sheets"),
                           detail: L("Toujours obsolète, jamais à jour"), active: true)
-                MultiCard(emoji: "notes", label: "L'app Notes",
-                          detail: "Tout est en vrac", active: true, color: .tRose)
+                MultiCard(emoji: "notes", label: L("L'app Notes"),
+                          detail: L("Tout est en vrac"), active: true, color: .tRose)
                 MultiCard(emoji: "wallet", label: L("L'app de ma banque"),
-                          detail: L("Catégories pas adaptées au voyage"))
+                          detail: L("Catégories pas adaptées au voyage"), color: .tMint)
                 MultiCard(emoji: "unknown", label: L("Rien de précis"),
-                          detail: "Je fais au feeling", color: .tGold)
+                          detail: L("Je fais au feeling"), color: .tGold)
                 MultiCard(emoji: "calculator", label: L("Une autre app"),
                           detail: L("Mais ça ne me convient pas"), color: .tBlue)
             }
@@ -362,15 +369,15 @@ struct V2_10: View {
             step: 10, label: L("État des lieux"),
             subtitle: L("Q6 · CE QUI TE FRUSTRE"),
             title: AnyView(Text(L("Qu'est-ce qui te frustre\nle plus avec ces outils ?"))),
-            hint: "Plusieurs choix possibles."
+            hint: L("Plusieurs choix possibles.")
         ) {
             VStack(spacing: 8) {
                 MultiCard(emoji: "time", label: L("Trop de temps à saisir"),
                           detail: L("Je finis par ne plus le faire"), active: true)
                 MultiCard(emoji: "wallet", label: L("Les conversions de devises"),
                           detail: L("Je ne sais jamais où j'en suis"), active: true, color: .tGold)
-                MultiCard(emoji: "bell", label: "Pas de mode hors-ligne",
-                          detail: L("Inutile en plein voyage"))
+                MultiCard(emoji: "bell", label: L("Pas de mode hors-ligne"),
+                          detail: L("Inutile en plein voyage"), color: .tMint)
                 MultiCard(emoji: "globe", label: L("Aucune vision d'ensemble"),
                           detail: L("Je découvre les dégâts au retour"), active: true, color: .tRose)
                 MultiCard(emoji: "spot", label: L("Je perds les lieux découverts"),
@@ -391,11 +398,11 @@ struct V2_11: View {
         ) {
             VStack(spacing: 10) {
                 OptCard(emoji: "wallet", label: L("Économiser 500€+ sur mes voyages"),
-                        detail: "Plus de marge, moins de stress", active: true, color: .tGold)
+                        detail: L("Plus de marge, moins de stress"), active: true, color: .tGold)
                 OptCard(emoji: "map", label: L("Visiter 3 nouvelles destinations"),
                         detail: L("Sortir de ma zone"), color: .tRose)
                 OptCard(emoji: "calendar", label: L("Mieux planifier mes vacances"),
-                        detail: "Anticiper, ne plus subir", color: .tBlue)
+                        detail: L("Anticiper, ne plus subir"), color: .tBlue)
                 OptCard(emoji: "globe", label: L("Faire le voyage de ma vie"),
                         detail: L("Cette année, c'est la bonne"), color: .tMint)
             }
@@ -408,26 +415,55 @@ struct V2_11: View {
 struct V2_12: View {
     @EnvironmentObject private var onboarding: OnboardingState
     @Environment(\.tripnestOnboardingStep) private var step
-    @State private var style = "Confort"
+    @State private var numDown = false
+    @State private var budgetTier = 0
     private var pct: Double { onboarding.slider(step: step, fallback: 25) }
     private var v: Int { Int(500 + pct / 100 * (6000 - 500)) }
+
+    private static let tierLabels = [
+        L("C'est le budget parfait pour voyager ✈️"),
+        L("Belle enveloppe — tu vas pouvoir profiter 🙌"),
+        L("Solide. De belles expériences t'attendent 🔥"),
+        L("On est sur du premium là 👑")
+    ]
+    private static let tierColors: [Color] = [.tTextMute, .tAccent2, .tGold, .tRose]
+
+    private func tier(for value: Int) -> Int {
+        switch value {
+        case ..<1700: return 0
+        case 1700..<3000: return 1
+        case 3000..<4500: return 2
+        default: return 3
+        }
+    }
 
     var body: some View {
         OBQuestion(
             step: 12, label: L("Ton objectif"),
             subtitle: L("TON BUDGET MOYEN"),
             title: AnyView(Text(L("Combien dépenses-tu\npar voyage en moyenne ?"))),
-            hint: "Hors transport longue distance. Estime au mieux."
+            hint: L("Hors transport longue distance. Estime au mieux.")
         ) {
             VStack(spacing: 30) {
                 Color.clear.frame(height: 10)
                 VStack(spacing: 4) {
-                    GradientNumber(text: "\(v.formatted(.number.locale(Locale(identifier: "fr_FR"))))€",
-                                  size: 78, colors: [.white, .tAccent2])
+                    GradientNumber(prefix: "~", value: "\(v.formatted(.number.locale(Locale(identifier: "fr_FR"))))", suffix: "€",
+                                  size: 78, colors: [.white, .tAccent2], countsDown: numDown)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.82), value: v)
                     Text(L("≈ 230€ / jour pour 8 jours"))
                         .font(.tText(13)).foregroundColor(.tTextMute)
                 }
                 .frame(maxWidth: .infinity)
+                .onAppear { budgetTier = tier(for: v) }
+                .onChange(of: v) { old, new in
+                    numDown = new < old
+                    let t = tier(for: new)
+                    if t != budgetTier {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                            budgetTier = t
+                        }
+                    }
+                }
                 VStack(spacing: 14) {
                     OBSlider(pct: pct)
                     HStack {
@@ -437,13 +473,20 @@ struct V2_12: View {
                         Text("6000€+")
                     }
                     .font(.tText(11)).foregroundColor(.tTextMute)
+                    ZStack {
+                        ForEach(0..<4, id: \.self) { i in
+                            Text(Self.tierLabels[i])
+                                .foregroundColor(Self.tierColors[i])
+                                .fontWeight(i >= 2 ? .medium : .regular)
+                                .opacity(budgetTier == i ? 1 : 0)
+                                .scaleEffect(budgetTier == i ? 1 : 0.94)
+                        }
+                    }
+                    .font(.tText(13))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, minHeight: 18)
                 }
                 .padding(.horizontal, 6)
-                HStack(spacing: 8) {
-                    TPill(label: "Backpack", active: style == "Backpack", action: { style = "Backpack" })
-                    TPill(label: "Confort", active: style == "Confort", action: { style = "Confort" })
-                    TPill(label: "Luxe", active: style == "Luxe", action: { style = "Luxe" })
-                }
             }
         }
     }
@@ -468,7 +511,7 @@ struct V2_13: View {
 
     var body: some View {
         OBQuestion(
-            step: 13, label: "Inspiration",
+            step: 13, label: L("Inspiration"),
             subtitle: L("DESTINATIONS RÊVÉES"),
             title: AnyView(Text(L("Où as-tu envie d'aller\nen priorité ?"))),
             hint: L("Choisis au moins 3 destinations."),
@@ -543,7 +586,7 @@ struct V2_14: View {
     @AppStorage("tripnest.onboarding.destination") private var destination = ""
     var body: some View {
         OBQuestion(
-            step: 14, label: "Engagement",
+            step: 14, label: L("Engagement"),
             subtitle: L("TON PROCHAIN VOYAGE"),
             title: AnyView(Text(L("Où as-tu envie\nd'aller ?"))),
             hint: L("On l'utilise pour construire ton premier plan. Tu pourras ajouter les dates plus tard."),
@@ -587,12 +630,13 @@ struct V2_14: View {
 struct V2_15: View {
     @EnvironmentObject private var onboarding: OnboardingState
     @Environment(\.tripnestOnboardingStep) private var step
+    @State private var numDown = false
     private var pct: Double { onboarding.slider(step: step, fallback: 27) }
     private var save: Int { Int(100 + pct / 100 * (2000 - 100)) }
 
     var body: some View {
         OBQuestion(
-            step: 15, label: "Engagement",
+            step: 15, label: L("Engagement"),
             subtitle: L("TON OBJECTIF D'ÉCONOMIE"),
             title: AnyView(Text(L("Combien veux-tu économiser\nsur ton prochain voyage ?"))),
             hint: L("Sois ambitieux·se. On va t'y aider.")
@@ -602,11 +646,13 @@ struct V2_15: View {
                 VStack(spacing: 6) {
                     Text(L("OBJECTIF"))
                         .font(.tText(12, weight: .bold)).tracking(2).foregroundColor(.tMint)
-                    GradientNumber(text: "−\(save)€", size: 78, colors: [.tMint, .tAccent2])
+                    GradientNumber(prefix: "−", value: "\(save)", suffix: "€", size: 78, colors: [.tMint, .tAccent2], countsDown: numDown)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.82), value: save)
                     Text(L("selon ton budget réel"))
                         .font(.tText(13)).foregroundColor(.tTextMute)
                 }
                 .frame(maxWidth: .infinity)
+                .onChange(of: save) { old, new in numDown = new < old }
 
                 VStack(spacing: 14) {
                     OBSlider(pct: pct, trackColors: [.tMint, .tAccent2], thumbBorder: .tMint)

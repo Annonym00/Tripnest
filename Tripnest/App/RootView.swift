@@ -50,7 +50,6 @@ struct OnboardingFlow: View {
                         .transition(.identity)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
             }
         }
         .environmentObject(navigator)
@@ -104,16 +103,20 @@ struct OnboardingFlow: View {
         )
     }
 
-    private static let _onboardingDateFmt: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "fr_FR"); return f
-    }()
-
     private func parseOnboardingDate(_ text: String) -> Date? {
         guard !text.isEmpty else { return nil }
-        let f = Self._onboardingDateFmt
-        for format in ["d MMM yyyy", "dd/MM/yyyy", "yyyy-MM-dd"] {
-            f.dateFormat = format
-            if let date = f.date(from: text) { return date }
+        let f = DateFormatter()
+        // Try the active language first, then fall back to both locales so a date
+        // typed in either language still parses (avoids a nil departure date).
+        let locales = [Localizer.shared.language.locale,
+                       Locale(identifier: "fr_FR"),
+                       Locale(identifier: "en_US")]
+        for locale in locales {
+            f.locale = locale
+            for format in ["d MMM yyyy", "dd/MM/yyyy", "yyyy-MM-dd"] {
+                f.dateFormat = format
+                if let date = f.date(from: text) { return date }
+            }
         }
         return nil
     }
@@ -132,7 +135,7 @@ struct OnboardingFlow: View {
         case 19: V2_19(); case 20: V2_20(); case 21: V2_21()
         case 22: V2_22(); case 23: V2_23(); case 24: V2_24()
         case 25: V2_25(); case 26: V2_26(); case 27: V2_27()
-        case 28: V2_28(); default: V2_29()
+        case 28: V2_28(); case 29: V2_29(); default: V2_30()
         }
     }
 }

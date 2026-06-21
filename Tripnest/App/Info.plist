@@ -25,7 +25,7 @@
   <key>UILaunchScreen</key>
   <dict>
     <key>UIColorName</key>
-    <string></string>
+    <string>LaunchBackground</string>
   </dict>
   <key>UIApplicationSceneManifest</key>
   <dict>
@@ -34,8 +34,10 @@
   </dict>
   <key>UIRequiredDeviceCapabilities</key>
   <array>
-    <string>armv7</string>
+    <string>arm64</string>
   </array>
+  <key>ITSAppUsesNonExemptEncryption</key>
+  <false/>
   <key>UISupportedInterfaceOrientations</key>
   <array>
     <string>UIInterfaceOrientationPortrait</string>

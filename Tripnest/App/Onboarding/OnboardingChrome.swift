@@ -4,7 +4,7 @@ import SwiftUI
 // Réordonner ou retirer une valeur suffit à changer le parcours.
 let onboardingFunnel: [Int] = [
     1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12,
-    17, 18, 19, 20, 21, 23, 25, 26, 29
+    17, 18, 19, 20, 21, 23, 25, 26, 29, 30
 ]
 
 let OB_TOTAL = onboardingFunnel.count
@@ -41,6 +41,7 @@ enum OnboardingLabels {
         case 25: return "Notifications"
         case 26: return "Sauvegarde"
         case 27: return L("Récapitulatif")
+        case 30: return L("Accès Tripnest")
         default: return nil
         }
     }
@@ -85,7 +86,7 @@ struct OnboardingChromeBar: View {
     }
 
     private var stepCaption: String {
-        let base = "Étape \(navigator.step) / \(OB_TOTAL)"
+        let base = L("Étape %d / %d", navigator.step, OB_TOTAL)
         let position = min(max(navigator.step, 1), OB_TOTAL)
         let screenID = onboardingFunnel[position - 1]
         guard let label = OnboardingLabels.label(for: screenID) else { return base }
@@ -128,7 +129,7 @@ struct OBProgressTrack: View {
 final class OnboardingState: ObservableObject {
     @Published var single: [Int: String] { didSet { save() } }
     @Published var multiple: [Int: Set<String>] { didSet { save() } }
-    @Published var sliders: [Int: Double] { didSet { save() } }
+    @Published var sliders: [Int: Double]
 
     private let singleKey = "tripnest.onboarding.single"
     private let multipleKey = "tripnest.onboarding.multiple"
@@ -173,6 +174,10 @@ final class OnboardingState: ObservableObject {
 
     func setSlider(_ value: Double, step: Int) {
         sliders[step] = min(100, max(0, value))
+    }
+
+    func persistSlider(step: Int) {
+        save()
     }
 
     func slider(step: Int, fallback: Double) -> Double {
@@ -446,10 +451,12 @@ struct OBSlider: View {
     var trackColors: [Color] = [.tAccent2, .tAccent]
     var thumbBorder: Color = .tAccent
     @State private var localPct: Double?
+    @State private var isDragging = false
 
     var body: some View {
         GeometryReader { geo in
             let value = min(100, max(0, localPct ?? onboarding.slider(step: step, fallback: pct)))
+            let thumbX = max(14, min(geo.size.width - 14, geo.size.width * CGFloat(value) / 100))
             ZStack(alignment: .leading) {
                 Capsule().fill(Color(hex: 0x2b1d49))
                     .frame(height: 8)
@@ -460,22 +467,32 @@ struct OBSlider: View {
                 Circle().fill(Color.white)
                     .frame(width: 28, height: 28)
                     .overlay(Circle().stroke(thumbBorder, lineWidth: 3))
-                    .shadow(color: Color.tAccent.opacity(0.4), radius: 6)
-                    .position(x: max(14, min(geo.size.width - 14,
-                                             geo.size.width * CGFloat(value) / 100)),
-                              y: 4)
+                    .shadow(color: thumbBorder.opacity(isDragging ? 0.65 : 0.4),
+                            radius: isDragging ? 14 : 6)
+                    .scaleEffect(isDragging ? 1.18 : 1.0)
+                    .animation(.spring(response: 0.25, dampingFraction: 0.6), value: isDragging)
+                    .position(x: thumbX, y: geo.size.height / 2)
             }
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { gesture in
-                        let next = Double(gesture.location.x / max(1, geo.size.width) * 100)
-                        localPct = min(100, max(0, next))
-                        onboarding.setSlider(localPct ?? pct, step: step)
+                        if !isDragging {
+                            isDragging = true
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        }
+                        let next = min(100, max(0, Double(gesture.location.x / max(1, geo.size.width) * 100)))
+                        localPct = next
+                        onboarding.setSlider(next, step: step)
+                    }
+                    .onEnded { _ in
+                        withAnimation(.spring(response: 0.3)) { isDragging = false }
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        onboarding.persistSlider(step: step)
                     }
             )
         }
-        .frame(height: 28)
+        .frame(height: 36)
         .onAppear {
             if onboarding.sliders[step] == nil {
                 onboarding.setSlider(pct, step: step)
@@ -487,17 +504,37 @@ struct OBSlider: View {
 // MARK: - Big gradient number ───────────────────────────────────────────────
 
 struct GradientNumber: View {
-    let text: String
+    var prefix: String = ""
+    let value: String
+    var suffix: String = ""
     var size: CGFloat = 78
     var colors: [Color] = [.white, .tAccent2]
+    var countsDown: Bool = false
+
+    private var gradient: LinearGradient {
+        LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom)
+    }
 
     var body: some View {
-        Text(text)
-            .font(.tDisplay(size))
-            .tracking(-3.5)
-            .foregroundStyle(
-                LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom)
-            )
+        HStack(spacing: 0) {
+            if !prefix.isEmpty {
+                Text(prefix)
+                    .font(.tDisplay(size))
+                    .tracking(-3.5)
+                    .foregroundStyle(gradient)
+            }
+            Text(value)
+                .font(.tDisplay(size))
+                .tracking(-3.5)
+                .foregroundStyle(gradient)
+                .contentTransition(.numericText(countsDown: countsDown))
+            if !suffix.isEmpty {
+                Text(suffix)
+                    .font(.tDisplay(size))
+                    .tracking(-3.5)
+                    .foregroundStyle(gradient)
+            }
+        }
     }
 }
 

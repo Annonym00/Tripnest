@@ -418,6 +418,8 @@ func tripnestGlyph(for symbol: String?) -> TIcon.Glyph {
     case "user", "mind", "unknown", "calm": return .user
     case "calendar", "time", "weather": return .cal
     case "bell": return .bell
+    case "search": return .search
+    case "check": return .check
     case "spot": return .spot
     case "target": return .filter
     case "gift": return .gift

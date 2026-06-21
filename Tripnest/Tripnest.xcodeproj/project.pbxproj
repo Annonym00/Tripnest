@@ -20,8 +20,11 @@
 		91633CAA2FC3B2740067704B /* DestinationPhotoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91633CA92FC3B2740067704B /* DestinationPhotoService.swift */; };
 		9E3F35C1CCF826862B110B0D /* TripsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607AB288CFB072752B3D55FF /* TripsScreen.swift */; };
 		A7C3E9012F4B5A6D8E9F0011 /* TransportPlaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C3E9012F4B5A6D8E9F0010 /* TransportPlaces.swift */; };
+		FA00000000000000000000D1 /* Purchases.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA00000000000000000000D0 /* Purchases.swift */; };
 		AF1637F3A5B7FB73C884C605 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D08709D528A0B926E698E16 /* HomeScreen.swift */; };
 		B8D4F2A13C5E6D7E8F901234 /* TransportPlaces.json in Resources */ = {isa = PBXBuildFile; fileRef = B8D4F2A13C5E6D7E8F901233 /* TransportPlaces.json */; };
+		A1B2C3D4E5F60718293A4B51 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B50 /* PrivacyInfo.xcprivacy */; };
+		FA00000000000000000000C3 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = FA00000000000000000000C2 /* RevenueCat */; };
 		B9AEFFE10F306E52EB394D8B /* BudgetScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11D99A7DC044400EBEA0C6A9 /* BudgetScreen.swift */; };
 		B9DCF460A0B37B8D8A6FBFD1 /* Icons.swift in Sources */ = {isa = PBXBuildFile; fileRef = E23EE7F5E0B204FBC1A53389 /* Icons.swift */; };
 		C0MPLETEDTR1P5CR33N01B2C3D4 /* CompletedTripsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0MPLETEDTR1P5CR33N01F1L3R3F /* CompletedTripsScreen.swift */; };
@@ -65,10 +68,12 @@
 		9AD29C99CCFF9C56E224C5E2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9D08709D528A0B926E698E16 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
 		A7C3E9012F4B5A6D8E9F0010 /* TransportPlaces.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransportPlaces.swift; sourceTree = "<group>"; };
+		FA00000000000000000000D0 /* Purchases.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Purchases.swift; sourceTree = "<group>"; };
 		AABCEE5EC5CC25924E18C496 /* SpotsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsScreen.swift; sourceTree = "<group>"; };
 		B27177C527B89901263C3844 /* TripnestApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripnestApp.swift; sourceTree = "<group>"; };
 		B5B19288855135BE04B6E6D0 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		B8D4F2A13C5E6D7E8F901233 /* TransportPlaces.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = TransportPlaces.json; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B50 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C0MPLETEDTR1P5CR33N01F1L3R3F /* CompletedTripsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletedTripsScreen.swift; sourceTree = "<group>"; };
 		C8E4A2B24D6F7A8091B2C3D3 /* TripRouteMapCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripRouteMapCard.swift; sourceTree = "<group>"; };
 		CE64E4C2F239A0C8869FB61E /* MainApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainApp.swift; sourceTree = "<group>"; };
@@ -128,6 +133,7 @@
 			children = (
 				9AD29C99CCFF9C56E224C5E2 /* Assets.xcassets */,
 				D9DBF3CF1B8D43985980052F /* Info.plist */,
+				A1B2C3D4E5F60718293A4B50 /* PrivacyInfo.xcprivacy */,
 				B5B19288855135BE04B6E6D0 /* RootView.swift */,
 				B27177C527B89901263C3844 /* TripnestApp.swift */,
 				B373A4F9BB947D9C1985C82A /* Core */,
@@ -176,6 +182,7 @@
 				91633CA92FC3B2740067704B /* DestinationPhotoService.swift */,
 				E4C5A2B24D6F7A8091B2C3E4 /* TripCoverImageStore.swift */,
 				A7C3E9012F4B5A6D8E9F0010 /* TransportPlaces.swift */,
+				FA00000000000000000000D0 /* Purchases.swift */,
 				B8D4F2A13C5E6D7E8F901233 /* TransportPlaces.json */,
 				FDE9278FBABFF64A57E9799D /* Components.swift */,
 				E23EE7F5E0B204FBC1A53389 /* Icons.swift */,
@@ -205,6 +212,7 @@
 			buildConfigurationList = 6B5A0F9C4F8496D789188A99 /* Build configuration list for PBXNativeTarget "Tripnest" */;
 			buildPhases = (
 				A3A90AC083904A7CC2381395 /* Sources */,
+				FA00000000000000000000C4 /* Frameworks */,
 				BBECAE4AFF5ED4C227286B2B /* Resources */,
 			);
 			buildRules = (
@@ -213,6 +221,7 @@
 			);
 			name = Tripnest;
 			packageProductDependencies = (
+				FA00000000000000000000C2 /* RevenueCat */,
 			);
 			productName = Tripnest;
 			productReference = D4059DEF3EB57FB21D3C3514 /* Tripnest.app */;
@@ -241,6 +250,9 @@
 			);
 			mainGroup = 30AF3DF2A4A5201265306FDF;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FA00000000000000000000C1 /* XCRemoteSwiftPackageReference "purchases-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5873FBE7E59B1B3537A7A01F /* Products */;
 			projectDirPath = "";
@@ -251,6 +263,17 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXFrameworksBuildPhase section */
+		FA00000000000000000000C4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FA00000000000000000000C3 /* RevenueCat in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
 /* Begin PBXResourcesBuildPhase section */
 		BBECAE4AFF5ED4C227286B2B /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
@@ -258,6 +281,7 @@
 			files = (
 				387F621678A8D96A660DD462 /* Assets.xcassets in Resources */,
 				B8D4F2A13C5E6D7E8F901234 /* TransportPlaces.json in Resources */,
+				A1B2C3D4E5F60718293A4B51 /* PrivacyInfo.xcprivacy in Resources */,
 				268E5DBF75412955D82BED0C /* Preview Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -279,6 +303,7 @@
 				B9DCF460A0B37B8D8A6FBFD1 /* Icons.swift in Sources */,
 				91633CAA2FC3B2740067704B /* DestinationPhotoService.swift in Sources */,
 				A7C3E9012F4B5A6D8E9F0011 /* TransportPlaces.swift in Sources */,
+				FA00000000000000000000D1 /* Purchases.swift in Sources */,
 				FD64DDBDEE99BDA269D207D0 /* LoginScreen.swift in Sources */,
 				C99E8FDA520D4437688B2A24 /* MainApp.swift in Sources */,
 				4A2098050D6B0C39E7C2D09A /* MemoriesScreen.swift in Sources */,
@@ -513,6 +538,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		FA00000000000000000000C1 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FA00000000000000000000C2 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FA00000000000000000000C1 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 808D1CD52F4BC4DA9B22B383 /* Project object */;
 }

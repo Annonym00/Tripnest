@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
+import StoreKit
 
 struct ProfileScreen: View {
     @EnvironmentObject private var store: TripStore
@@ -14,6 +15,7 @@ struct ProfileScreen: View {
     @State private var showCurrencyPicker = false
     @State private var showDocuments = false
     @State private var showSupport = false
+    @State private var showSubscription = false
     @Environment(\.scenePhase) private var scenePhase
     @State private var notificationStatus: TripnestNotificationStatus = .notDetermined
     @EnvironmentObject private var avatarStore: ProfileImageStore
@@ -47,11 +49,12 @@ struct ProfileScreen: View {
             .filter { !$0.isEmpty && $0 != "À définir" }).count
     }
 
-    private enum AccAction { case documents, support, logout }
+    private enum AccAction { case documents, support, subscription, logout }
     private struct Acc { let label: String; let glyph: TIcon.Glyph; let action: AccAction }
     private let accs: [Acc] = [
         .init(label: L("Documents · passeport, ID"), glyph: .passport, action: .documents),
         .init(label: L("Aide & support"),            glyph: .bell,     action: .support),
+        .init(label: L("Abonnement"),                glyph: .star,     action: .subscription),
         .init(label: L("Se déconnecter"),            glyph: .close,    action: .logout),
     ]
 
@@ -145,6 +148,11 @@ struct ProfileScreen: View {
         }
         .sheet(isPresented: $showSupport) {
             SupportSheet()
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showSubscription) {
+            SubscriptionSheet()
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
         }
@@ -249,7 +257,7 @@ struct ProfileScreen: View {
                 .frame(width: 34, height: 34)
                 Text(L("Langue")).font(.tText(14, weight: .semibold))
                 Spacer()
-                Text("\(localizer.language.flag)  \(localizer.language.label)")
+                Text(localizer.language.label)
                     .font(.tText(13)).foregroundColor(.tTextMute)
                 TIcon(glyph: .arrow, size: 14, stroke: .tTextDim)
             }
@@ -417,6 +425,7 @@ struct ProfileScreen: View {
                 switch a.action {
                 case .documents: showDocuments = true
                 case .support:   showSupport = true
+                case .subscription: showSubscription = true
                 case .logout:    onLogout()
                 }
             }) {
@@ -943,9 +952,11 @@ struct SupportSheet: View {
                                 .font(.tText(14))
                                 .foregroundColor(.tTextMute)
                                 .multilineTextAlignment(.center)
-                            Text("contact@menify.fr")
-                                .font(.tText(15, weight: .bold))
-                                .foregroundColor(.tAccent2)
+                            Link(destination: URL(string: "mailto:contact@menify.fr")!) {
+                                Text("contact@menify.fr")
+                                    .font(.tText(15, weight: .bold))
+                                    .foregroundColor(.tAccent2)
+                            }
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -963,6 +974,150 @@ struct SupportSheet: View {
             }
         }
         .tripnestPreferredColorScheme()
+    }
+}
+
+struct SubscriptionSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var purchases: PurchasesManager
+    @State private var isOpeningManagement = false
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.tBg0.ignoresSafeArea()
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 16) {
+                        subscriptionCard
+                        manageButton
+                        if purchases.isLive {
+                            restoreButton
+                        }
+                        Text(L("L’annulation est confirmée par Apple. Ton accès reste actif jusqu’à la fin de la période déjà réglée."))
+                            .font(.tText(11))
+                            .foregroundColor(.tTextMute)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 12)
+                    }
+                    .padding(22)
+                    .padding(.top, 8)
+                }
+            }
+            .task { await purchases.refreshCustomerInfo() }
+            .navigationTitle(L("Abonnement"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L("Fermer")) { dismiss() }
+                        .foregroundColor(.tAccent2)
+                }
+            }
+        }
+        .tripnestPreferredColorScheme()
+    }
+
+    private var subscriptionCard: some View {
+        TCard(
+            padding: 18,
+            bg: AnyShapeStyle(LinearGradient(
+                colors: [Color.tAccent.opacity(0.18), Color.tSurface],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )),
+            border: Color.tAccent2.opacity(0.35)
+        ) {
+            VStack(spacing: 14) {
+                ZStack {
+                    Circle().fill(Color.tAccent.opacity(0.16))
+                    TIcon(glyph: .star, size: 27, stroke: .tAccent2, strokeWidth: 2.2)
+                }
+                .frame(width: 58, height: 58)
+
+                VStack(spacing: 4) {
+                    Text(L("TripNest Premium"))
+                        .font(.tDisplay(22))
+                    Text(L("Abonnement géré par l’App Store"))
+                        .font(.tText(12))
+                        .foregroundColor(.tTextMute)
+                }
+
+                HStack(spacing: 8) {
+                    Circle().fill(Color.tMint).frame(width: 7, height: 7)
+                    Text(purchases.isPremium ? L("Abonnement actif") : L("4 jours d’essai inclus"))
+                        .font(.tText(12, weight: .bold))
+                        .foregroundColor(.tMint)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(Capsule().fill(Color.tMint.opacity(0.10)))
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private var manageButton: some View {
+        Button(action: openSubscriptionManagement) {
+            HStack(spacing: 9) {
+                if isOpeningManagement {
+                    ProgressView().tint(.white)
+                } else {
+                    TIcon(glyph: .close, size: 13, stroke: .white, strokeWidth: 2.5)
+                }
+                Text(L("Gérer ou annuler l’abonnement"))
+                    .font(.tText(15, weight: .bold))
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(
+                RoundedRectangle(cornerRadius: 17, style: .continuous)
+                    .fill(Color.tRose)
+            )
+            .shadow(color: Color.tRose.opacity(0.24), radius: 10, y: 7)
+        }
+        .buttonStyle(TripnestPressStyle())
+        .disabled(isOpeningManagement)
+    }
+
+    private var restoreButton: some View {
+        Button {
+            Task { await purchases.restore() }
+        } label: {
+            Text(L("Restaurer mes achats"))
+                .font(.tText(14, weight: .bold))
+                .foregroundColor(.tAccent2)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.tBorderStrong, lineWidth: 1)
+                )
+        }
+        .buttonStyle(TripnestPressStyle())
+        .disabled(purchases.purchaseInProgress)
+    }
+
+    private func openSubscriptionManagement() {
+        guard !isOpeningManagement else { return }
+        isOpeningManagement = true
+        Task { @MainActor in
+            defer { isOpeningManagement = false }
+            guard let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }) else {
+                if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+                    await UIApplication.shared.open(url)
+                }
+                return
+            }
+            do {
+                try await AppStore.showManageSubscriptions(in: scene)
+            } catch {
+                if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+                    await UIApplication.shared.open(url)
+                }
+            }
+        }
     }
 }
 

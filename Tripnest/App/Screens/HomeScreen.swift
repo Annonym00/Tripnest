@@ -1071,14 +1071,11 @@ private struct HomeHeroCard: View {
         .background(Capsule().fill(Color.black.opacity(0.42)))
     }
 
-    private static let _dateRangeFmt: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "fr_FR"); f.dateFormat = "d MMM"
-        return f
-    }()
-
     private var dateRangeLine: String {
         let total = max(1, trip.planDayCount)
-        let fmt = Self._dateRangeFmt
+        let fmt = DateFormatter()
+        fmt.locale = Localizer.shared.language.locale
+        fmt.setLocalizedDateFormatFromTemplate("d MMM")
         if let dep = trip.departureDate {
             let start = fmt.string(from: dep)
             if let ret = trip.returnDate {
