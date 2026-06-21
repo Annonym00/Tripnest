@@ -53,7 +53,7 @@ struct ProfileScreen: View {
     private struct Acc { let label: String; let glyph: TIcon.Glyph; let action: AccAction }
     private let accs: [Acc] = [
         .init(label: L("Documents · passeport, ID"), glyph: .passport, action: .documents),
-        .init(label: L("Aide & support"),            glyph: .bell,     action: .support),
+        .init(label: L("Aide & support"),            glyph: .heart,    action: .support),
         .init(label: L("Abonnement"),                glyph: .star,     action: .subscription),
         .init(label: L("Se déconnecter"),            glyph: .close,    action: .logout),
     ]
@@ -945,7 +945,7 @@ struct SupportSheet: View {
                 VStack(spacing: 20) {
                     TCard(padding: 20) {
                         VStack(spacing: 12) {
-                            TIcon(glyph: .bell, size: 36, stroke: .tAccent2)
+                            TIcon(glyph: .heart, size: 36, stroke: .tAccent2)
                             Text(L("Aide & support"))
                                 .font(.tDisplay(22)).tracking(-0.4)
                             Text(L("Pour toute question ou problème, contacte-nous à :"))
