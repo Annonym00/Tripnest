@@ -981,6 +981,8 @@ struct SubscriptionSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var purchases: PurchasesManager
     @State private var isOpeningManagement = false
+    @State private var showCustomerCenter = false
+    @State private var showPaywall = false
 
     var body: some View {
         NavigationStack {
@@ -989,6 +991,9 @@ struct SubscriptionSheet: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
                         subscriptionCard
+                        if purchases.isLive && !purchases.isPremium {
+                            upgradeButton
+                        }
                         manageButton
                         if purchases.isLive {
                             restoreButton
@@ -1004,6 +1009,12 @@ struct SubscriptionSheet: View {
                 }
             }
             .task { await purchases.refreshCustomerInfo() }
+            .sheet(isPresented: $showCustomerCenter) {
+                TripnestCustomerCenter()
+            }
+            .sheet(isPresented: $showPaywall) {
+                TripnestPaywall { showPaywall = false }
+            }
             .navigationTitle(L("Abonnement"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -1055,6 +1066,27 @@ struct SubscriptionSheet: View {
         }
     }
 
+    private var upgradeButton: some View {
+        Button { showPaywall = true } label: {
+            HStack(spacing: 9) {
+                TIcon(glyph: .star, size: 14, stroke: .white, strokeWidth: 2.5)
+                Text(purchases.primaryPriceString.map { "\(L("Voir les offres")) · \($0)" }
+                     ?? L("Voir les offres"))
+                    .font(.tText(15, weight: .bold))
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(
+                RoundedRectangle(cornerRadius: 17, style: .continuous)
+                    .fill(LinearGradient(colors: [.tGold, .tAccent2],
+                                         startPoint: .topLeading, endPoint: .bottomTrailing))
+            )
+            .shadow(color: Color.tAccent2.opacity(0.24), radius: 10, y: 7)
+        }
+        .buttonStyle(TripnestPressStyle())
+    }
+
     private var manageButton: some View {
         Button(action: openSubscriptionManagement) {
             HStack(spacing: 9) {
@@ -1098,6 +1130,16 @@ struct SubscriptionSheet: View {
     }
 
     private func openSubscriptionManagement() {
+        // When RevenueCat is live, the Customer Center handles manage / cancel /
+        // refund / restore in-app. Otherwise fall back to the App Store sheet.
+        guard purchases.isLive else {
+            openAppStoreSubscriptionManagement()
+            return
+        }
+        showCustomerCenter = true
+    }
+
+    private func openAppStoreSubscriptionManagement() {
         guard !isOpeningManagement else { return }
         isOpeningManagement = true
         Task { @MainActor in

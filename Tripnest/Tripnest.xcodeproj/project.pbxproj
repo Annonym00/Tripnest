@@ -25,6 +25,7 @@
 		B8D4F2A13C5E6D7E8F901234 /* TransportPlaces.json in Resources */ = {isa = PBXBuildFile; fileRef = B8D4F2A13C5E6D7E8F901233 /* TransportPlaces.json */; };
 		A1B2C3D4E5F60718293A4B51 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B50 /* PrivacyInfo.xcprivacy */; };
 		FA00000000000000000000C3 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = FA00000000000000000000C2 /* RevenueCat */; };
+		FA00000000000000000000C6 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = FA00000000000000000000C5 /* RevenueCatUI */; };
 		B9AEFFE10F306E52EB394D8B /* BudgetScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11D99A7DC044400EBEA0C6A9 /* BudgetScreen.swift */; };
 		B9DCF460A0B37B8D8A6FBFD1 /* Icons.swift in Sources */ = {isa = PBXBuildFile; fileRef = E23EE7F5E0B204FBC1A53389 /* Icons.swift */; };
 		C0MPLETEDTR1P5CR33N01B2C3D4 /* CompletedTripsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0MPLETEDTR1P5CR33N01F1L3R3F /* CompletedTripsScreen.swift */; };
@@ -222,6 +223,7 @@
 			name = Tripnest;
 			packageProductDependencies = (
 				FA00000000000000000000C2 /* RevenueCat */,
+				FA00000000000000000000C5 /* RevenueCatUI */,
 			);
 			productName = Tripnest;
 			productReference = D4059DEF3EB57FB21D3C3514 /* Tripnest.app */;
@@ -251,7 +253,7 @@
 			mainGroup = 30AF3DF2A4A5201265306FDF;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				FA00000000000000000000C1 /* XCRemoteSwiftPackageReference "purchases-ios" */,
+				FA00000000000000000000C1 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5873FBE7E59B1B3537A7A01F /* Products */;
@@ -269,6 +271,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FA00000000000000000000C3 /* RevenueCat in Frameworks */,
+				FA00000000000000000000C6 /* RevenueCatUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -540,9 +543,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		FA00000000000000000000C1 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+		FA00000000000000000000C1 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/RevenueCat/purchases-ios.git";
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios-spm.git";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 5.0.0;
@@ -553,8 +556,13 @@
 /* Begin XCSwiftPackageProductDependency section */
 		FA00000000000000000000C2 /* RevenueCat */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = FA00000000000000000000C1 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			package = FA00000000000000000000C1 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
 			productName = RevenueCat;
+		};
+		FA00000000000000000000C5 /* RevenueCatUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FA00000000000000000000C1 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
+			productName = RevenueCatUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
